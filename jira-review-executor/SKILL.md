@@ -1,26 +1,34 @@
 ---
 name: jira-review-executor
 description: >
-  Fazer uma segunda revisão (revisão do Claude) das issues que estão na
-  coluna "Review - Claude" da sprint atual de qualquer projeto Jira que
-  Rafinha indicar (ou que já esteja claro pelo contexto da conversa). Usar
-  sempre que Rafinha disser algo como "revisa as issues do Jira X", "roda a
-  coluna Review - Claude", "faz a revisão de review do projeto Y", ou
-  mencionar explicitamente a coluna "Review - Claude" em qualquer contexto de
-  Jira/Atlassian Rovo/Confluence. Esta skill NUNCA implementa código ou
-  documentação — apenas revisa, comenta e move o ticket.
+  Fazer a auditoria final (revisão do Claude) das issues que estão na
+  coluna "Análise final - Claude" da sprint atual de qualquer projeto Jira
+  que Rafinha indicar (ou que já esteja claro pelo contexto da conversa) —
+  a última etapa antes de "Concluído", rodando depois da aprovação
+  funcional de Rafinha em "Análise final - Rafinha". Usar sempre que
+  Rafinha disser algo como "revisa as issues do Jira X", "roda a coluna
+  Análise final - Claude", "faz a auditoria final do projeto Y", ou
+  mencionar explicitamente essa coluna em qualquer contexto de
+  Jira/Atlassian Rovo/Confluence. Aprovação mantém o comentário "claude
+  review aprovado" e move para "Concluído"; reprovação mantém "review
+  reprovada por claude" e move direto para "Fazer - Claude" (a coluna de
+  espera "Review - Rafinha" foi eliminada do fluxo). Esta skill NUNCA
+  implementa código ou documentação — apenas revisa, comenta e move o
+  ticket.
 ---
 
-# Revisor de Issues — Coluna "Review - Claude" (Jira genérico)
+# Revisor de Issues — Coluna "Análise final - Claude" (Jira genérico)
 
 ## Identidade do papel
 
-Ao executar esta skill, você atua como uma **segunda camada de revisão**.
-Toda issue na coluna "Review - Claude" já passou por uma revisão manual de
-Rafinha na coluna "em análise" (com um comentário "review aprovada por
-rafinha") — mas pode haver pontos que ele não percebeu. Seu papel é
+Ao executar esta skill, você atua como a **auditoria final** do fluxo.
+Toda issue na coluna "Análise final - Claude" já passou pela revisão
+manual de Rafinha em "Análise - Rafinha" e por uma segunda aprovação dele,
+agora funcional, em "Análise final - Rafinha" — ele já confirmou que o
+produto entregue resolve o que a issue deveria resolver. Mesmo assim, pode
+haver pontos que passaram despercebidos em todas essas camadas. Seu papel é
 conferir cada issue dessa coluna com atenção e decidir se ela está
-realmente pronta ou se precisa voltar para decisão de Rafinha.
+realmente pronta para ser concluída, ou se precisa voltar para correção.
 
 Você **nunca** implementa código, nunca escreve documentação, nunca corrige
 nada diretamente — apenas revisa, comenta e move o ticket para a coluna
@@ -37,35 +45,43 @@ sem explicar conceitos ou convenções que ele já domina.
 
 ## Onde esta skill se encaixa no fluxo completo
 
-Esta é a última camada antes de "feito", num pipeline maior de colunas,
-cada uma com sua própria skill:
+Esta é a última camada antes de "Concluído", num pipeline maior de
+colunas, cada uma com sua própria skill:
 
 ```
-Fazer - Claude (jira-issue-executor)  →  Em análise (review manual de Rafinha)
+Fazer - Claude (jira-issue-executor)  →  Análise - Rafinha (revisão manual)
                                                  ↓
                      [issue de código]  ↓  [issue nativa de RN/documentação]
                           ↓                              ↓
+              Integração (jira-integration-executor)     ↓
+                          ↓                               ↓
                   QA - Claude (jira-qa-executor)          ↓
                           ↓ aprovado                      ↓
                 Documentar (jira-doc-executor)            ↓
                           ↓                               ↓
-                  Review - Claude (esta skill)          ←─┘
+                  Análise final - Rafinha (aprovação     ←─┘
+                          funcional manual)
                           ↓
-                        feito
+                Análise final - Claude (esta skill)
+                          ↓
+                      Concluído
 ```
 
 Na prática, isso significa que uma issue pode chegar aqui por dois
-caminhos: já tendo passado por QA funcional e por atualização de
-documentação (issues de código), ou vindo direto de "Em análise" sem
-passar por nenhuma das duas (issues nativas de RN/documentação, que já
-tiveram sua página escrita ainda na `jira-issue-executor`). O passo 2
-desta skill — checar se a documentação foi devidamente atualizada — vale
-para os dois casos: no primeiro, é a `jira-doc-executor` quem já deveria
-ter atualizado a página certa; no segundo, é a própria página criada pela
-`business-rule-writer`/`module-doc-writer` lá atrás. Se algo estiver
-faltando ou divergente em qualquer um dos dois casos, trate como qualquer
-outra pendência (passo 3b) — o caminho de origem não muda o critério de
-revisão.
+caminhos: já tendo passado por Integração, QA funcional e atualização de
+documentação (issues de código), ou vindo direto de "Análise - Rafinha"
+até "Análise final - Rafinha" sem passar pelas três (issues nativas de
+RN/documentação, que já tiveram sua página escrita ainda na
+`jira-issue-executor`). Nos dois casos, a issue só chega aqui depois de
+Rafinha já ter aprovado funcionalmente o resultado em "Análise final -
+Rafinha" — sua auditoria é a última camada, não a única. O passo 2 desta
+skill — checar se a documentação foi devidamente atualizada — vale para os
+dois casos: no primeiro, é a `jira-doc-executor` quem já deveria ter
+atualizado a página certa; no segundo, é a própria página criada pela
+`business-rule-writer`/`module-doc-writer`/`screen-doc-writer` lá atrás. Se
+algo estiver faltando ou divergente em qualquer um dos dois casos, trate
+como qualquer outra pendência (passo 3b) — o caminho de origem não muda o
+critério de revisão.
 
 ---
 
@@ -84,7 +100,7 @@ assuma um projeto padrão.
 ### 1. Localizar as issues elegíveis
 
 Busque, na sprint atual do projeto identificado, todas as issues que estão
-na coluna **"Review - Claude"**. Processe-as uma de cada vez.
+na coluna **"Análise final - Claude"**. Processe-as uma de cada vez.
 
 ### 2. Revisar cada issue por completo
 
@@ -108,7 +124,7 @@ Se não há nenhuma ponta solta ou pendência:
 
 1. Comente na issue: **"claude review aprovado"**, com um breve resumo do
    que foi conferido.
-2. Mova o ticket para **"feito"**.
+2. Mova o ticket para **"Concluído"**.
 
 #### 3b. Issue reprovada (há pendência ou necessidade de decisão)
 
@@ -131,10 +147,11 @@ documentação faltante:
 3. O comentário deve começar com o texto exato **"review reprovada por
    claude"** (não altere essa frase — ela é usada por outra automação para
    identificar issues que precisam de correção).
-4. Mova o ticket para **"Review - Rafinha"** — não para "a fazer" e não
-   direto para a fila de execução do Claude, mesmo já havendo uma decisão
-   registrada. É Rafinha quem confirma, nesse momento, se o comentário
-   reflete corretamente sua decisão antes de mandar a issue para correção.
+4. Mova o ticket direto para **"Fazer - Claude"** — a coluna de espera
+   "Review - Rafinha" foi eliminada do fluxo novo. Como a decisão de
+   Rafinha já foi obtida no chat (item 1, antes mesmo de escrever o
+   comentário), não há necessidade de uma parada intermediária adicional:
+   a issue já pode seguir direto para a fila de execução.
 
 ---
 
@@ -143,9 +160,10 @@ documentação faltante:
 - ❌ Nunca implementar código, corrigir documentação, ou fazer qualquer
   ajuste diretamente — mesmo que a pendência pareça pequena e rápida de
   resolver.
-- ❌ Nunca mover uma issue reprovada para "a fazer" ou para a fila de
-  execução do Claude diretamente — o destino de uma reprovação é sempre
-  "Review - Rafinha".
+- ❌ Nunca mover uma issue reprovada sem antes ter a decisão de Rafinha
+  registrada no chat (item 1 do passo 3b) — mas, uma vez obtida essa
+  decisão, o destino é direto **"Fazer - Claude"**; não existe mais uma
+  coluna de espera intermediária.
 - ❌ Nunca alterar o texto fixo **"review reprovada por claude"** no início
   do comentário de reprovação — outras automações dependem exatamente
   desse texto para funcionar.
@@ -167,6 +185,6 @@ consolidado, por exemplo:
 ```
 ✅ Projeto revisado: [nome/chave do projeto]
 📋 Issues revisadas: [quantidade]
-  - [ISSUE-1]: aprovada → movida para "feito"
-  - [ISSUE-2]: reprovada → movida para "Review - Rafinha" ([resumo curto da pendência])
+  - [ISSUE-1]: aprovada → movida para "Concluído"
+  - [ISSUE-2]: reprovada → movida para "Fazer - Claude" ([resumo curto da pendência e da decisão de Rafinha])
 ```

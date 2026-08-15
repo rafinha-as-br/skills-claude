@@ -29,12 +29,20 @@ desenvolve, para que uma rodada de QA não atrapalhe o trabalho dele em
 paralelo.
 
 Toda issue que chega em "QA - Claude" já passou pela implementação
-(`jira-issue-executor`) e pelo review manual de negócio de Rafinha em "Em
-análise" — ou seja, ele já validou que aquilo é o que ele esperava do ponto
-de vista de dono do negócio. Seu papel é diferente e complementar: verificar
-sistematicamente, tela por tela, campo por campo, que a implementação
-funciona como descrito — o tipo de cobertura repetitiva que ele não tem
-tempo de fazer manualmente em toda issue.
+(`jira-issue-executor`), pelo review manual de negócio de Rafinha em
+"Análise - Rafinha", e pela etapa de Integração (`jira-integration-executor`)
+— ou seja, já está mergeada em `develop`, com o Pull Request validado pelo
+GitHub Actions. Você não testa mais a branch isolada da issue: testa o
+estado real e já integrado do sistema. Seu papel é diferente e complementar
+ao das etapas anteriores: verificar sistematicamente, tela por tela, campo
+por campo, que a implementação funciona como descrito dentro do sistema já
+integrado — a Integração sozinha só valida que o código compila e mergeia
+limpo, não que o comportamento está correto; isso é o que você cobre, com o
+tipo de verificação repetitiva que Rafinha não tem tempo de fazer
+manualmente em toda issue.
+
+Consulte a skill `workflow-development-flow` para dúvidas sobre como esta
+etapa se encaixa no fluxo geral do pipeline.
 
 O resultado dessa verificação não vive só num comentário de texto: cada caso
 de teste é registrado como um objeto de verdade no **AIO Tests** (app de test
@@ -134,18 +142,28 @@ Busque, na sprint atual do projeto indicado, todas as issues na coluna
 **"QA - Claude"**. Processe-as uma de cada vez, do início ao fim do fluxo
 abaixo, antes de passar para a próxima.
 
-### 2. Obter a branch a partir do comentário "Implementação Claude"
+### 2. Confirmar a integração e reunir o contexto da mudança
 
-Leia o comentário "Implementação Claude" deixado pela `jira-issue-executor`
-nessa issue e extraia o nome exato da branch. Se esse comentário não
-existir ou não trouxer uma branch de código clara (por exemplo, se a issue
+Leia o comentário de resumo deixado pela `jira-integration-executor` nessa
+issue, confirmando que o merge para `develop` foi realizado (link do PR,
+resultado da pipeline). Se esse comentário não existir — ou a issue chegou
+em "QA - Claude" sem ter passado pela Integração —, **pare e pergunte a
+Rafinha** em vez de assumir que está tudo integrado.
+
+Leia também o comentário "Implementação Claude" (de `jira-issue-executor`)
+para entender o que foi implementado e quais áreas do sistema foram
+tocadas — isso orienta tanto os casos de teste da própria issue quanto os
+fluxos relacionados a incluir na regressão (passo 4). Se nenhum desses
+comentários existir ou não trouxer contexto claro (por exemplo, se a issue
 foi originalmente de RN/documentação e não deveria estar nessa coluna),
 **pare e pergunte a Rafinha** em vez de adivinhar.
 
 ### 3. Preparar o ambiente
 
 1. `git status` (ver Pré-requisito 5) e resolver pendências se houver.
-2. Checkout na branch identificada no passo 2.
+2. Checkout na branch `develop` e `git pull origin develop`, para garantir
+   que está testando o estado mais recente já integrado — não a branch
+   isolada da issue.
 3. Subir o backend local via docker compose.
 4. Rodar `flutter run -d chrome` apontando para o app correspondente à
    issue (hoje, Travel Matrix). Se o app da issue não tiver target Flutter
@@ -160,6 +178,17 @@ comentários relevantes, escreva os casos de teste em formato objetivo
 aceite claro o suficiente para derivar um caso de teste objetivo, **pare e
 pergunte a Rafinha** o que deveria ser validado — nunca invente um critério
 de aceite para preencher a lacuna.
+
+**Regressão dos fluxos relacionados.** Além dos casos que cobrem
+diretamente a issue, identifique os fluxos existentes que têm relação ou
+dependência com a área alterada — o que já funcionava antes precisa
+continuar funcionando depois da integração (ex.: uma alteração no
+gerenciamento de autenticação pode exigir regressão em login, logout,
+navegação autenticada). Escreva casos de teste também para esses fluxos
+relacionados, na mesma pasta/estrutura do AIO Tests. Se, depois de avaliar
+a mudança, não houver fluxo relacionado plausível, registre isso
+explicitamente no comentário final (passo 8) em vez de pular a etapa
+silenciosamente.
 
 Em seguida, registre cada caso no AIO Tests:
 
@@ -257,6 +286,13 @@ já fazem) com:
 - ❌ Nunca testar uma issue cujas telas não rodam em Flutter Web tentando
   outro caminho (emulador, etc.) — isso está fora do escopo desta skill;
   pare e pergunte.
+- ❌ Nunca começar a testar sem confirmar que a issue passou pela
+  Integração (comentário da `jira-integration-executor`) — se não houver
+  esse comentário, pare e pergunte a Rafinha em vez de assumir que está
+  tudo integrado.
+- ❌ Nunca testar só os casos da própria issue quando existir fluxo
+  relacionado plausível de regressão — identifique-o e cubra-o, ou registre
+  explicitamente que não há nenhum aplicável.
 - ❌ Nunca mover a issue sem o comentário de resumo com a frase fixa
   correspondente ao resultado.
 - ❌ Nunca descartar alterações não commitadas no repositório sem
@@ -272,8 +308,9 @@ resumo consolidado, por exemplo:
 ```
 ✅ Projeto testado: [nome/chave do projeto]
 📋 Issues processadas: [quantidade]
-  - [ISSUE-1]: 4 casos de teste no AIO Tests, todos aprovados → movida
-    para "Documentar" (Cycle: [link])
+  - [ISSUE-1]: 4 casos da issue + 2 de regressão (login, navegação
+    autenticada) no AIO Tests, todos aprovados → movida para "Documentar"
+    (Cycle: [link])
   - [ISSUE-2]: 3 casos de teste, 1 reprovado (campo "status" não atualiza
     após salvar) → movida para "Fazer - Claude" (Run: [link])
 ⚠️ Issues puladas por ambiguidade (sem critério de aceite claro, ou fora do

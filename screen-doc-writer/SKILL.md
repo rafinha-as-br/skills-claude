@@ -43,6 +43,9 @@ O que torna esta skill diferente das outras duas de documentação:
   arquivo, provider, endpoint — isso é `module-doc-writer`. Aqui você
   descreve o que qualquer pessoa vê e faz ao usar a tela.
 
+Consulte a skill `workflow-development-flow` para dúvidas sobre como a
+etapa "Documentar" se encaixa no fluxo geral do pipeline.
+
 ---
 
 ## Quando usar (e quando não)
@@ -53,10 +56,11 @@ porque o texto ficou fraco/desatualizado. Isso inclui:
 
 - Pedido direto de Rafinha ("documenta essa tela", "revisa a doc da tela
   X", link de uma página de tela do Confluence).
-- Uma issue do Jira que Rafinha apontar como estando na coluna
-  **"Documentar"** e que ele confirme ser sobre alteração de tela/UI. (Ver
-  seção "Contexto do pipeline" abaixo — a classificação código/RN/módulo/
-  tela **nunca** é inferida sozinha por esta skill.)
+- Uma issue da coluna **"Documentar"** delegada por `jira-doc-executor`
+  (quando ele classificar o impacto da issue como tela/UI), ou uma issue
+  que Rafinha aponte diretamente e confirme ser sobre alteração de
+  tela/UI. (Ver seção "Contexto do pipeline" abaixo — a classificação
+  código/RN/módulo/tela **nunca** é inferida sozinha por esta skill.)
 
 **Não use** esta skill para:
 - Regra de negócio isolada (quem pode fazer o quê, sob quais condições) →
@@ -71,17 +75,20 @@ porque o texto ficou fraco/desatualizado. Isso inclui:
 ### Contexto do pipeline (Documentar)
 
 Issues chegam à coluna **"Documentar"** depois de passar pela revisão
-manual de Rafinha e pela QA (`jira-qa-executor`) — ou seja, o código já
-funciona. Segundo o próprio Rafinha, "Documentar" reúne issues **quase
-concluídas, faltando só uma revisão pra ver se precisa atualizar algo no
-Confluence por causa delas". Isso significa que nem toda issue na coluna
-precisa necessariamente de uma atualização de página — pode ser que nada
-tenha mudado o suficiente para justificar edição. Ainda não existe uma
-skill orquestradora (`jira-doc-executor`) que varra essa coluna sozinha e
-decida qual skill de documentação acionar para cada issue — hoje, é
-Rafinha quem aponta uma issue específica e confirma que ela é sobre
-tela/UI antes de você agir. Se um dia essa orquestradora existir, ela
-delega para cá do mesmo jeito.
+manual de Rafinha (`Análise - Rafinha`), pela Integração
+(`jira-integration-executor`) e pela QA (`jira-qa-executor`) — ou seja, o
+código já está integrado em `develop` e funciona como esperado. Isso
+significa que nem toda issue na coluna precisa necessariamente de uma
+atualização de página — pode ser que nada tenha mudado o suficiente para
+justificar edição.
+
+A skill orquestradora `jira-doc-executor` já varre essa coluna, classifica
+o impacto de cada issue (RN, módulo, ou tela/UI) e delega para esta skill
+quando o impacto é tela/UI — passando o link da página e o contexto
+extraído da issue (o que mudou, a issue de origem, o que foi testado no
+QA). Você também continua podendo ser acionada diretamente por Rafinha,
+fora desse pipeline (link de página avulso, pedido de revisão de texto
+fraco/desatualizado, etc.) — nada disso muda o seu comportamento.
 
 ---
 

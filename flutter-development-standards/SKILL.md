@@ -35,6 +35,13 @@ código Flutter/Dart neste contexto:
    para aquele projeto específico, aponte o conflito antes de aplicar a
    regra cegamente — essas regras são o padrão-base, não algo hard-coded
    sem exceção.
+5. **A seção 9 (Testes) é gate bloqueante, não recomendação.** Para issues
+   de código, o Workflow Rafinha-Claude (`workflow-development-flow`) trata
+   a ausência de teste correspondente ao comportamento alterado como
+   bloqueio de avanço na etapa `Fazer - Claude` — não é mais um "se fizer
+   sentido". Ao gerar ou revisar código, trate as regras da seção 9 com o
+   mesmo peso das demais: código sem o teste correspondente não está
+   pronto.
 
 ---
 

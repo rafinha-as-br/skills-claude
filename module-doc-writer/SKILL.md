@@ -27,6 +27,13 @@ uma única tela específica** (em vez do módulo como um todo), a skill certa
 é `screen-doc-writer`. Se ficar em dúvida sobre qual das três se aplica,
 pergunte a Rafinha antes de começar a escrever.
 
+Quando você tem acesso real ao repositório do módulo (rodando via Claude
+Code, tipicamente no mesmo contexto de `jira-issue-executor`), esta skill
+também sincroniza a pasta `docs/` correspondente no código, depois de
+publicar a página do Confluence — ver passo 9. Consulte a skill
+`workflow-development-flow` para dúvidas sobre como a etapa "Documentar" se
+encaixa no fluxo geral do pipeline.
+
 ## Como esta documentação difere de uma página de RN
 
 Isso importa porque muda o tom de escrita:
@@ -157,11 +164,59 @@ substituir o código-fonte.
 - Linguagem técnica, direta, sem eliminar informação necessária para
   entendimento completo do módulo.
 
-### 8. Publicar e apresentar resumo
+### 8. Publicar a página no Confluence
 
 Crie ou atualize a página no Confluence com o conteúdo formatado (usando
-`createConfluencePage` ou `updateConfluencePage` conforme o caso). Ao final,
-apresente a Rafinha:
+`createConfluencePage` ou `updateConfluencePage` conforme o caso).
+
+### 9. Sincronizar a documentação em `docs/` no código (quando aplicável)
+
+Além da página do Confluence, cada módulo pode possuir uma pasta `docs/`
+própria dentro do código:
+
+```
+module/
+├── data/
+├── domain/
+├── presentation/
+└── docs/
+    ├── overview.md
+    ├── architecture.md
+    ├── state-management.md
+    ├── api.md
+    ├── maintenance.md
+    └── changelog.md
+```
+
+Crie ou atualize só os arquivos que fizerem sentido para o módulo — isso
+não é burocracia, não force a existência de um arquivo vazio:
+
+- **`overview.md`** — responsabilidade do módulo, funcionalidades, limites,
+  dependências relevantes.
+- **`architecture.md`** — organização das camadas, fluxo dos dados,
+  componentes principais, dependências, decisões arquiteturais relevantes.
+- **`state-management.md`** — como o estado é gerenciado (Bloc/Cubit/
+  Provider/etc.), estados possíveis, eventos/métodos disponíveis, quem
+  provoca cada transição, fluxo entre UI e camadas inferiores.
+- **`api.md`** — endpoints utilizados, modelos, requisições, respostas,
+  erros relevantes, autenticação.
+- **`maintenance.md`** — como modificar o módulo, pontos de atenção,
+  sequência de alterações, testes que devem ser atualizados, documentação
+  que deve ser revisada.
+- **`changelog.md`** — registro de mudanças estruturais relevantes no
+  módulo.
+
+Esta etapa só se aplica quando você está rodando com acesso real ao
+repositório do módulo (via Claude Code — o mesmo contexto de
+`jira-issue-executor`, seja porque foi chamada por ela/por
+`jira-doc-executor` durante a execução de uma issue, seja porque Rafinha
+pediu isso explicitamente numa sessão com o repositório aberto). Se você
+estiver só no chat, sem acesso ao repositório, pule esta etapa e diga isso
+explicitamente no resumo (passo 10) em vez de simular o resultado.
+
+### 10. Apresentar resumo
+
+Ao final, apresente a Rafinha:
 
 ```
 ✅ Página [criada/atualizada]: [link da página]
@@ -169,6 +224,7 @@ apresente a Rafinha:
 ⚠️ Pendências sinalizadas (via doc-pendency-resolver): [quantidade e resumo, ou "nenhuma"]
 📝 Gaps/observações documentados (já confirmados por Rafinha, sem pergunta): [lista ou "nenhum"]
 🔗 Links para outras páginas: [lista ou "nenhum"]
+📁 Arquivos docs/ no código: [lista dos criados/atualizados, ou "não aplicável (sem acesso ao repositório)"]
 ```
 
 ---
@@ -191,3 +247,8 @@ apresente a Rafinha:
 - ❌ Não esconda o estado real de implementação para deixar a página "mais
   bonita" — se algo está mockado ou incompleto, isso faz parte do valor da
   documentação.
+- ❌ Não crie arquivo de `docs/` vazio ou genérico só para ter os seis
+  presentes — só os que o módulo realmente precisa (passo 9).
+- ❌ Não simule ou invente que atualizou `docs/` no código quando estiver
+  rodando sem acesso ao repositório — declare isso explicitamente no resumo
+  (passo 10) em vez de fingir que a etapa foi feita.

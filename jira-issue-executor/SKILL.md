@@ -1,11 +1,11 @@
 ---
 name: "jira-issue-executor"
-description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Issues de código são implementadas de verdade (branch + commit + push). Issues de documentação são delegadas à business-rule-writer (RN) ou module-doc-writer (documentação de módulo) — classificação código/RN/módulo sempre confirmada com Rafinha, nunca inferida sozinha. Roda via Claude Code no repositório real dele. Abertura de PR/MR continua sendo dele, salvo pedido explícito."
+description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Interpreta a hierarquia Épico/Issue/Subtask do item recebido (consultando workflow-development-flow em caso de dúvida) e lê o campo tipo (código/documentação) já definido por jira-issue-creator — só pergunta como fallback se o campo não existir ou estiver ambíguo. Issues de código são implementadas de verdade (branch + commit + testes obrigatórios e proporcionais ao risco + push + abertura automática de Pull Request referenciando a Issue do Jira). Issues de documentação são delegadas à business-rule-writer (RN), module-doc-writer (módulo) ou screen-doc-writer (tela/UI). Roda via Claude Code no repositório real dele. Abre o Pull Request automaticamente após o push; mergear continua fora do escopo desta skill."
 ---
 
 ---
 name: jira-issue-executor
-description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Issues de código são implementadas de verdade (branch + commit + push). Issues de documentação são delegadas à business-rule-writer (RN) ou module-doc-writer (documentação de módulo) — classificação código/RN/módulo sempre confirmada com Rafinha, nunca inferida sozinha. Roda via Claude Code no repositório real dele. Abertura de PR/MR continua sendo dele, salvo pedido explícito."
+description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Interpreta a hierarquia Épico/Issue/Subtask do item recebido (consultando workflow-development-flow em caso de dúvida) e lê o campo tipo (código/documentação) já definido por jira-issue-creator — só pergunta como fallback se o campo não existir ou estiver ambíguo. Issues de código são implementadas de verdade (branch + commit + testes obrigatórios e proporcionais ao risco + push + abertura automática de Pull Request referenciando a Issue do Jira). Issues de documentação são delegadas à business-rule-writer (RN), module-doc-writer (módulo) ou screen-doc-writer (tela/UI). Roda via Claude Code no repositório real dele. Abre o Pull Request automaticamente após o push; mergear continua fora do escopo desta skill."
 ---
 
 # Executor de Issues — Coluna "Fazer - Claude" (Jira genérico)
@@ -33,13 +33,19 @@ skills de documentação, não aqui, para não haver duas versões da mesma
 lógica divergindo com o tempo.
 
 Ao final do trabalho em cada issue de código, você **dá `git push` na
-branch** — isso é autorizado por padrão, não precisa perguntar a cada vez.
+branch e abre o Pull Request** em seguida — ambos autorizados por padrão,
+não precisa perguntar a cada vez. Abrir o PR logo após o push faz o GitHub
+Actions começar a rodar já durante a `Análise - Rafinha`, em paralelo à
+revisão manual, em vez de só na etapa de Integração.
 
-Você **não abre nem mergeia Pull/Merge Request** por conta própria — por
-padrão essa parte continua sendo decisão e ação do Rafinha. A única
-exceção é se ele pedir explicitamente, na própria conversa, para você
-abrir o MR de uma issue específica; fora isso, nunca tome essa iniciativa
-sozinho.
+Você **não mergeia** Pull/Merge Request por conta própria — isso é
+responsabilidade da etapa de Integração (`jira-integration-executor`), não
+desta skill.
+
+Antes de processar qualquer item da coluna, você interpreta o nível
+hierárquico dele (Épico, Issue ou Subtask) — ver passo 1 do fluxo abaixo.
+Consulte a skill `workflow-development-flow` sempre que tiver dúvida sobre
+como uma etapa se encaixa no fluxo geral, ou sobre essa hierarquia.
 
 A entrega do seu trabalho, para issues de código, termina no commit + push
 da branch. **Você nunca gera bundle Git** (nem qualquer outro arquivo/artefato
@@ -96,6 +102,17 @@ coluna **"Fazer - Claude"** (via `searchJiraIssuesUsingJql` ou equivalente,
 filtrando por status/coluna e sprint ativa). Processe-as **uma de cada
 vez**, do início ao fim do fluxo abaixo, antes de passar para a próxima.
 
+**Interpretar a hierarquia de cada item antes de processá-lo:**
+- **Épico** → recuse executá-lo. Aponte as Issues filhas relacionadas a
+  Rafinha e não prossiga com o fluxo abaixo para esse item.
+- **Subtask** → entenda o contexto da Issue pai (objetivo, requisitos,
+  regras de negócio) e execute somente a parte correspondente à subtask,
+  respeitando o workflow da Issue pai.
+- **Issue** → siga o fluxo normalmente, sem tratamento especial.
+
+Consulte `workflow-development-flow` em caso de dúvida sobre como
+interpretar o nível recebido.
+
 ### 2. Verificar comentários existentes para cada issue
 
 Para cada issue, leia todos os comentários antes de decidir o que fazer:
@@ -115,10 +132,10 @@ Para cada issue, leia todos os comentários antes de decidir o que fazer:
 mudar, ele comenta o que falta e move a issue de volta para "Fazer -
 Claude" — é assim que ela reaparece na sua fila.)*
 
-### 3. Classificar a issue: código, RN, ou documentação de módulo
+### 3. Classificar a issue: código, RN, documentação de módulo, ou tela
 
 Antes de tratar qualquer issue (nova ou em correção), classifique-a em uma
-das três trilhas:
+das quatro trilhas:
 
 - **Código** — a issue pede implementação, correção de bug, ou qualquer
   mudança em código-fonte.
@@ -126,24 +143,27 @@ das três trilhas:
   regra de negócio isolada no Confluence (quem pode fazer o quê, sob quais
   condições, critério de aprovação). Vai para a skill `business-rule-writer`.
 - **Documentação de módulo** — a issue pede para documentar ou atualizar a
-  documentação técnica/arquitetural de um módulo do Geoprag (estrutura de
-  código, fluxos, estado de implementação). Vai para a skill
-  `module-doc-writer`.
+  documentação técnica/arquitetural de um módulo (estrutura de código,
+  fluxos, estado de implementação). Vai para a skill `module-doc-writer`.
+- **Tela/UI** — a issue pede para documentar ou atualizar campos,
+  componentes, interações, estados ou regras de exibição de uma tela. Vai
+  para a skill `screen-doc-writer`.
 
-**Sempre pergunte a Rafinha qual das três trilhas se aplica antes de
-prosseguir — nunca infira sozinho a partir do tipo, label ou título da
-issue**, mesmo quando parecer óbvio. Isso evita que uma issue de
-documentação seja tratada como código (ou vice-versa) por causa de um título
-ambíguo, e evita que uma RN acabe delegada para a skill de módulo ou
-vice-versa. Se estiver processando várias issues na mesma execução, pode
-perguntar a classificação de todas de uma vez, no início, para não interromper
-o fluxo issue a issue.
+**A classificação código/documentação é lida do campo `tipo`, já definido
+por `jira-issue-creator` na criação da issue — não pergunte por rotina.**
+Pergunte a Rafinha apenas como fallback, se o campo não existir na issue ou
+estiver realmente ambíguo. A subdivisão dentro de "documentação" (RN,
+módulo ou tela) normalmente não vem nesse campo — infira pelo conteúdo da
+issue e só pergunte se ficar genuinamente ambíguo entre duas trilhas. Se
+estiver processando várias issues na mesma execução e restar mais de uma
+dúvida real, pode perguntar todas de uma vez, no início, para não
+interromper o fluxo issue a issue.
 
 Depois de classificada:
 - Código → siga para o passo 4a/4b normalmente, e a implementação real
   acontece na seção 5.
-- RN ou Documentação de módulo → siga para o passo 4a/4b normalmente, e a
-  implementação real acontece na seção 6.
+- RN, Documentação de módulo, ou Tela → siga para o passo 4a/4b
+  normalmente, e a implementação real acontece na seção 6.
 
 ### 4a. Issue nova (sem review anterior)
 
@@ -225,13 +245,20 @@ resultado (seções violadas e corrigidas, ou "sem violações") para incluir no
 comentário de resumo do passo 7.
 
 **5.4 Gate de qualidade antes de commitar.** Depois da autorevisão do passo
-5.3b (quando aplicável), rode as ferramentas de análise
-estática e os testes automatizados do projeto antes de qualquer commit:
-- Flutter/Dart: `flutter analyze`, e `flutter test` se já existirem testes
-  cobrindo a área alterada. Se fizer sentido, você pode escrever novos
-  testes unitários para o que foi implementado.
+5.3b (quando aplicável), rode as ferramentas de análise estática e os
+testes automatizados do projeto antes de qualquer commit. Testes deixaram
+de ser opcionais: são **obrigatórios e proporcionais ao risco** introduzido
+pela alteração — não é possível commitar sem teste correspondente ao
+comportamento alterado (unitário, widget ou integração, conforme o caso).
+Isso é a camada de **validação local** (feedback rápido, antes do commit) —
+não substitui, nem é substituída por, a camada de pipeline (GitHub Actions)
+que roda depois, na etapa Integração.
+- Flutter/Dart: `flutter analyze`, e `flutter test` cobrindo a área
+  alterada — escreva os testes que faltarem para o comportamento
+  implementado, não apenas rode os já existentes.
 - Outras stacks: use o equivalente já configurado no repositório (linter,
-  typecheck, testes unitários existentes ou novos).
+  typecheck), escrevendo/atualizando os testes correspondentes ao
+  comportamento alterado.
 
 **Nunca suba o projeto em background para verificar visualmente** (ex.:
 `flutter run`, `npm start`/`npm run dev`, `docker compose up`, abrir um
@@ -261,23 +288,33 @@ Se o push for rejeitado por divergência de histórico (non-fast-forward),
 final — nunca resolva isso sozinho com `git push --force` ou
 `--force-with-lease`.
 
-Não abra nem mergeie o Pull/Merge Request dessa issue — isso continua
-sendo com o Rafinha, a menos que ele peça explicitamente para você fazer.
+**5.6 Abrir o Pull Request.** Logo após o push, abra o PR — isso é
+autorizado por padrão, não precisa perguntar a cada execução. O título ou a
+descrição do PR deve indicar claramente qual Issue do Jira está sendo
+resolvida (a chave já está no nome da branch, mas vale repetir). Se a issue
+tiver uma GitHub Issue de origem vinculada (campo `Link para GitHub
+Issue`, criado por `jira-issue-creator`), a descrição do PR também
+referencia ela usando a convenção nativa do GitHub (`Closes #N`),
+fechando-a automaticamente quando o PR for mergeado. Você **não mergeia** o
+PR — isso é responsabilidade da etapa de Integração
+(`jira-integration-executor`), não desta skill.
 
-### 6. Issues de documentação: delegar para business-rule-writer ou module-doc-writer
+### 6. Issues de documentação: delegar para business-rule-writer, module-doc-writer ou screen-doc-writer
 
-Quando a issue foi classificada como RN ou documentação de módulo (passo 3),
-não escreva nenhum conteúdo de página por conta própria. Em vez disso:
+Quando a issue foi classificada como RN, documentação de módulo, ou tela
+(passo 3), não escreva nenhum conteúdo de página por conta própria. Em vez
+disso:
 
 **6.1 Confirmar a página do Confluence alvo.** Procure, na descrição ou nos
 comentários da issue, o link da página a criar ou atualizar (ou da página-mãe,
 se for uma página nova). Se a issue não trouxer um link claro, pergunte a
 Rafinha antes de prosseguir — nunca escolha ou adivinhe qual página é.
 
-**6.2 Invocar a skill correspondente.** Chame `business-rule-writer` (RN) ou
-`module-doc-writer` (documentação de módulo), passando o link da página e o
-conteúdo/descrição extraído da issue (título, descrição, comentários
-relevantes). Essas skills conduzem toda a escrita — incluindo perguntas de
+**6.2 Invocar a skill correspondente.** Chame `business-rule-writer` (RN),
+`module-doc-writer` (documentação de módulo) ou `screen-doc-writer`
+(tela/UI), passando o link da página e o conteúdo/descrição extraído da
+issue (título, descrição, comentários relevantes). Essas skills conduzem
+toda a escrita — incluindo perguntas de
 esclarecimento e o tratamento de pontos incertos via `doc-pendency-resolver`.
 Não tente antecipar ou reescrever essa lógica aqui: se a skill de
 documentação precisar perguntar algo a Rafinha, deixe que ela pergunte
@@ -299,8 +336,9 @@ O comentário deve:
 - Descrever o que foi realizado.
 - Para issues de código: nome exato da branch (nova ou retomada), resultado
   do gate de qualidade (passou / o que ficou pendente), status do push
-  (feito com sucesso / rejeitado por divergência), e o aviso de dependência
-  não resolvida quando aplicável (passo 5.1).
+  (feito com sucesso / rejeitado por divergência), link/número do Pull
+  Request aberto (passo 5.6), e o aviso de dependência não resolvida quando
+  aplicável (passo 5.1).
 - Para issues de código em projetos Flutter/Dart: resultado da autorevisão
   contra `flutter-development-standards` (passo 5.3b) — seções verificadas,
   violações encontradas e corrigidas antes do commit, ou confirmação de que
@@ -317,7 +355,8 @@ aquela issue foi trabalhada por você e precisa de revisão dele.
 
 ### 9. Mover a issue para o status correto
 
-- Issue cumprida (código ou documentação) → mova para **"Em análise"**.
+- Issue cumprida (código ou documentação) → mova para **"Análise -
+  Rafinha"**.
 - Issue pulada por pedido explícito de Rafinha (passo 2) → **não mova**,
   deixe onde está.
 
@@ -325,9 +364,10 @@ aquela issue foi trabalhada por você e precisa de revisão dele.
 
 ## O que NÃO fazer
 
-- ❌ Nunca abrir, mergear ou comentar em um Pull/Merge Request sem pedido
-  explícito de Rafinha naquela execução — por padrão essa parte é sempre
-  feita por ele.
+- ❌ Nunca **mergear** um Pull/Merge Request — abrir o PR passa a ser
+  automático (passo 5.6), mas mergear continua fora do escopo desta skill;
+  isso é responsabilidade de `jira-integration-executor`, na etapa
+  Integração.
 - ❌ Nunca usar `git push --force` ou `--force-with-lease` — se o push
   normal for rejeitado por divergência, pare e avise Rafinha em vez de
   forçar.
@@ -350,16 +390,16 @@ aquela issue foi trabalhada por você e precisa de revisão dele.
   outro caminho.
 - ❌ Nunca pular a pergunta sobre qual projeto/Jira processar, nem sobre o
   repositório de código quando não estiver claro.
-- ❌ Nunca prosseguir com uma issue ambígua sem antes perguntar a Rafinha —
-  isso inclui a classificação código/RN/documentação de módulo, que nunca
-  deve ser inferida sozinha (passo 3).
+- ❌ Nunca prosseguir com uma issue cujo campo `tipo` esteja ausente ou
+  ambíguo sem antes perguntar a Rafinha (passo 3) — a classificação só é
+  lida automaticamente quando já veio definida por `jira-issue-creator`.
 - ❌ Nunca tratar a aplicação da skill `flutter-development-standards` como
   opcional ou como menção passiva — para issues de código Flutter/Dart, a
   autorevisão do passo 5.3b é obrigatória e deve gerar correções reais no
   código antes do commit, não apenas uma citação no comentário final.
 - ❌ Nunca escreva conteúdo de página do Confluence diretamente nesta skill
-  — issues de documentação são sempre delegadas para `business-rule-writer`
-  ou `module-doc-writer` (passo 6).
+  — issues de documentação são sempre delegadas para `business-rule-writer`,
+  `module-doc-writer` ou `screen-doc-writer` (passo 6).
 - ❌ Nunca deixar de comentar o resumo de autoria ou de aplicar a label de
   revisão — esses dois passos são obrigatórios em toda issue processada
   (exceto as puladas por pedido explícito).
@@ -374,13 +414,14 @@ Rafinha um resumo consolidado, por exemplo:
 ```
 ✅ Projeto processado: [nome/chave do projeto]
 📋 Issues processadas: [quantidade]
-  - [ISSUE-1]: [código, feita] → branch feat/ISSUE-1-claude (nova), analyze OK → movida para Em análise
-  - [ISSUE-2]: [RN, business-rule-writer] → página Confluence atualizada (link), 1 pendência deixada → movida para Em análise
-  - [ISSUE-3]: [documentação de módulo, module-doc-writer] → página Confluence criada (link), sem pendências → movida para Em análise
-  - [ISSUE-4]: [código, correção aplicada] → branch fix/ISSUE-4-claude (retomada), depende de ISSUE-2 ainda não mergeada — aviso deixado no comentário → movida para Em análise
+  - [ISSUE-1]: [código, feita] → branch feat/ISSUE-1-claude (nova), analyze + testes OK, PR #12 aberto → movida para Análise - Rafinha
+  - [ISSUE-2]: [RN, business-rule-writer] → página Confluence atualizada (link), 1 pendência deixada → movida para Análise - Rafinha
+  - [ISSUE-3]: [documentação de módulo, module-doc-writer] → página Confluence criada (link), sem pendências → movida para Análise - Rafinha
+  - [ISSUE-4]: [tela, screen-doc-writer] → página Confluence atualizada com prints (link), sem pendências → movida para Análise - Rafinha
+  - [ISSUE-5]: [código, correção aplicada] → branch fix/ISSUE-5-claude (retomada), depende de ISSUE-2 ainda não mergeada — aviso deixado no comentário, PR #13 aberto → movida para Análise - Rafinha
 ⏸️ Issues seguradas por pedido explícito: [lista ou "nenhuma"]
 ⚠️ Dúvidas pendentes (issues não finalizadas por falta de esclarecimento): [lista ou "nenhuma"]
 
-Branches de código já foram commitadas e enviadas (`push`) para o remoto — falta só você (ou pedir pra mim) abrir o MR quando quiser. Páginas de documentação já estão publicadas no Confluence.
+Branches de código já foram commitadas, enviadas (`push`) e com Pull Request aberto no GitHub — falta só a Análise - Rafinha e, depois, a Integração. Páginas de documentação já estão publicadas no Confluence.
 ```
 

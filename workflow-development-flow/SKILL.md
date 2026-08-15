@@ -1,0 +1,492 @@
+---
+name: "workflow-development-flow"
+description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final) e a integração GitHub Issues ↔ Jira ↔ Pull Request. Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
+---
+
+---
+name: workflow-development-flow
+description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final) e a integração GitHub Issues ↔ Jira ↔ Pull Request. Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
+---
+
+# Fluxo de Desenvolvimento — Skill Mãe (Rafinha + Claude)
+
+## Identidade do papel
+
+Esta é a **skill mãe** do workflow de desenvolvimento, revisão, integração,
+QA e documentação de Rafinha e Claude. Ela guarda o vocabulário e o mapa do
+processo que todas as demais skills do pipeline (`jira-issue-creator`,
+`jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`,
+`jira-doc-executor`, `jira-review-executor`, `business-rule-writer`,
+`module-doc-writer`, `screen-doc-writer`) referenciam quando precisam
+entender em qual etapa uma issue está, o que vem antes ou depois, o que uma
+etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo.
+
+**Esta skill nunca executa ação nenhuma sozinha** — não cria, não move, não
+comenta e não transiciona issues no Jira; não escreve página no Confluence;
+não toca em código ou em git. Ela só responde perguntas e fornece contexto.
+Quem executa cada etapa é sempre a skill específica correspondente.
+
+As skills específicas não precisam carregar todo este conteúdo na própria
+execução — só precisam saber que podem consultar esta skill quando surgir
+dúvida sobre o fluxo.
+
+---
+
+## 1. Hierarquia de trabalho no Jira
+
+Esta hierarquia é uma **camada anterior ao workflow**. Antes de executar
+qualquer uma das 8 etapas (seção 5), é preciso entender sobre qual nível do
+Jira se está atuando.
+
+```text
+ÉPICO
+  ↓
+ISSUE
+  ↓
+SUBTASK
+```
+
+### Épico
+Representa uma iniciativa grande, objetivo e contexto geral.
+**Nunca é executado diretamente.** Contém: objetivo, motivação, escopo,
+fora de escopo, arquitetura/visão geral, critérios gerais de sucesso,
+dependências, issues relacionadas.
+
+> **Épico = por que estamos fazendo isso?**
+
+### Issue
+Representa uma unidade de entrega concreta — é a unidade principal que
+percorre as 8 etapas do fluxo (seção 5). Contém: problema, objetivo,
+requisitos, regras de negócio, critérios de aceitação, testes esperados,
+documentação necessária.
+
+> **Issue = o que exatamente precisa ser entregue?**
+
+### Subtask
+Representa uma parte interna da execução de uma Issue.
+**Não possui ciclo de vida independente** — não avança sozinha pelas
+colunas do fluxo; existe só para indicar progresso interno da Issue pai.
+
+> **Subtask = quais partes compõem essa entrega?**
+
+### Regra principal ao receber um item do Jira
+
+```text
+Épico recebido
+→ NÃO executar o Épico
+→ consultar as Issues relacionadas
+→ trabalhar somente sobre uma Issue executável
+
+Issue recebida
+→ executar normalmente, seguindo o fluxo geral (seção 4)
+
+Subtask recebida
+→ entender o contexto da Issue pai
+→ executar somente a parte correspondente à subtask
+→ respeitar o workflow da Issue pai
+```
+
+### Critério para decidir entre Issue e Subtask
+
+> **Se uma parte do trabalho puder ser entregue, revisada e validada de
+> forma independente, ela deve ser uma Issue. Se for apenas uma parte
+> necessária da implementação de outra entrega, deve ser uma Subtask.**
+
+### Escopo de aplicação
+
+Decidir entre Épico/Issue/Subtask na criação, e interpretar o nível
+recebido na execução, é responsabilidade de `jira-issue-creator` e
+`jira-issue-executor`. As demais skills do pipeline (Integração, QA,
+Documentação, Revisões) já recebem a Issue certa nessa altura do fluxo e
+não precisam reaplicar essa decisão — a referência fica aqui só para
+consulta quando surgir dúvida.
+
+---
+
+## 2. Princípios do fluxo
+
+Válidos para todas as etapas, sem exceção:
+
+1. **A IA implementa, mas não decide requisitos ou regras de negócio não
+   especificados.**
+2. **Nenhuma etapa deve ignorar falhas para permitir que a issue avance.**
+3. **Cada etapa possui responsabilidades próprias e não deve assumir
+   responsabilidades de outra etapa sem orientação explícita.**
+4. **Testes devem validar comportamento e risco, não apenas buscar
+   cobertura de código.**
+5. **O tipo e a quantidade de testes devem ser proporcionais ao
+   comportamento e ao risco introduzidos pela issue.**
+6. **A documentação de implementação é produzida durante a execução da
+   issue.**
+7. **A documentação do estado final do produto somente é consolidada após
+   integração e QA.**
+8. **Cada etapa deve produzir uma saída verificável antes de permitir a
+   passagem para a próxima etapa.**
+9. **Toda decisão relevante deve deixar um registro onde possa ser
+   consultada posteriormente.**
+10. **A responsabilidade final pelas regras de negócio, pela aceitação do
+    produto e pelas decisões técnicas críticas permanece com Rafinha.**
+
+**Extensão à camada de pipeline:** o princípio 2 se aplica também à
+validação por GitHub Actions (seção 6) — falha na pipeline é bloqueio de
+avanço, nunca só informação de diagnóstico.
+
+---
+
+## 3. Classificação das issues
+
+Toda issue possui um atributo que identifica seu tipo. **A classificação é
+definida na criação da issue** (campo formal, preenchido por
+`jira-issue-creator`) — não é mais perguntada em tempo de execução. Se o
+campo não existir ou estiver ambíguo numa issue já criada, isso é tratado
+como exceção pela skill que a recebe (fallback, não regra geral).
+
+### 3.1 Issue de código
+Altera código, comportamento executável, arquitetura, testes ou
+configuração técnica. Exemplos: nova funcionalidade, correção de bug,
+alteração de regra implementada em código, refatoração, alteração de
+gerenciamento de estado, alteração de API/client, alteração de
+persistência, criação ou alteração de testes.
+
+`tipo: código` — percorre o fluxo técnico completo (implementação, testes,
+integração).
+
+### 3.2 Issue de documentação
+Não altera o comportamento executável do sistema. Exemplos: documentação
+de regra de negócio, documentação de módulo, documentação de tela,
+documentação arquitetural, atualização de Confluence, correção de
+documentação.
+
+`tipo: documentação` — não executa etapas de implementação ou testes de
+código que não sejam necessários para a própria documentação.
+
+### 3.3 Ambiguidade
+Quando houver ambiguidade real entre código e documentação na criação da
+issue, a IA deve solicitar decisão de Rafinha em vez de inferir
+silenciosamente.
+
+---
+
+## 4. Fluxo geral — as 8 etapas
+
+```text
+Fazer - Claude
+        ↓
+Análise - Rafinha
+        ↓
+Integração
+        ↓
+QA - Claude
+        ↓
+Documentar
+        ↓
+Análise final - Rafinha
+        ↓
+Análise final - Claude
+        ↓
+Concluído
+```
+
+Para issues de documentação, as etapas técnicas que não forem aplicáveis
+são ignoradas de acordo com a classificação da issue (seção 3).
+
+---
+
+## 5. As etapas em detalhe
+
+### 5.1 Fazer - Claude
+
+> **Objetivo:** implementar a issue conforme requisitos, regras de negócio
+> e arquitetura estabelecidos, produzindo os testes necessários para
+> comprovar o comportamento alterado.
+
+Responsabilidades:
+- Implementação da issue, respeitando a arquitetura já estabelecida.
+- Aplicação dos padrões técnicos do projeto.
+- Criação ou atualização de testes automatizados — tipo e quantidade
+  proporcionais ao comportamento e risco introduzidos (unitários, widget,
+  integração, conforme aplicável). Testes deixaram de ser "se fizer
+  sentido": são obrigatórios e proporcionais ao risco.
+- Análise estática.
+- Verificação de compilação/build quando aplicável.
+- Documentação de implementação (não genérica — deve explicar o impacto
+  real da alteração: componentes criados/alterados, camadas afetadas,
+  testes adicionados, decisões técnicas relevantes).
+- Commit + push.
+- **Abrir Pull Request**, referenciando a Issue do Jira (a chave já está no
+  nome da branch, mas deve constar também no título/descrição do PR) e, se
+  houver GitHub Issue de origem vinculada, referenciá-la também
+  (`Closes #N`).
+
+Falha de análise estática, build ou teste é bloqueio de avanço — não avança
+até ser corrigida ou explicitamente tratada por Rafinha.
+
+**Resultado esperado:** `Pronto para Análise - Rafinha`
+
+### 5.2 Análise - Rafinha (manual)
+
+> **Objetivo:** verificar se a implementação atende aos requisitos, às
+> regras de negócio, à arquitetura estabelecida e possui testes adequados.
+
+Responsabilidades: code review, verificação de regras de negócio, de
+arquitetura, de qualidade da implementação, de testes, avaliação de efeitos
+colaterais, decisão de aprovação ou reprovação.
+
+- **Aprovação** → segue para Integração.
+- **Reprovação** → volta direto para `Fazer - Claude`, com problema
+  encontrado, comportamento esperado e correção necessária registrados.
+
+Uma implementação tecnicamente elegante não deve ser aprovada se não
+atende ao requisito, viola regra de negócio, tem arquitetura inadequada,
+testes insuficientes para o risco, ou comportamento incorreto.
+
+**Resultado esperado:** `Pronto para Integração`
+
+### 5.3 Integração
+
+> **Objetivo:** integrar a alteração à `develop`, verificando que ela passa
+> pelos gates técnicos num ambiente independente (GitHub Actions) e que
+> consegue coexistir com o restante do sistema sem conflitos ou quebra dos
+> testes automatizados.
+
+Responsabilidades, nesta ordem (pipeline antes de conflito, conflito antes
+do merge):
+1. Confirmar que o Pull Request já existe (aberto na `Fazer - Claude`).
+2. Verificar o GitHub Actions do PR — ainda rodando: aguardar; passou:
+   segue; falhou: corrigir e repetir até passar (bloqueio de avanço, nunca
+   só diagnóstico).
+3. Verificar se a branch mergeia limpo com a `develop` — sem conflito:
+   segue; conflito mecânico: resolve e registra; conflito semântico real:
+   para e pergunta a Rafinha. Depois de qualquer resolução de conflito,
+   volta ao passo 2 (pipeline precisa passar de novo). Se o conflito foi
+   semântico, a issue também volta para `Análise - Rafinha` antes do merge.
+4. Merge para `develop`.
+5. Registrar o resultado (PR, resultado da pipeline, merge realizado).
+
+A integração não declara que o aplicativo inteiro está livre de problemas
+— isso é o QA. O objetivo aqui é só verificar se a alteração se integra de
+forma tecnicamente consistente.
+
+**Resultado esperado:** `Pronto para QA - Claude`
+
+### 5.4 QA - Claude
+
+> **Objetivo:** verificar se o sistema **já integrado na `develop`**
+> continua funcionando corretamente e se a alteração não introduziu
+> regressões nos fluxos existentes.
+
+Roda **depois** da etapa Integração (pós-merge), não mais logo após
+`Análise - Rafinha` aprovada — o ambiente de teste é a `develop`
+atualizada, não a branch isolada da issue.
+
+Responsabilidades: testes de regressão dos fluxos relacionados, testes dos
+fluxos diretamente alterados, testes de integração quando a alteração
+atravessa várias camadas, validação dos comportamentos impactados,
+identificação de efeitos colaterais, registro dos resultados (fluxo
+testado, resultado, falhas, evidências, ambiente, necessidade de
+intervenção de Rafinha).
+
+- **Aprovado** → segue para `Documentar`.
+- **Reprovado** → volta para `Fazer - Claude`.
+
+**Resultado esperado:** `Pronto para Documentação`
+
+### 5.5 Documentar
+
+> **Objetivo:** registrar o estado final e validado do sistema após
+> integração e QA, mantendo sincronizadas a documentação do código e a do
+> Confluence.
+
+Descreve o **estado real e validado**, não apenas o que foi implementado
+originalmente. Responsabilidades: atualização da documentação de módulos
+no código (pasta `docs/` — `overview.md`, `architecture.md`,
+`state-management.md`, `api.md`, `maintenance.md`, `changelog.md`, só os
+que fizerem sentido), atualização do Confluence (regra de negócio, módulo,
+tela), sem burocracia — nada é criado só por criar.
+
+A documentação do estado final só é consolidada depois do QA; antes disso
+existe apenas documentação de implementação (produzida na `Fazer -
+Claude`).
+
+**Resultado esperado:** `Pronto para Análise Final - Rafinha`
+
+### 5.6 Análise final - Rafinha (manual)
+
+> **Objetivo:** analisar se o produto realmente entrega o que era
+> proposto.
+
+Não repete o code review já feito na `Análise - Rafinha`. O foco é:
+
+> **"O produto entregue resolve corretamente o problema que a issue deveria
+> resolver?"**
+
+Responsabilidades: validação funcional, uso das funcionalidades entregues,
+confirmação de comportamento e regra de negócio, aceitação ou rejeição.
+
+- **Aprovação** → segue para `Análise final - Claude`.
+- **Reprovação** → volta direto para `Fazer - Claude`, com o problema
+  encontrado registrado.
+
+**Resultado esperado:** `Pronto para Análise Final - Claude`
+
+### 5.7 Análise final - Claude
+
+> **Objetivo:** auditoria final da issue para identificar pendências,
+> inconsistências ou itens não contemplados nas etapas anteriores.
+
+Verifica: testes faltantes, documentação inconsistente, requisitos não
+atendidos, pendências não resolvidas, detalhes esquecidos, divergência
+entre implementação e documentação, divergência entre documentação do
+código e Confluence, evidências ausentes das etapas anteriores. Não
+implementa correções automaticamente — pendência que exija decisão de
+Rafinha interrompe a conclusão e solicita a decisão.
+
+- **Nenhuma pendência** → aprova e conclui.
+- **Pendências** → registra e encaminha a issue para a etapa adequada —
+  o destino de reprovação é `Fazer - Claude`.
+
+**Resultado esperado:** `Concluído`
+
+### 5.8 Concluído
+
+Estado terminal da issue. Nenhuma ação adicional é esperada nesta coluna.
+
+---
+
+## 6. Camadas de validação
+
+Quatro camadas coexistem — cada uma responde a uma pergunta diferente e
+nenhuma substitui a outra:
+
+| Camada | Pergunta que responde |
+|---|---|
+| Validação local (`Fazer - Claude`) | "O código que acabei de implementar funciona?" |
+| GitHub Actions (`Integração`) | "O código enviado ao repositório passa pelos gates técnicos num ambiente independente?" |
+| `QA - Claude` | "O sistema integrado continua funcionando e não foram introduzidas regressões?" |
+| `Análise final - Rafinha` | "O produto realmente entrega o comportamento esperado?" |
+
+**Princípio, válido em qualquer camada:** falha em validação local ou na
+pipeline é **bloqueio de avanço**, nunca só informação de diagnóstico — a
+issue não avança até o problema ser corrigido ou Rafinha tratá-lo
+explicitamente.
+
+A pipeline (GitHub Actions) não é uma nova etapa do fluxo — é um mecanismo
+que roda dentro da etapa Integração. Ela não substitui code review, QA
+funcional, nem a aceitação do produto por Rafinha.
+
+---
+
+## 7. Integração GitHub Issues ↔ Jira ↔ Pull Request
+
+> **O Jira é a fonte de verdade do workflow de execução; o GitHub registra
+> a origem do problema e a implementação que o resolve, sem criar um
+> workflow paralelo.**
+
+Fluxo de origem, quando o trabalho nasce de uma GitHub Issue:
+
+```text
+GitHub Issue          (registro do problema/bug/melhoria)
+    ↓
+jira-issue-creator    (novo trigger: GH Issue como origem)
+    ↓
+Jira Issue            (guarda referência de volta pra GH Issue)
+    ↓
+Workflow normal do Jira (as 8 etapas, sem mudança)
+```
+
+Responsabilidade de cada sistema:
+
+| Sistema | Responsabilidade |
+|---|---|
+| GitHub Issue | Registrar o problema, bug ou melhoria identificada |
+| Jira Issue | Controlar o trabalho e seu workflow |
+| Pull/Merge Request | Registrar a implementação técnica e indicar qual Issue do Jira foi resolvida |
+| Confluence | Registrar conhecimento e documentação |
+| GitHub Actions | Validar tecnicamente o código enviado ao repositório |
+
+Cadeia de rastreabilidade esperada:
+
+```text
+GitHub Issue ↔ Jira Issue ↔ Pull/Merge Request ↔ Commits
+```
+
+**Regra importante:** nenhum dos três sistemas mantém workflow paralelo. A
+GitHub Issue não avança por colunas próprias — quando vira trabalho de
+verdade, o controle passa a ser 100% do Jira.
+
+---
+
+## 8. Gates de passagem
+
+```text
+Fazer - Claude
+    ↓
+Implementação + testes + análise estática + build + documentação + PR aberto
+    ↓
+Análise - Rafinha
+    ↓
+Aprovação técnica e funcional
+    ↓
+Integração
+    ↓
+GitHub Actions aprovado + conflitos resolvidos + merge
+    ↓
+QA - Claude
+    ↓
+Regressão + fluxos afetados + integração (sobre a develop já integrada)
+    ↓
+Documentar
+    ↓
+Estado final sincronizado (código + Confluence)
+    ↓
+Análise final - Rafinha
+    ↓
+Aceitação funcional
+    ↓
+Análise final - Claude
+    ↓
+Auditoria final sem pendências
+    ↓
+Concluído
+```
+
+Uma etapa não é considerada concluída apenas porque uma ação foi
+executada — só quando **sua saída esperada está comprovadamente
+atendida**.
+
+---
+
+## 9. Responsabilidade de cada etapa em uma frase
+
+| Etapa | Pergunta principal |
+|---|---|
+| Fazer - Claude | "Consigo implementar a issue e produzir evidências de que a mudança funciona?" |
+| Análise - Rafinha | "A implementação está tecnicamente e funcionalmente correta?" |
+| Integração | "Essa mudança consegue conviver com o restante do sistema, validada por um ambiente independente?" |
+| QA - Claude | "O sistema integrado continua funcionando e não sofreu regressões?" |
+| Documentar | "O estado final e validado do sistema está registrado?" |
+| Análise final - Rafinha | "O produto realmente entrega o que foi proposto?" |
+| Análise final - Claude | "Existe algo que esquecemos ou deixamos inconsistente?" |
+
+---
+
+## Quando Rafinha aciona esta skill diretamente
+
+Perguntas do tipo:
+- "Qual a próxima etapa depois de X?"
+- "O que a etapa Y deveria produzir?"
+- "Explica o fluxo novo."
+- "Essa issue devia ser Issue ou Subtask?"
+- "Qual a diferença entre o que a pipeline valida e o que o QA valida?"
+- Qualquer dúvida sobre nomenclatura de colunas, ordem das etapas, ou
+  regra de bloqueio de avanço.
+
+## O que esta skill NUNCA faz
+
+- ❌ Não cria, não move, não comenta e não transiciona issues no Jira.
+- ❌ Não escreve nem edita página nenhuma no Confluence.
+- ❌ Não toca em código, git, branch, commit, merge ou pipeline.
+- ❌ Não decide sozinha uma ambiguidade de fluxo que deveria ser perguntada
+  a Rafinha — ela expõe o critério já definido aqui; quando o caso real não
+  se encaixa claramente em nenhuma regra deste documento, a skill que
+  consultou deve perguntar a Rafinha, não inferir.

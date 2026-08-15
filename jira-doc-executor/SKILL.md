@@ -12,7 +12,7 @@ description: >
   business-rule-writer, module-doc-writer ou screen-doc-writer conforme o
   caso. Qual página é a afetada nunca é adivinhado — sempre confirmado com
   Rafinha quando não houver um único candidato claro. Depois de delegar,
-  move a issue para "Review - Claude".
+  move a issue para "Análise final - Rafinha".
 ---
 
 # Executor de Documentação — Coluna "Documentar" (Jira genérico)
@@ -100,6 +100,12 @@ issue de origem, e o que foi testado). Essas skills conduzem toda a
 escrita, incluindo suas próprias perguntas de esclarecimento via
 `doc-pendency-resolver` — não antecipe nem reescreva essa lógica aqui.
 
+**Delegação para `module-doc-writer`.** Além do contexto padrão acima,
+inclua quais arquivos/módulos de código foram tocados pela issue (a partir
+do comentário "Implementação Claude") — isso permite que ela avalie se a
+mudança também exige atualização da pasta `docs/` dentro do código
+(responsabilidade dela, não sua).
+
 Uma mesma issue pode gerar mais de uma delegação (ex.: atualizar a página
 de módulo **e** a de uma tela específica).
 
@@ -115,7 +121,7 @@ Publique um comentário na issue com:
 
 ### 6. Mover a issue
 
-Sempre para **"Review - Claude"**, independentemente de ter havido
+Sempre para **"Análise final - Rafinha"**, independentemente de ter havido
 delegação ou não.
 
 ---
@@ -142,7 +148,7 @@ delegação ou não.
 ```
 ✅ Projeto processado: [nome/chave do projeto]
 📋 Issues processadas: [quantidade]
-  - [ISSUE-1]: impacto em RN e tela → 2 páginas atualizadas (links) → movida para Review - Claude
-  - [ISSUE-2]: sem impacto real de documentação → movida para Review - Claude
+  - [ISSUE-1]: impacto em RN e tela → 2 páginas atualizadas (links) → movida para Análise final - Rafinha
+  - [ISSUE-2]: sem impacto real de documentação → movida para Análise final - Rafinha
 ⚠️ Issues com página ambígua, aguardando decisão de Rafinha: [lista ou "nenhuma"]
 ```

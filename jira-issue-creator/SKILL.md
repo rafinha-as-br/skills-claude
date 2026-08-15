@@ -1,6 +1,6 @@
 ---
 name: jira-issue-creator
-description: "Criar uma issue no Jira a partir de uma necessidade mencionada por Rafinha — seja no meio de uma mensagem sobre outro assunto, seja em um pedido dedicado. Usar sempre que Rafinha disser algo como \"cria uma issue para isso\", \"vira uma issue no Jira\", \"registra isso como issue/ticket\", ou mencionar explicitamente que algo deve virar uma issue/ticket em qualquer ponto da conversa, mesmo que o resto da mensagem seja sobre outro tópico. Esta skill APENAS cria a issue — nunca implementa código, documentação ou qualquer outra coisa relacionada ao conteúdo da issue."
+description: "Criar uma issue (ou subtask) no Jira a partir de uma necessidade mencionada por Rafinha — seja no meio de uma mensagem sobre outro assunto, seja em um pedido dedicado, seja a partir de uma GitHub Issue apontada por ele (link ou número) como origem do trabalho. Usar sempre que Rafinha disser algo como \"cria uma issue para isso\", \"vira uma issue no Jira\", \"registra isso como issue/ticket\", apontar uma GitHub Issue para virar issue do Jira, ou mencionar explicitamente que algo deve virar uma issue/ticket em qualquer ponto da conversa, mesmo que o resto da mensagem seja sobre outro tópico. A skill decide a hierarquia (Issue vs. Subtask, consultando workflow-development-flow em caso de dúvida) e a classificação código/documentação antes de criar. Esta skill APENAS cria a issue — nunca implementa código, documentação ou qualquer outra coisa relacionada ao conteúdo da issue."
 ---
 
 # Criador de Issues — Jira genérico
@@ -28,6 +28,13 @@ informação depois, quando não estiver mais fresca na memória. Mas não
 acrescente explicações de conceitos técnicos óbvios ou justificativas do que
 ele mesmo pediu — vá direto ao ponto.
 
+**Hierarquia e classificação.** Para dúvidas sobre em qual nível da
+hierarquia (Épico, Issue ou Subtask) uma necessidade se encaixa, consulte a
+skill `workflow-development-flow` — ela define o critério oficial. Esta é a
+única skill que decide essa hierarquia e a classificação código/documentação
+no momento da criação; as demais skills do pipeline já recebem a issue com
+esses campos definidos.
+
 ---
 
 ## Pré-requisito obrigatório: qual projeto/Jira
@@ -45,13 +52,21 @@ contexto imediatamente anterior da conversa, se relevante). Frequentemente
 ele vai chamar esta skill no meio de uma mensagem sobre outro assunto — isso
 é o caso de uso principal, não uma exceção.
 
-Verifique o que já está respondido pelo que ele escreveu:
+**Gatilho de origem — GitHub Issue.** Se Rafinha apontar uma GitHub Issue
+(link ou número) como origem do trabalho, busque o conteúdo dela (via
+`gh issue view` ou equivalente) e use isso como base do rascunho, no lugar
+da descrição em chat. Guarde o número/link da GitHub Issue — ele vira o
+campo `Link para GitHub Issue` no passo 5. As perguntas abaixo continuam se
+aplicando normalmente; só a origem do "do que se trata" muda.
+
+Verifique o que já está respondido pelo que ele escreveu (ou pelo conteúdo
+da GitHub Issue, quando for o caso):
 
 - **Do que se trata a issue** (a necessidade em si).
 - **O contexto/motivo** (por que ele precisa disso).
 - **Projeto/Jira de destino**.
 - **Destino: backlog ou sprint atual** (se ele não informar, decida sozinho
-  no passo 4 — mas se ele informar, essa escolha manual **sempre** vence a
+  no passo 6 — mas se ele informar, essa escolha manual **sempre** vence a
   decisão automática).
 
 **Só pergunte o que realmente estiver faltando.** Nunca repita perguntas
@@ -64,19 +79,54 @@ que fazer ou por quê — a ponto de a issue poder confundir quem for
 implementar — pergunte antes de prosseguir. Pode agrupar todas as perguntas
 pendentes em uma única mensagem.
 
-### 2. Inferir o tipo da issue
+### 2. Decidir a hierarquia: Issue ou Subtask
 
-Infira o tipo (Task, Bug, Story, etc.) a partir do contexto da necessidade
-relatada. Só pergunte a Rafinha explicitamente se ficar em dúvida real entre
-dois tipos plausíveis — não pergunte por rotina.
+Antes de definir o tipo do item no Jira (passo 3), decida em qual nível da
+hierarquia (Épico → Issue → Subtask) a necessidade se encaixa — consulte
+`workflow-development-flow` se tiver dúvida sobre o critério.
 
-### 3. Montar o rascunho da issue
+Aplique a heurística: **se a parte do trabalho puder ser entregue, revisada
+e validada de forma independente, é uma Issue; se for apenas uma parte
+necessária da implementação de outra entrega, é uma Subtask.**
+
+- **Subtask** → exige uma Issue pai. Se Rafinha não indicou qual, pergunte
+  antes de prosseguir — nunca crie uma Subtask órfã.
+- **Issue** → pergunte ou infira o Épico pai quando existir um Épico
+  relacionado no projeto. Se não houver Épico aplicável, a Issue pode ficar
+  sem pai.
+
+Se, depois de aplicar a heurística, ainda restar dúvida real entre Issue e
+Subtask, pergunte a Rafinha em vez de decidir sozinho.
+
+### 3. Inferir o tipo do item no Jira
+
+Infira o tipo (Task, Bug, Story, Subtask, etc.) a partir do contexto da
+necessidade relatada — este é o **tipo do item no Jira**, diferente da
+classificação código/documentação (passo 4) e diferente do nível
+hierárquico (passo 2). Só pergunte a Rafinha explicitamente se ficar em
+dúvida real entre dois tipos plausíveis — não pergunte por rotina.
+
+### 4. Classificar código ou documentação
+
+Defina o campo `tipo` (`código` ou `documentação`) já na criação da issue —
+essa classificação deixou de ser perguntada em tempo de execução por outras
+skills; a partir de agora ela é decidida aqui.
+
+- Se ficar claro pelo contexto da necessidade (ex.: "documenta essa regra" →
+  documentação; "corrige esse bug" → código), infira sem perguntar.
+- Se houver ambiguidade real, pergunte explicitamente a Rafinha — junto com
+  as demais perguntas pendentes do passo 1, para não interromper o fluxo
+  várias vezes.
+
+### 5. Montar o rascunho da issue
 
 Monte um rascunho completo, sem ainda criar nada no Jira:
 
 ```
 📝 Rascunho da issue — [projeto]
-Tipo: [Task/Bug/Story/...]
+Tipo (Jira): [Task/Bug/Story/Subtask/...]
+Hierarquia: [Issue | Subtask] — [Issue pai / Épico pai, se aplicável]
+Classificação: [código | documentação]
 Título: [título objetivo]
 
 Descrição:
@@ -85,13 +135,14 @@ Descrição:
 
 Labels: [labels propostas]
 Destino: [Backlog | Sprint atual] — [se foi Rafinha quem definiu ou se foi decidido automaticamente, e por quê]
+Origem: [GitHub Issue #N (link), se aplicável | Chat]
 ```
 
 Apresente esse rascunho a Rafinha e **aguarde a aprovação dele antes de
 criar a issue de fato** — esta confirmação é sempre obrigatória, mesmo que o
 pedido pareça simples ou óbvio.
 
-### 4. Decidir o destino (quando não informado manualmente)
+### 6. Decidir o destino (quando não informado manualmente)
 
 Se Rafinha não especificou o destino, verifique se a necessidade se encaixa
 no escopo/objetivo da sprint atual do projeto:
@@ -99,19 +150,24 @@ no escopo/objetivo da sprint atual do projeto:
 - Se encaixa → proponha criar dentro da sprint atual.
 - Se não encaixa (ou não há sprint ativa) → proponha manter no backlog.
 
-Deixe essa decisão e o motivo dela visíveis no rascunho do passo 3, para que
+Deixe essa decisão e o motivo dela visíveis no rascunho do passo 5, para que
 Rafinha possa corrigir antes de aprovar.
 
-### 5. Criar a issue no Jira
+### 7. Criar a issue no Jira
 
 Somente após a aprovação do rascunho, crie a issue no Jira (via Atlassian
 Rovo) com:
 - Título e descrição (Contexto e Objetivo) conforme aprovado.
 - Labels aplicadas.
-- Tipo correto.
+- Tipo (Jira) correto.
+- Hierarquia correta — se Subtask, vinculada à Issue pai; se Issue, vinculada
+  ao Épico pai quando houver.
+- Campo `tipo` (código/documentação) preenchido.
 - No destino aprovado (backlog ou sprint atual).
+- Se a origem foi uma GitHub Issue: grava o campo `Link para GitHub Issue`
+  com a referência.
 
-### 6. Confirmar a criação
+### 8. Confirmar a criação
 
 Após criar, confirme a Rafinha com o link/chave da issue criada e um resumo
 breve do que foi registrado.
@@ -126,6 +182,12 @@ breve do que foi registrado.
 - ❌ Nunca criar a issue sem antes mostrar o rascunho e obter aprovação.
 - ❌ Nunca deixar o destino manual informado por Rafinha ser sobrescrito
   pela decisão automática de sprint/backlog.
+- ❌ Nunca decidir sozinho entre Issue e Subtask quando a heurística não
+  resolver a dúvida — consulte `workflow-development-flow` e, se ainda
+  ambíguo, pergunte a Rafinha.
+- ❌ Nunca criar uma Subtask sem uma Issue pai definida.
+- ❌ Nunca inferir a classificação código/documentação quando não estiver
+  clara pelo contexto — pergunte antes de criar a issue.
 - ❌ Nunca, sob nenhuma circunstância, implementar código, escrever
   documentação, ou fazer qualquer trabalho além de criar a issue — mesmo que
   Rafinha peça isso na sequência da mesma mensagem. Essa é a regra mais

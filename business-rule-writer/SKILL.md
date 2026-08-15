@@ -30,6 +30,10 @@ Rafael sempre envia o **link da página do Confluence** junto com o pedido.
 Use o Atlassian Rovo para ler a página (se já existir conteúdo) e para
 criar/atualizar o conteúdo formatado diretamente nela.
 
+Consulte a skill `workflow-development-flow` para dúvidas sobre como a
+documentação de regras de negócio se encaixa no fluxo geral do pipeline
+(hierarquia, etapas, classificação código/documentação).
+
 ---
 
 ## O que NÃO fazer
