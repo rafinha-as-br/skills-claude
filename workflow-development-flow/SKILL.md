@@ -1,11 +1,11 @@
 ---
 name: "workflow-development-flow"
-description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final) e a integração GitHub Issues ↔ Jira ↔ Pull Request. Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
+description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, e o ciclo de Release & Versionamento (SemVer, Fix Version, Release Lifecycle) — um ciclo separado do workflow de issue, nunca uma coluna do Jira. Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
 ---
 
 ---
 name: workflow-development-flow
-description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final) e a integração GitHub Issues ↔ Jira ↔ Pull Request. Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
+description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, e o ciclo de Release & Versionamento (SemVer, Fix Version, Release Lifecycle) — um ciclo separado do workflow de issue, nunca uma coluna do Jira. Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
 ---
 
 # Fluxo de Desenvolvimento — Skill Mãe (Rafinha + Claude)
@@ -17,9 +17,11 @@ QA e documentação de Rafinha e Claude. Ela guarda o vocabulário e o mapa do
 processo que todas as demais skills do pipeline (`jira-issue-creator`,
 `jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`,
 `jira-doc-executor`, `jira-review-executor`, `business-rule-writer`,
-`module-doc-writer`, `screen-doc-writer`) referenciam quando precisam
-entender em qual etapa uma issue está, o que vem antes ou depois, o que uma
-etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo.
+`module-doc-writer`, `screen-doc-writer`, `jira-release-executor`)
+referenciam quando precisam entender em qual etapa uma issue está, o que
+vem antes ou depois, o que uma etapa deve produzir, ou o que fazer diante
+de incerteza sobre o fluxo — incluindo o ciclo separado de Release &
+Versionamento (seção 10).
 
 **Esta skill nunca executa ação nenhuma sozinha** — não cria, não move, não
 comenta e não transiciona issues no Jira; não escreve página no Confluence;
@@ -470,6 +472,114 @@ atendida**.
 
 ---
 
+## 10. Release & Versionamento
+
+Complementa o workflow de 8 etapas com uma camada dedicada ao processo de
+entrega do produto — publicado em versões — mantendo os dois ciclos
+completamente separados.
+
+### 10.1 Dois ciclos diferentes
+
+> **Issue workflow e Release workflow não são a mesma coisa.**
+
+- **Issue workflow** (seções 4–5 acima) → processo de conclusão de uma
+  unidade de mudança. Termina em `Concluído`.
+- **Release workflow** (esta seção) → processo de entrega do produto.
+  Agrupa várias issues concluídas numa versão publicada.
+
+```text
+ISSUE WORKFLOW (inalterado)                RELEASE WORKFLOW (novo)
+
+Fazer - Claude                             Issues concluídas
+      ↓                                           ↓
+Análise - Rafinha                          Agrupamento de mudanças
+      ↓                                           ↓
+Integração                                 Definição da versão
+      ↓                                           ↓
+QA - Claude                                Release Candidate
+      ↓                                           ↓
+Documentar                                 Validação final
+      ↓                                           ↓
+Análise final - Rafinha                    Tag
+      ↓                                           ↓
+Análise final - Claude                     GitHub Release
+      ↓                                           ↓
+Concluído                                  Versão publicada
+```
+
+**Regra explícita:** Release nunca vira uma nona coluna do Jira depois de
+`Análise final - Claude` — misturaria duas unidades de trabalho diferentes.
+
+### 10.2 Versionamento (SemVer)
+
+Convenção `vMAJOR.MINOR.PATCH`:
+- **MAJOR** — mudança incompatível.
+- **MINOR** — nova funcionalidade compatível.
+- **PATCH** — correção compatível.
+
+Projetos em desenvolvimento inicial começam em `0.x.y` — faixa reservada
+pelo próprio SemVer para quando a API/contrato ainda não é considerada
+estável, não significa que o projeto está incompleto.
+
+### 10.3 Quem decide o incremento de versão
+
+**Sempre Rafinha** — nunca o Claude sozinho. O incremento de versão
+envolve significado de produto, não é decisão puramente técnica. O Claude
+pode e deve sugerir com justificativa (ex.: "recomendo MINOR porque foram
+adicionadas funcionalidades compatíveis"), mas a decisão final é sempre
+dele.
+
+### 10.4 Nem toda issue concluída gera uma release
+
+Uma release representa uma entrega de software, não uma issue. Concluir
+várias issues não significa gerar uma versão para cada uma — pode virar
+uma única release agrupando todas. Todo projeto **deve** ter
+versionamento; nenhuma issue concluída **deve** gerar automaticamente uma
+release.
+
+### 10.5 A entidade "Release" no Jira
+
+Usa a estrutura nativa de Releases/Versions do Jira (**Fix Version**). Uma
+Release agrupa issues concluídas — mas **não é pai hierárquico** de
+Épico/Issue/Subtask (hierarquia da seção 1). É uma **relação de
+versionamento**, não hierárquica:
+
+```text
+RELEASE
+   ↓
+ÉPICO / ISSUE
+   ↓
+SUBTASK
+```
+
+- **Release** responde: "quais mudanças compõem esta versão?"
+- **Épico** responde: "qual grande iniciativa estamos desenvolvendo?"
+
+São perguntas diferentes — não confundir as duas hierarquias.
+
+### 10.6 Release Lifecycle (processo completo)
+
+1. Selecionar issues concluídas.
+2. Definir escopo da release.
+3. Definir versão.
+4. Criar release branch, quando aplicável.
+5. Atualizar versão do projeto.
+6. Atualizar changelog.
+7. Executar Release CI.
+8. Criar/validar Release Candidate, quando aplicável.
+9. Validar funcionalmente.
+10. Merge para `main`.
+11. Criar tag `vX.Y.Z`.
+12. Criar GitHub Release.
+13. Associar a versão no Jira.
+14. Registrar documentação.
+
+Quem executa esse ciclo na prática é a skill `jira-release-executor`,
+acionada sob demanda por Rafinha (nunca por varredura automática de
+coluna, já que Release não é uma etapa do issue workflow).
+
+---
+
 ## Quando Rafinha aciona esta skill diretamente
 
 Perguntas do tipo:
@@ -478,6 +588,8 @@ Perguntas do tipo:
 - "Explica o fluxo novo."
 - "Essa issue devia ser Issue ou Subtask?"
 - "Qual a diferença entre o que a pipeline valida e o que o QA valida?"
+- "Como funciona o ciclo de release?" / "Quando uma issue concluída vira
+  uma versão?"
 - Qualquer dúvida sobre nomenclatura de colunas, ordem das etapas, ou
   regra de bloqueio de avanço.
 
@@ -490,3 +602,6 @@ Perguntas do tipo:
   a Rafinha — ela expõe o critério já definido aqui; quando o caso real não
   se encaixa claramente em nenhuma regra deste documento, a skill que
   consultou deve perguntar a Rafinha, não inferir.
+- ❌ Não decide (nem sugere sozinha, fora do contexto de uma execução real
+  de `jira-release-executor`) o incremento de versão de uma release — essa
+  decisão é sempre de Rafinha (seção 10.3).
