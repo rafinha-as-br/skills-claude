@@ -55,8 +55,9 @@ ele vai chamar esta skill no meio de uma mensagem sobre outro assunto — isso
 **Gatilho de origem — GitHub Issue.** Se Rafinha apontar uma GitHub Issue
 (link ou número) como origem do trabalho, busque o conteúdo dela (via
 `gh issue view` ou equivalente) e use isso como base do rascunho, no lugar
-da descrição em chat. Guarde o número/link da GitHub Issue — ele vira o
-campo `Link para GitHub Issue` no passo 5. As perguntas abaixo continuam se
+da descrição em chat. Guarde o número/link da GitHub Issue — ele aparece no
+rascunho do passo 5 e é gravado, **sem exceção**, no campo `Link para
+GitHub Issue` ao criar a issue (passo 7). As perguntas abaixo continuam se
 aplicando normalmente; só a origem do "do que se trata" muda.
 
 Verifique o que já está respondido pelo que ele escreveu (ou pelo conteúdo
@@ -164,8 +165,11 @@ Rovo) com:
   ao Épico pai quando houver.
 - Campo `tipo` (código/documentação) preenchido.
 - No destino aprovado (backlog ou sprint atual).
-- Se a origem foi uma GitHub Issue: grava o campo `Link para GitHub Issue`
-  com a referência.
+- Se a origem foi uma GitHub Issue (passo 1): grava, **sem exceção**, o
+  campo `Link para GitHub Issue` com a referência (link + número) — é isso
+  que permite que `jira-issue-executor` referencie e feche a GitHub Issue
+  automaticamente (`Closes #N`) quando o PR for mergeado. Nunca deixe essa
+  informação só na descrição textual da issue.
 
 ### 8. Confirmar a criação
 
@@ -188,6 +192,9 @@ breve do que foi registrado.
 - ❌ Nunca criar uma Subtask sem uma Issue pai definida.
 - ❌ Nunca inferir a classificação código/documentação quando não estiver
   clara pelo contexto — pergunte antes de criar a issue.
+- ❌ Nunca deixar de gravar o campo `Link para GitHub Issue` quando a issue
+  teve origem numa GitHub Issue (passo 1) — sem ele, `jira-issue-executor`
+  não consegue referenciá-la no PR nem fechá-la automaticamente.
 - ❌ Nunca, sob nenhuma circunstância, implementar código, escrever
   documentação, ou fazer qualquer trabalho além de criar a issue — mesmo que
   Rafinha peça isso na sequência da mesma mensagem. Essa é a regra mais

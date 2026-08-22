@@ -1,6 +1,6 @@
 ---
 name: jira-issue-executor
-description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Interpreta a hierarquia Épico/Issue/Subtask do item recebido (consultando workflow-development-flow em caso de dúvida) e lê o campo tipo (código/documentação) já definido por jira-issue-creator — só pergunta como fallback se o campo não existir ou estiver ambíguo. Issues de código são implementadas de verdade (branch + commit + code review automatizado via `/code-review` e `/ponytail:ponytail-review` + testes obrigatórios e proporcionais ao risco + push + abertura automática de Pull Request referenciando a Issue do Jira). Issues de documentação são delegadas à business-rule-writer (RN), module-doc-writer (módulo) ou screen-doc-writer (tela/UI). Roda via Claude Code no repositório real dele. Abre o Pull Request automaticamente após o push; mergear continua fora do escopo desta skill."
+description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Interpreta a hierarquia Épico/Issue/Subtask do item recebido (consultando workflow-development-flow em caso de dúvida) e lê o campo tipo (código/documentação) já definido por jira-issue-creator — só pergunta como fallback se o campo não existir ou estiver ambíguo. Issues de código são implementadas de verdade (branch + commit + code review automatizado via `/code-review` e `/ponytail:ponytail-review` + testes obrigatórios e proporcionais ao risco + push + abertura automática de Pull Request referenciando a Issue do Jira e, quando houver GitHub Issue de origem vinculada no campo Link para GitHub Issue, fechando-a via Closes #N). Grava o link do PR no campo Links para merge e mantém o campo Resumo da issue atualizado com uma versão breve do que foi desenvolvido, além de publicar tudo no comentário \"Implementação Claude\". Issues de documentação são delegadas à business-rule-writer (RN), module-doc-writer (módulo) ou screen-doc-writer (tela/UI). Roda via Claude Code no repositório real dele. Abre o Pull Request automaticamente após o push; mergear continua fora do escopo desta skill."
 ---
 
 # Executor de Issues — Coluna "Fazer - Claude" (Jira genérico)
@@ -312,13 +312,19 @@ final — nunca resolva isso sozinho com `git push --force` ou
 **5.6 Abrir o Pull Request.** Logo após o push, abra o PR — isso é
 autorizado por padrão, não precisa perguntar a cada execução. O título ou a
 descrição do PR deve indicar claramente qual Issue do Jira está sendo
-resolvida (a chave já está no nome da branch, mas vale repetir). Se a issue
-tiver uma GitHub Issue de origem vinculada (campo `Link para GitHub
-Issue`, criado por `jira-issue-creator`), a descrição do PR também
-referencia ela usando a convenção nativa do GitHub (`Closes #N`),
-fechando-a automaticamente quando o PR for mergeado. Você **não mergeia** o
-PR — isso é responsabilidade da etapa de Integração
-(`jira-integration-executor`), não desta skill.
+resolvida (a chave já está no nome da branch, mas vale repetir). Antes de
+abrir, verifique o campo `Link para GitHub Issue` da issue (gravado por
+`jira-issue-creator`, quando aplicável) — se estiver preenchido, a
+descrição do PR também referencia a GitHub Issue usando a convenção nativa
+do GitHub (`Closes #N`), fechando-a automaticamente quando o PR for
+mergeado. Você **não mergeia** o PR — isso é responsabilidade da etapa de
+Integração (`jira-integration-executor`), não desta skill.
+
+Assim que o PR estiver aberto, grave o link dele no campo `Links para
+merge` da issue (via `editJiraIssue` ou equivalente) — este é o único
+momento em que a skill escreve nesse campo. Não deixe essa informação só
+no comentário do passo 7; é o campo que torna o link reportável/filtrável
+no board, sem precisar abrir cada issue para achá-lo.
 
 ### 6. Issues de documentação: delegar para business-rule-writer, module-doc-writer ou screen-doc-writer
 
@@ -372,6 +378,13 @@ O comentário deve:
   qual skill foi usada (`business-rule-writer` ou `module-doc-writer`), e um
   resumo de quantos pontos foram deixados como pendência (via
   `doc-pendency-resolver`), se houver.
+
+Além do comentário, atualize o campo `Resumo` da issue (via `editJiraIssue`
+ou equivalente) com uma versão breve do que foi feito — não precisa ser
+detalhado, só o suficiente para entender rapidamente o que foi desenvolvido
+em código ou documentação nesta issue. Se a issue já tinha um `Resumo` de
+uma execução anterior (ex.: retomada após review reprovado), substitua pelo
+estado atual em vez de concatenar texto antigo com novo.
 
 ### 8. Label de revisão
 
@@ -432,6 +445,12 @@ aquela issue foi trabalhada por você e precisa de revisão dele.
 - ❌ Nunca deixar de comentar o resumo de autoria ou de aplicar a label de
   revisão — esses dois passos são obrigatórios em toda issue processada
   (exceto as puladas por pedido explícito).
+- ❌ Nunca deixar de gravar o campo `Links para merge` assim que o PR é
+  aberto (passo 5.6) — o link não pode existir só dentro do comentário
+  "Implementação Claude".
+- ❌ Nunca deixar de atualizar o campo `Resumo` da issue (passo 7) — mesmo
+  com o comentário de resumo já publicado, o campo precisa refletir o
+  estado atual do que foi feito.
 
 ---
 
