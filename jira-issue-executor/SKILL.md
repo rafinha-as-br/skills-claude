@@ -1,11 +1,6 @@
 ---
-name: "jira-issue-executor"
-description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Interpreta a hierarquia Épico/Issue/Subtask do item recebido (consultando workflow-development-flow em caso de dúvida) e lê o campo tipo (código/documentação) já definido por jira-issue-creator — só pergunta como fallback se o campo não existir ou estiver ambíguo. Issues de código são implementadas de verdade (branch + commit + testes obrigatórios e proporcionais ao risco + push + abertura automática de Pull Request referenciando a Issue do Jira). Issues de documentação são delegadas à business-rule-writer (RN), module-doc-writer (módulo) ou screen-doc-writer (tela/UI). Roda via Claude Code no repositório real dele. Abre o Pull Request automaticamente após o push; mergear continua fora do escopo desta skill."
----
-
----
 name: jira-issue-executor
-description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Interpreta a hierarquia Épico/Issue/Subtask do item recebido (consultando workflow-development-flow em caso de dúvida) e lê o campo tipo (código/documentação) já definido por jira-issue-creator — só pergunta como fallback se o campo não existir ou estiver ambíguo. Issues de código são implementadas de verdade (branch + commit + testes obrigatórios e proporcionais ao risco + push + abertura automática de Pull Request referenciando a Issue do Jira). Issues de documentação são delegadas à business-rule-writer (RN), module-doc-writer (módulo) ou screen-doc-writer (tela/UI). Roda via Claude Code no repositório real dele. Abre o Pull Request automaticamente após o push; mergear continua fora do escopo desta skill."
+description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Interpreta a hierarquia Épico/Issue/Subtask do item recebido (consultando workflow-development-flow em caso de dúvida) e lê o campo tipo (código/documentação) já definido por jira-issue-creator — só pergunta como fallback se o campo não existir ou estiver ambíguo. Issues de código são implementadas de verdade (branch + commit + code review automatizado via `/code-review` e `/ponytail:ponytail-review` + testes obrigatórios e proporcionais ao risco + push + abertura automática de Pull Request referenciando a Issue do Jira). Issues de documentação são delegadas à business-rule-writer (RN), module-doc-writer (módulo) ou screen-doc-writer (tela/UI). Roda via Claude Code no repositório real dele. Abre o Pull Request automaticamente após o push; mergear continua fora do escopo desta skill."
 ---
 
 # Executor de Issues — Coluna "Fazer - Claude" (Jira genérico)
@@ -50,11 +45,16 @@ como uma etapa se encaixa no fluxo geral, ou sobre essa hierarquia.
 A entrega do seu trabalho, para issues de código, termina no commit + push
 da branch. **Você nunca gera bundle Git** (nem qualquer outro arquivo/artefato
 como forma de entregar o código) — a branch já enviada ao remoto é
-suficiente. O code review acontece direto no GitHub, através do MR que o
-próprio Rafinha abre, e o teste manual/visual de que tudo funciona (rodar o
-projeto, navegar pela aplicação, etc.) também é sempre feito por ele, na
-máquina dele — nunca é algo que você tenta fazer ou substituir. Para issues
-de documentação, a entrega termina na página do Confluence publicada.
+suficiente. Antes do commit, você já roda um code review automatizado
+(`/code-review` + `/ponytail:ponytail-review`, passo 5.3c) para pegar bugs de
+lógica e over-engineering cedo, com achados de alta confiança corrigidos no
+próprio código. A revisão humana de Rafinha continua acontecendo depois,
+direto no GitHub através do PR, mas focada em validar o que foi feito — não
+em precisar entender 100% da lógica sozinho. O teste manual/visual de que
+tudo funciona (rodar o projeto, navegar pela aplicação, etc.) também é
+sempre feito por ele, na máquina dele — nunca é algo que você tenta fazer ou
+substituir. Para issues de documentação, a entrega termina na página do
+Confluence publicada.
 
 Use o Atlassian Rovo para toda a interação com o Jira (busca de issues,
 leitura/criação de comentários, labels e transições de status) e com o
@@ -244,8 +244,29 @@ obrigatório, não uma observação para o Rafinha resolver depois. Guarde o
 resultado (seções violadas e corrigidas, ou "sem violações") para incluir no
 comentário de resumo do passo 7.
 
-**5.4 Gate de qualidade antes de commitar.** Depois da autorevisão do passo
-5.3b (quando aplicável), rode as ferramentas de análise estática e os
+**5.3c Code review automatizado (`/code-review` + `/ponytail:ponytail-review`).**
+Depois da implementação (e da autorevisão do passo 5.3b, quando aplicável) e
+antes do gate de qualidade do passo 5.4, rode os dois reviews sobre o diff
+atual da branch — vale para qualquer stack, não só Flutter/Dart:
+
+- `/code-review` (nível `medium`): cobre correção, reuso e simplificação.
+  Como esta revisão roda sem Rafinha por perto, achados de alta confiança
+  devem ser corrigidos no código antes de prosseguir — mesmo tratamento
+  obrigatório do passo 5.3b, não uma observação para depois.
+- `/ponytail:ponytail-review`: cobre over-engineering (abstração
+  especulativa, dependência desnecessária, bloat), complementar ao
+  `/code-review`. Aplique as simplificações sugeridas que não contradigam um
+  requisito explícito da issue.
+
+Achado de baixa confiança, ou que exigiria mudar escopo além do que a issue
+pede: não aplique às cegas — deixe registrado no comentário de resumo do
+passo 7 para Rafinha decidir, em vez de arriscar uma mudança não solicitada.
+
+Guarde o resultado dos dois reviews (achados corrigidos, achados deixados
+como nota, ou "sem achados") para incluir no comentário de resumo do passo 7.
+
+**5.4 Gate de qualidade antes de commitar.** Depois do code review
+automatizado do passo 5.3c, rode as ferramentas de análise estática e os
 testes automatizados do projeto antes de qualquer commit. Testes deixaram
 de ser opcionais: são **obrigatórios e proporcionais ao risco** introduzido
 pela alteração — não é possível commitar sem teste correspondente ao
@@ -343,6 +364,10 @@ O comentário deve:
   contra `flutter-development-standards` (passo 5.3b) — seções verificadas,
   violações encontradas e corrigidas antes do commit, ou confirmação de que
   não houve violações.
+- Para issues de código: resultado do code review automatizado (passo 5.3c)
+  — achados do `/code-review` e do `/ponytail:ponytail-review` corrigidos no
+  código, achados deixados como nota para Rafinha, ou confirmação de que não
+  houve achados em nenhum dos dois.
 - Para issues de documentação: link da página do Confluence criada/atualizada,
   qual skill foi usada (`business-rule-writer` ou `module-doc-writer`), e um
   resumo de quantos pontos foram deixados como pendência (via
@@ -397,6 +422,10 @@ aquela issue foi trabalhada por você e precisa de revisão dele.
   opcional ou como menção passiva — para issues de código Flutter/Dart, a
   autorevisão do passo 5.3b é obrigatória e deve gerar correções reais no
   código antes do commit, não apenas uma citação no comentário final.
+- ❌ Nunca tratar o code review automatizado do passo 5.3c (`/code-review` +
+  `/ponytail:ponytail-review`) como opcional, nem pular direto para o gate de
+  qualidade sem rodá-lo — achados de alta confiança devem gerar correção real
+  no código antes do commit, do mesmo jeito que a autorevisão do passo 5.3b.
 - ❌ Nunca escreva conteúdo de página do Confluence diretamente nesta skill
   — issues de documentação são sempre delegadas para `business-rule-writer`,
   `module-doc-writer` ou `screen-doc-writer` (passo 6).
@@ -414,7 +443,7 @@ Rafinha um resumo consolidado, por exemplo:
 ```
 ✅ Projeto processado: [nome/chave do projeto]
 📋 Issues processadas: [quantidade]
-  - [ISSUE-1]: [código, feita] → branch feat/ISSUE-1-claude (nova), analyze + testes OK, PR #12 aberto → movida para Análise - Rafinha
+  - [ISSUE-1]: [código, feita] → branch feat/ISSUE-1-claude (nova), code review (/code-review + ponytail-review) sem achados, analyze + testes OK, PR #12 aberto → movida para Análise - Rafinha
   - [ISSUE-2]: [RN, business-rule-writer] → página Confluence atualizada (link), 1 pendência deixada → movida para Análise - Rafinha
   - [ISSUE-3]: [documentação de módulo, module-doc-writer] → página Confluence criada (link), sem pendências → movida para Análise - Rafinha
   - [ISSUE-4]: [tela, screen-doc-writer] → página Confluence atualizada com prints (link), sem pendências → movida para Análise - Rafinha
