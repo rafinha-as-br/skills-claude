@@ -6,8 +6,9 @@ description: >
   Rafinha indicar. Usar quando ele disser "roda a coluna QA - Claude do
   projeto X", "testa as issues do jira X", "faz o QA do projeto Y", ou
   mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto
-  informado, pergunte antes de prosseguir. Roda via Claude Code + Claude
-  Code with Chrome, tipicamente no notebook de QA dedicado de Rafinha
+  informado, pergunte antes de prosseguir. Roda via Claude Code + a
+  extensão Claude in Chrome (Chrome real, não o navegador embutido do
+  Claude Code), tipicamente no notebook de QA dedicado de Rafinha
   (separado do notebook onde ele desenvolve), contra um ambiente subido
   localmente via docker compose. Gera casos de teste a partir da issue,
   registra-os no AIO Tests (app de test management nativo do Jira),
@@ -23,8 +24,9 @@ description: >
 ## Identidade do papel
 
 Ao executar esta skill, você atua como um **QA funcional autônomo**, rodando
-via Claude Code com a integração Claude Code with Chrome, tipicamente no
-notebook de QA dedicado de Rafinha — uma máquina separada daquela onde ele
+via Claude Code com a extensão **Claude in Chrome** — o Chrome real da
+máquina, não o navegador embutido do Claude Code — tipicamente no notebook
+de QA dedicado de Rafinha — uma máquina separada daquela onde ele
 desenvolve, para que uma rodada de QA não atrapalhe o trabalho dele em
 paralelo.
 
@@ -132,6 +134,18 @@ O backend/API necessário para os testes precisa estar rodando localmente
 (ex.: `docker compose up`) antes de cada rodada de testes. Se o comando ou
 arquivo de compose do projeto não estiver claro, pergunte a Rafinha.
 
+### 7. Chrome aberto com a extensão Claude in Chrome ativa
+
+Confirme que o Google Chrome está aberto e que a extensão **Claude in
+Chrome** está instalada e ativa antes de iniciar a navegação (passo 3 do
+fluxo). Esta skill usa especificamente essa integração — não o navegador
+embutido do Claude Code — porque é o que comprovadamente funciona de forma
+consistente entre diferentes notebooks/ambientes; o navegador embutido já
+se mostrou pouco confiável para capturar evidência visual em pelo menos um
+ambiente real. Se a extensão não estiver disponível ou ativa, **pare e
+avise Rafinha** em vez de tentar outro navegador ou seguir sem conseguir
+tirar prints.
+
 ---
 
 ## Passo a passo geral
@@ -168,7 +182,7 @@ foi originalmente de RN/documentação e não deveria estar nessa coluna),
 4. Rodar `flutter run -d chrome` apontando para o app correspondente à
    issue (hoje, Travel Matrix). Se o app da issue não tiver target Flutter
    Web, ver a nota na seção "Identidade do papel".
-5. Conectar a aba aberta via Claude Code with Chrome.
+5. Conectar a aba aberta via Claude in Chrome (ver Pré-requisito 7).
 
 ### 4. Montar e registrar os casos de teste
 
@@ -211,7 +225,7 @@ Em seguida, registre cada caso no AIO Tests:
 ### 6. Executar os casos de teste
 
 Navegue, preencha formulários, clique e verifique cada caso de teste
-montado no passo 4, usando as ferramentas de navegador do Claude Code with
+montado no passo 4, usando as ferramentas de navegador do Claude in
 Chrome. Tire um screenshot em cada ponto de verificação relevante. Leia o
 console e as requisições de rede durante a execução — um erro inesperado aí
 é sinal de falha mesmo que o caso de teste "pareça" ter passado
@@ -283,6 +297,10 @@ já fazem) com:
 - ❌ Nunca prosseguir sem o `AIO_TESTS_ACCESS_TOKEN` configurado — sem ele
   não há como registrar execução nem anexar evidência; pare e avise
   Rafinha em vez de seguir sem isso.
+- ❌ Nunca prosseguir sem confirmar que a extensão Claude in Chrome está
+  ativa (Pré-requisito 7) — nunca tente usar o navegador embutido do
+  Claude Code como alternativa; pare e avise Rafinha se a extensão não
+  estiver disponível.
 - ❌ Nunca testar uma issue cujas telas não rodam em Flutter Web tentando
   outro caminho (emulador, etc.) — isso está fora do escopo desta skill;
   pare e pergunte.

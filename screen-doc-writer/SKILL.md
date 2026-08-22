@@ -1,6 +1,6 @@
 ---
 name: screen-doc-writer
-description: "Elaborar ou reescrever páginas de documentação de tela/UI no Confluence de Rafinha (ex.: \"Tela - Cadastro de Viagem\", \"Tela - Login\") — campos, componentes, interações, estados e regras de exibição de uma tela de um app Flutter, em tom de estado atual (sem histórico, sem citar issues), sucinta o bastante pra ser entendida por programadores e por usuários finais do sistema. Usar sempre que Rafinha disser \"documenta essa tela\", \"atualiza a doc da tela X\", \"o texto dessa página ficou fraco/desatualizado, revisa\", enviar um link de página de tela do Confluence, apontar uma issue na coluna \"Documentar\" que ele confirme ser de alteração de tela/UI, ou pedir pra tirar print de uma tela e anexar na documentação. Navega a tela de verdade no navegador (mesmo recurso da jira-qa-executor) pra tirar prints reais e embuti-los na página. Não usar para regra de negócio isolada (business-rule-writer) nem para documentação de módulo/arquitetura/código (module-doc-writer)."
+description: "Elaborar ou reescrever páginas de documentação de tela/UI no Confluence de Rafinha (ex.: \"Tela - Cadastro de Viagem\", \"Tela - Login\") — campos, componentes, interações, estados e regras de exibição de uma tela de um app Flutter, em tom de estado atual (sem histórico, sem citar issues), sucinta o bastante pra ser entendida por programadores e por usuários finais do sistema. Usar sempre que Rafinha disser \"documenta essa tela\", \"atualiza a doc da tela X\", \"o texto dessa página ficou fraco/desatualizado, revisa\", enviar um link de página de tela do Confluence, apontar uma issue na coluna \"Documentar\" que ele confirme ser de alteração de tela/UI, ou pedir pra tirar print de uma tela e anexar na documentação. Navega a tela de verdade via Claude in Chrome (Chrome real, mesma extensão que a jira-qa-executor usa — não o navegador embutido do Claude Code) pra tirar prints reais e embuti-los na página. Não usar para regra de negócio isolada (business-rule-writer) nem para documentação de módulo/arquitetura/código (module-doc-writer)."
 ---
 
 # Escritor de Documentação de Tela/UI — Confluence de Rafinha
@@ -26,9 +26,10 @@ atualizando diretamente a página cujo link Rafinha fornecer.
 O que torna esta skill diferente das outras duas de documentação:
 
 - **Você não parte só da descrição de Rafinha.** Você **navega a tela de
-  verdade** no navegador — mesma integração Chrome que a `jira-qa-executor`
-  usa — pra observar o estado real da UI e tirar os prints que vão pra
-  página. Isso existe justamente para resolver o problema que motivou a
+  verdade** via **Claude in Chrome** (Chrome real da máquina, não o
+  navegador embutido do Claude Code) — mesma extensão que a
+  `jira-qa-executor` usa — pra observar o estado real da UI e tirar os
+  prints que vão pra página. Isso existe justamente para resolver o problema que motivou a
   criação desta skill: documentação que vai ficando desatualizada, com
   texto fraco ou rastros de uma versão antiga da tela, porque foi escrita
   de memória em vez de a partir do que está de fato implementado.
@@ -103,7 +104,17 @@ página nova), pergunte antes de prosseguir — esta skill sempre escreve
 diretamente na página, nunca devolve o conteúdo só no chat como entrega
 final.
 
-### 2. Como chegar na tela, ao vivo
+### 2. Chrome aberto com a extensão Claude in Chrome ativa
+
+Confirme que o Google Chrome está aberto e que a extensão **Claude in
+Chrome** está instalada e ativa antes de navegar (passo 2 do fluxo abaixo)
+— mesmo pré-requisito de `jira-qa-executor`. Esta skill usa
+especificamente essa integração, não o navegador embutido do Claude Code,
+porque é o que comprovadamente funciona de forma consistente entre
+diferentes notebooks/ambientes. Se a extensão não estiver disponível ou
+ativa, **pare e avise Rafinha** em vez de tentar outro navegador.
+
+### 3. Como chegar na tela, ao vivo
 
 Você precisa navegar a tela de verdade antes de escrever qualquer seção
 que descreva campos, componentes ou estados. Confirme com Rafinha (se não
@@ -119,7 +130,7 @@ Se o ambiente já estiver no ar (ex.: reaproveitando uma sessão de QA em
 andamento), pode usar o que já está aberto em vez de subir tudo de novo —
 confirme com Rafinha se for o caso.
 
-### 3. Estado limpo antes de interagir com a tela
+### 4. Estado limpo antes de interagir com a tela
 
 Esta skill **observa e explora** a tela — nunca realiza ações que alterem
 dados reais do sistema. Preencher campos para ilustrar um estado
@@ -148,16 +159,16 @@ mesma página.
 
 ### 2. Navegar a tela e observar o estado real
 
-Usando a integração do navegador (mesma da `jira-qa-executor`):
+Usando o Claude in Chrome (mesma integração da `jira-qa-executor`):
 
-1. Abra o ambiente confirmado no pré-requisito 2 e navegue até a tela.
+1. Abra o ambiente confirmado no pré-requisito 3 e navegue até a tela.
 2. Leia a tela como ela está: campos visíveis, rótulos, botões, textos de
    ajuda, valores padrão, o que está habilitado/desabilitado no estado
    inicial.
 3. Explore as interações relevantes para entender o comportamento real —
    preenchendo campos com dados de exemplo, dessa forma provocando
    validações, mensagens de erro, mudanças de estado — sempre respeitando
-   o limite do pré-requisito 3 (nunca submeter uma ação destrutiva/real
+   o limite do pré-requisito 4 (nunca submeter uma ação destrutiva/real
    sem confirmação).
 4. Ao longo da exploração, tire os poucos prints realmente necessários
    para ilustrar cada seção da página (ver seção "Prints" abaixo) — não é
@@ -310,9 +321,13 @@ Rafinha:
   o comportamento não for observável.
 - ❌ Nunca realizar, no navegador, uma ação que crie, altere ou exclua um
   dado real sem confirmação explícita de Rafinha — preenchimento de
-  exemplo é permitido, submissão real não é (ver pré-requisito 3).
+  exemplo é permitido, submissão real não é (ver pré-requisito 4).
 - ❌ Nunca abrir um ambiente de produção para navegar/capturar prints —
   sempre local/dev, e sempre confirmado com Rafinha se não estiver claro.
+- ❌ Nunca prosseguir sem confirmar que a extensão Claude in Chrome está
+  ativa (Pré-requisito 2) — nunca tente usar o navegador embutido do
+  Claude Code como alternativa; pare e avise Rafinha se a extensão não
+  estiver disponível.
 - ❌ Nunca escrever em tom narrativo/histórico ou citar número de issue no
   corpo da página — isso é exclusivo da `module-doc-writer`.
 - ❌ Nunca incluir detalhe de código (classe, arquivo, provider, endpoint,
