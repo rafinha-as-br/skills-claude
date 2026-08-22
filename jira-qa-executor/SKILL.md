@@ -9,15 +9,15 @@ description: >
   informado, pergunte antes de prosseguir. A skill suporta múltiplos
   executores de QA conforme a plataforma da issue (lida via label do Jira):
   Flutter Web usa Claude in Chrome (Chrome real, não o navegador embutido do
-  Claude Code) e está ativo em produção; Flutter Android usa Maestro
-  (MCP preferencial, fallback CLI) contra um Android Emulator, mas está
-  documentado sem estar ativado ainda — issues rotuladas "mobile" fazem a
-  skill parar e avisar Rafinha em vez de testar (ver "Status de ativação
-  por plataforma"). Gera/seleciona casos de teste, executa os fluxos de
-  verdade, coleta evidências, registra resultados no AIO Tests e move a
-  issue conforme o resultado. Esta skill NUNCA corrige código, nunca
-  implementa funcionalidades, e só tem permissão de commit/push para
-  arquivos de teste Maestro (`.maestro/**`) — nunca para código do projeto.
+  Claude Code); Flutter Android usa Maestro (MCP preferencial, fallback
+  CLI) contra um Android Emulator, subido sob demanda pela própria skill
+  quando necessário. Os dois executores estão ativos em produção (Android
+  validado em 2026-08-22 no projeto Encryption Playground). Gera/seleciona
+  casos de teste, executa os fluxos de verdade, coleta evidências, registra
+  resultados no AIO Tests e move a issue conforme o resultado. Esta skill
+  NUNCA corrige código, nunca implementa funcionalidades, e só tem
+  permissão de commit/push para arquivos de teste Maestro (`.maestro/**`)
+  — nunca para código do projeto.
 ---
 
 # Executor de QA — Coluna "QA - Claude" (Jira genérico)
@@ -88,22 +88,18 @@ registrado.
 | Plataforma | Executor | Status |
 |---|---|---|
 | Flutter Web | Claude in Chrome | **Ativo** |
-| Flutter Android | Maestro (MCP → fallback CLI) | **Documentado, não ativado.** Ver nota abaixo. |
+| Flutter Android | Maestro (MCP → fallback CLI) | **Ativo** |
 | Outra plataforma | — | Fora de escopo. Pare e pergunte a Rafinha. |
 
-> **Fase 1 (atual):** esta seção e as seções "Pré-requisitos — Flutter
-> Android" e "Executor Android — Maestro" abaixo já descrevem o fluxo
-> completo, mas **não estão ativas**. Se uma issue chegar com o label
-> `mobile` (ver "Como a skill descobre a plataforma"), **pare, informe
-> Rafinha que o executor Android ainda não foi ativado nesta skill, e não
-> tente testá-la via Web como substituto**. Siga para a próxima issue
-> elegível.
->
-> **Fase 2 (futura):** depois de uma rodada de validação real numa issue
-> Android de verdade — combinando este SKILL.md com Maestro já funcionando
-> na máquina —, Rafinha ativa o executor removendo este aviso. A partir daí
-> as instruções abaixo passam a valer imediatamente, sem precisar reescrever
-> a skill.
+> **Validação Fase 2 concluída em 2026-08-22**, no projeto Encryption
+> Playground (primeira issue Android de ponta a ponta: build do APK,
+> emulador, flow Maestro novo, evidência, registro no AIO Tests, commit dos
+> arquivos `.maestro/**`). O fluxo completo funcionou; os ajustes reais
+> descobertos na primeira rodada já estão incorporados abaixo (SDK fora do
+> PATH, nome sanitizado do AVD, boot manual do emulador antes da
+> descoberta via MCP, `adb reverse` condicional à existência de backend, e
+> os gotchas da API do AIO Tests). Não trate esta seção como "só
+> documentada" — o executor Android roda de verdade.
 
 ### Como a skill descobre a plataforma da issue
 
@@ -115,11 +111,10 @@ título, pelo componente tocado, etc.).
 * Sem nenhum label de plataforma na issue → trate como **Web** (é o
   comportamento histórico desta skill, válido até a `jira-issue-executor`
   passar a aplicar o label em todo issue nova).
-* Label `mobile` → executor Android. Na Fase 1, pare e avise Rafinha (ver
-  acima).
+* Label `mobile` → executor Android.
 * Label `web` → executor Web.
-* Ambos os labels → execute os dois executores para essa issue (na Fase 1,
-  execute o Web normalmente e avise que a parte Android ficou pendente).
+* Ambos os labels → execute os dois executores para essa issue, quando a
+  superfície de risco justificar (ver "Regressão").
 
 ---
 
@@ -207,22 +202,34 @@ atrapalhe o trabalho dele em paralelo.
 
 ---
 
-## Pré-requisitos específicos — Flutter Android *(documentado, Fase 2)*
+## Pré-requisitos específicos — Flutter Android
 
-> Ver "Status de ativação por plataforma" — nada abaixo executa na Fase 1.
-
-1. Android SDK instalado;
-2. Android Emulator instalado, com um AVD (dispositivo virtual) chamado
-   exatamente **`QA - Claude`** — é a convenção padrão desta skill,
-   paralela ao nome de Cycle usado no AIO Tests. Procure esse AVD primeiro
-   e use-o automaticamente sem perguntar. A skill **nunca cria um AVD
-   sozinha** — se o `QA - Claude` não existir (ex.: primeira vez rodando
-   num projeto/máquina nova), **pare e peça para Rafinha criar/indicar o
-   dispositivo virtual**, em vez de escolher outro AVD existente por conta
-   própria;
-3. ADB disponível;
-4. Flutter disponível;
-5. Maestro CLI instalado e no PATH (`maestro --version` deve responder);
+1. **Android SDK instalado.** Se `ANDROID_HOME`/`ANDROID_SDK_ROOT` não
+   estiverem setados e `adb`/`emulator` não estiverem no PATH (comum em
+   instalação via Android Studio), não assuma que falta o SDK — rode
+   `flutter doctor -v`, que localiza o SDK mesmo sem essas variáveis, e use
+   o caminho absoluto reportado por ele para os comandos `adb`/`emulator`
+   pelo resto da execução.
+2. **AVD `QA - Claude` configurado.** É a convenção padrão desta skill,
+   paralela ao nome de Cycle usado no AIO Tests — procure-o primeiro e
+   use-o automaticamente, sem perguntar. **Atenção:** esse é o nome de
+   exibição; o identificador real que `avdmanager`/`emulator` aceitam
+   sanitiza espaços e o hífen para underscore (ex.: `QA_-_Claude`). Rode
+   `emulator -list-avds` (ou `avdmanager list avd`) para obter o
+   identificador exato — nunca assuma que o nome de exibição funciona
+   literalmente como argumento de `-avd`. A skill **nunca cria um AVD
+   sozinha** — se não existir um AVD equivalente a `QA - Claude`, **pare e
+   peça para Rafinha criar/indicar o dispositivo virtual**.
+3. **Emulador de pé antes da descoberta.** Nem o Maestro MCP
+   (`list_devices`) nem o CLI enxergam ou iniciam um AVD parado — só veem
+   dispositivos **já rodando**. Antes de qualquer descoberta, suba o
+   emulador manualmente em background (`emulator -avd <identificador do
+   item 2>`) e aguarde o boot completar (`adb shell getprop
+   sys.boot_completed` até retornar `1` — costuma levar ~50s a partir de um
+   emulador frio). Só então rode `list_devices`/`maestro list-devices` para
+   confirmar o dispositivo disponível antes de instalar o APK.
+4. ADB e Flutter disponíveis.
+5. Maestro CLI instalado e no PATH (`maestro --version` deve responder).
 6. Maestro MCP configurado no Claude Code (`claude mcp list` deve mostrar
    `maestro` conectado). Instalação esperada:
 
@@ -236,15 +243,17 @@ atrapalhe o trabalho dele em paralelo.
    projeto). Não instalar um MCP de terceiros se o Maestro MCP oficial
    estiver disponível.
 
-Antes de iniciar o teste, descubra os dispositivos disponíveis (via
-Maestro/MCP quando possível, ou `maestro list-devices`) para confirmar que
-existe um emulador utilizável antes de tentar instalar o APK.
+### Rede: emulator → backend local (quando o projeto tiver backend)
 
-### Rede: emulator → backend local
+Primeiro confirme se o projeto **tem** um backend local para se comunicar —
+procure `docker-compose.yml`/equivalente e dependências HTTP no
+`pubspec.yaml` (`http`, `dio`, etc.). Um app 100% local (sem chamada de
+rede) não precisa desta etapa — pule-a e registre isso como fato do
+projeto, não como pendência.
 
-O Android Emulator não enxerga `localhost` da máquina host como o Chrome
-enxerga. Antes de instalar/abrir o app no emulador, rode, para cada porta
-que o backend expõe:
+Se houver backend: o Android Emulator não enxerga `localhost` da máquina
+host como o Chrome enxerga. Antes de instalar/abrir o app no emulador,
+rode, para cada porta que o backend expõe:
 
 ```bash
 adb reverse tcp:<porta> tcp:<porta>
@@ -264,13 +273,13 @@ checkout develop
        ↓
 git pull origin develop
        ↓
-adb reverse tcp:<porta> tcp:<porta>   (para cada porta do backend)
+adb reverse tcp:<porta> tcp:<porta>   (só se o projeto tiver backend)
        ↓
 flutter build apk --debug
        ↓
 APK
        ↓
-instalar no Android Emulator
+instalar no Android Emulator (já de pé, ver item 3 acima)
 ```
 
 A skill deve verificar o caminho real do APK produzido pelo projeto antes
@@ -281,7 +290,9 @@ confirmar sua origem: o APK precisa representar o estado atual de
 
 **Antes da primeira rodada Android num projeto**, confirme se o workflow do
 GitHub Actions daquele repo já builda o APK Android como parte da pipeline
-de Integração, ou só valida o lado Web/lint. Isso muda como uma falha de
+de Integração, ou só valida o lado Web/lint (relate esse achado no
+comentário da issue de qualquer forma — é informação relevante para
+Rafinha mesmo quando o build funciona). Isso muda como uma falha de
 `flutter build apk` deve ser interpretada — ver "Falha de teste vs. falha
 de infraestrutura".
 
@@ -291,7 +302,7 @@ de infraestrutura".
 
 ```
 Flutter Web       → Claude in Chrome
-Flutter Android    → Maestro (Fase 1: não ativado — parar e avisar)
+Flutter Android    → Maestro
 Web + Android      → executar os dois quando a superfície de risco justificar
 Outra plataforma   → verificar se existe executor oficialmente configurado; senão, parar e perguntar
 ```
@@ -308,36 +319,42 @@ Issue: "Corrigir comportamento do botão voltar no Android"
 
 ---
 
-## Executor Android — Maestro *(documentado, Fase 2)*
+## Executor Android — Maestro
 
 ### MCP vs. CLI
 
-O MCP é preferencial para **exploração interativa**: descobrir dispositivo,
-inspecionar tela, identificar elementos, executar ação, validar estado,
-capturar evidência. O CLI é preferencial para **execução determinística**:
-rodar flows já existentes, regressão, execução em lote, e é o fallback
-quando o MCP não estiver disponível.
+O fluxo confirmado é `list_devices` → `inspect_screen` → `run` (exploração
+interativa, com `take_screenshot` quando útil), seguido de
+`maestro test .maestro/<flow>.yaml` via CLI para a execução determinística
+final do flow permanente — os dois papéis coexistem na mesma rodada, não
+são alternativas entre si:
 
 ```
 maestro test .maestro/
 maestro test .maestro/auth/login_success.yaml
 ```
 
-Antes de assumir nomes de ferramentas do MCP, **consulte as ferramentas
-efetivamente disponibilizadas pela versão instalada** — não assuma nomes
-fixos entre versões. Não usar coordenadas de mouse do desktop como
-mecanismo primário de automação mobile, e não usar captura de tela do
-desktop como substituto da inspeção do dispositivo quando o MCP estiver
-disponível.
+Os nomes de ferramenta do MCP confirmados na versão atual (Maestro 2.8.0)
+são `list_devices`, `inspect_screen`, `run`, `take_screenshot` e
+`cheat_sheet` (consulte este último antes de escrever comando/flow não
+familiar). Ainda assim, **não assuma esses nomes fixos entre versões** —
+confirme as ferramentas efetivamente disponibilizadas antes de depender
+delas. Não usar coordenadas de mouse do desktop como mecanismo primário de
+automação mobile, e não usar captura de tela do desktop como substituto da
+inspeção do dispositivo quando o MCP estiver disponível.
 
 ### Testabilidade
 
 Componentes interativos importantes precisam de identificadores estáveis
 (texto acessível, `Key`, semântica acessível) para os flows serem estáveis.
 Preferir `tapOn: "Salvar"` a "clicar no terceiro botão da tela". Se um
-elemento importante não puder ser identificado de forma confiável, registre
-isso como problema de testabilidade — a skill de QA **não modifica código**
-para criar o identificador, só relata o problema.
+elemento importante não puder ser identificado de forma confiável (ex.:
+dois controles com o mesmo texto/label, exigindo um seletor relativo como
+`below:`; ou um controle sem `content-desc`, exigindo `point:` percentual
+como último recurso), registre isso como problema de testabilidade — a
+skill de QA **não modifica código** para criar o identificador, só relata
+o problema, tanto no `.maestro/README.md` quanto no comentário da issue
+(ver "Comentário obrigatório no Jira").
 
 ### Falha no Maestro: teste vs. infraestrutura
 
@@ -466,6 +483,25 @@ reexecutar imediatamente o teste.
 
 ## AIO Tests — registro
 
+Não existe um MCP dedicado para o AIO Tests — os nomes abaixo (ex.:
+`createTestCase`, `addCaseToCycle`) são referências às operações da API
+REST, chamadas via HTTP direto (`curl` ou equivalente), não nomes de
+ferramenta MCP. Confirme o schema exato de cada uma no Swagger antes de
+montar o payload — os nomes de campo abaixo não substituem essa consulta.
+
+### Gotchas conhecidos da API (confirmados em 2026-08-22, projeto Encryption Playground)
+
+* `CaseStep` exige o campo `stepType` — não fica óbvio lendo o resumo do
+  Swagger na diagonal; confira a definição do schema `CaseStep`
+  explicitamente antes da primeira chamada, ou a criação retorna `400`.
+* `jiraRequirementIDs` com o ID numérico da issue do Jira funciona direto
+  no POST de criação do caso — não é necessário nenhum fallback via
+  `PUT /detail` só para vincular à issue.
+* Upload de anexo (`curl -F`) em ambiente Windows + Git Bash: use caminho
+  no formato Windows (`C:/Users/...`), não POSIX (`/c/Users/...`) — o
+  `curl` instalado nesses ambientes costuma ser um build nativo mingw64
+  que espera caminho Windows; caminho POSIX falha com `curl: (26)`.
+
 ### Casos de teste
 
 1. `getOrCreateTestCaseFolderHierarchy` — encontre ou crie a pasta
@@ -564,11 +600,14 @@ não executada — issue exclusiva de Web").
 * ❌ Nunca prosseguir sem confirmar o executor certo para a plataforma —
   nunca testar Android pelo Web nem Web pelo Android, mesmo em mudanças
   aparentemente pequenas.
-* ❌ Nunca tentar testar uma issue Android enquanto o executor Android não
-  estiver ativado (Fase 1) — pare e avise Rafinha.
+* ❌ Nunca assumir que `list_devices`/o CLI enxergam um AVD parado — suba o
+  emulador explicitamente e aguarde o boot completar antes de prosseguir.
 * ❌ Nunca criar um AVD automaticamente, nem escolher um AVD diferente de
   `QA - Claude` por conta própria quando ele não existir — pare e peça
   para Rafinha.
+* ❌ Nunca aplicar `adb reverse` ou assumir backend local num projeto
+  Android sem antes confirmar que ele realmente tem um backend — alguns
+  apps são 100% locais.
 * ❌ Nunca usar coordenadas de tela como estratégia primária de automação
   mobile, nem controle visual de desktop quando o Maestro MCP estiver
   disponível.
@@ -605,8 +644,9 @@ resumo consolidado, por exemplo:
     (Cycle: [link])
   - [ISSUE-2] (Web): 3 casos de teste, 1 reprovado (campo "status" não
     atualiza após salvar) → movida para "Fazer - Claude" (Run: [link])
-  - [ISSUE-3] (mobile): executor Android ainda não ativado (Fase 1) →
-    issue não processada, aguardando ativação
+  - [ISSUE-3] (mobile): 1 caso novo (flow Maestro criado em
+    .maestro/<area>/<cenario>.yaml, commitado e enviado direto para
+    develop), aprovado → movida para "Documentar" (Cycle: [link])
 ⚠️ Issues puladas por ambiguidade (sem critério de aceite claro, plataforma
   sem executor ativo, etc.): [lista ou "nenhuma"]
 ```
