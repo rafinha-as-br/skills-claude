@@ -168,11 +168,17 @@ indicado (nome do repo, remote `origin`). Web e Android sempre saem do
 plataforma. Se o repo não bater com o projeto indicado, pergunte a Rafinha
 o caminho correto.
 
-### 5. Estado limpo antes de trocar de branch
+### 5. Estado limpo e `develop` atualizada antes de testar
 
 Rode `git status` antes de qualquer checkout. Se houver alterações não
 commitadas, pare e pergunte a Rafinha o que fazer com elas — nunca descarte
 sozinho.
+
+Em seguida, `git checkout develop` e `git pull origin develop` — **sempre,
+independente da plataforma** (Web ou Android). O QA testa o estado já
+integrado do sistema (ver "Identidade do papel"), nunca a branch isolada da
+issue; testar contra uma `develop` local desatualizada invalida o resultado
+tanto no build web (`flutter run -d chrome`) quanto no build do APK.
 
 ### 6. Ambiente local sobe via docker compose
 
@@ -266,13 +272,10 @@ Isso faz o `localhost` dentro do emulador apontar de volta para o
 
 Sempre **debug**, sem flavor especial — evita o risco de uma build
 "release" acabar apontando pra um endpoint real de staging/produção em vez
-do backend local:
+do backend local. `develop` já deve estar atualizada pelo pré-requisito
+comum (item 5):
 
 ```
-checkout develop
-       ↓
-git pull origin develop
-       ↓
 adb reverse tcp:<porta> tcp:<porta>   (só se o projeto tiver backend)
        ↓
 flutter build apk --debug
