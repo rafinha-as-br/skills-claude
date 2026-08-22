@@ -212,10 +212,14 @@ atrapalhe o trabalho dele em paralelo.
 > Ver "Status de ativação por plataforma" — nada abaixo executa na Fase 1.
 
 1. Android SDK instalado;
-2. Android Emulator instalado, com **pelo menos um AVD (dispositivo
-   virtual) já configurado**. A skill **nunca cria um AVD sozinha** — se
-   não existir nenhum, ou existir mais de um sem ficar claro qual usar,
-   **pare e peça para Rafinha configurar/indicar o dispositivo virtual**;
+2. Android Emulator instalado, com um AVD (dispositivo virtual) chamado
+   exatamente **`QA - Claude`** — é a convenção padrão desta skill,
+   paralela ao nome de Cycle usado no AIO Tests. Procure esse AVD primeiro
+   e use-o automaticamente sem perguntar. A skill **nunca cria um AVD
+   sozinha** — se o `QA - Claude` não existir (ex.: primeira vez rodando
+   num projeto/máquina nova), **pare e peça para Rafinha criar/indicar o
+   dispositivo virtual**, em vez de escolher outro AVD existente por conta
+   própria;
 3. ADB disponível;
 4. Flutter disponível;
 5. Maestro CLI instalado e no PATH (`maestro --version` deve responder);
@@ -562,7 +566,9 @@ não executada — issue exclusiva de Web").
   aparentemente pequenas.
 * ❌ Nunca tentar testar uma issue Android enquanto o executor Android não
   estiver ativado (Fase 1) — pare e avise Rafinha.
-* ❌ Nunca criar um AVD automaticamente — pare e peça para Rafinha.
+* ❌ Nunca criar um AVD automaticamente, nem escolher um AVD diferente de
+  `QA - Claude` por conta própria quando ele não existir — pare e peça
+  para Rafinha.
 * ❌ Nunca usar coordenadas de tela como estratégia primária de automação
   mobile, nem controle visual de desktop quando o Maestro MCP estiver
   disponível.
