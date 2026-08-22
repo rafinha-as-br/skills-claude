@@ -1,6 +1,6 @@
 ---
 name: jira-issue-executor
-description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Interpreta a hierarquia Épico/Issue/Subtask do item recebido (consultando workflow-development-flow em caso de dúvida) e lê o campo tipo (código/documentação) já definido por jira-issue-creator — só pergunta como fallback se o campo não existir ou estiver ambíguo. Issues de código são implementadas de verdade (branch + commit + code review automatizado via `/code-review` e `/ponytail:ponytail-review` + testes obrigatórios e proporcionais ao risco + push + abertura automática de Pull Request referenciando a Issue do Jira e, quando houver GitHub Issue de origem vinculada no campo Link para GitHub Issue, fechando-a via Closes #N). Grava o link do PR no campo Links para merge e mantém o campo Resumo da issue atualizado com uma versão breve do que foi desenvolvido, além de publicar tudo no comentário \"Implementação Claude\". Issues de documentação são delegadas à business-rule-writer (RN), module-doc-writer (módulo) ou screen-doc-writer (tela/UI). Roda via Claude Code no repositório real dele. Abre o Pull Request automaticamente após o push; mergear continua fora do escopo desta skill."
+description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Interpreta a hierarquia Épico/Issue/Subtask do item recebido (consultando workflow-development-flow em caso de dúvida) e lê o campo tipo (código/documentação) já definido por jira-issue-creator — só pergunta como fallback se o campo não existir ou estiver ambíguo. Issues de código são implementadas de verdade (branch + commit + code review automatizado via `/code-review` e `/ponytail:ponytail-review` + testes obrigatórios e proporcionais ao risco + push + abertura automática de Pull Request referenciando a Issue do Jira e, quando houver GitHub Issue de origem vinculada no campo Link para GitHub Issue, fechando-a via Closes #N). Grava o link do PR no campo Links para merge, mantém o campo Resumo da issue atualizado com uma versão breve do que foi desenvolvido, aplica a label de revisão e, para issues de código, também a label de plataforma (web/mobile, conforme o código tocado) que a jira-qa-executor usa depois para escolher o executor de QA certo, além de publicar tudo no comentário \"Implementação Claude\". Issues de documentação são delegadas à business-rule-writer (RN), module-doc-writer (módulo) ou screen-doc-writer (tela/UI). Roda via Claude Code no repositório real dele. Abre o Pull Request automaticamente após o push; mergear continua fora do escopo desta skill."
 ---
 
 # Executor de Issues — Coluna "Fazer - Claude" (Jira genérico)
@@ -120,7 +120,9 @@ Para cada issue, leia todos os comentários antes de decidir o que fazer:
 - Se **não há** nenhum comentário de review → trate como issue nova (vá
   para o passo 4a).
 - Se **há** comentário de review reprovando o trabalho (ex.: "review
-  reprovada por rafinha" ou "review reprovada por claude") → trate como
+  reprovada por rafinha", "review reprovada por claude", ou "Teste de QA -
+  Claude falharam" — essa última vem da `jira-qa-executor`, quando o QA
+  funcional/visual reprova a issue já integrada em `develop`) → trate como
   correção (vá para o passo 4b).
 - Se **há** um comentário de Rafinha pedindo explicitamente para **segurar**
   a implementação (ex.: "não implementa ainda", "segura essa issue",
@@ -386,10 +388,30 @@ em código ou documentação nesta issue. Se a issue já tinha um `Resumo` de
 uma execução anterior (ex.: retomada após review reprovado), substitua pelo
 estado atual em vez de concatenar texto antigo com novo.
 
-### 8. Label de revisão
+### 8. Labels obrigatórias
 
-Adicione à issue a label/categoria de revisão, para sinalizar a Rafinha que
-aquela issue foi trabalhada por você e precisa de revisão dele.
+**Label de revisão.** Adicione à issue a label/categoria de revisão, para
+sinalizar a Rafinha que aquela issue foi trabalhada por você e precisa de
+revisão dele.
+
+**Label de plataforma — apenas issues de código.** Aplique também o label
+nativo do Jira `web` e/ou `mobile`, indicando em qual(is) plataforma(s) a
+mudança é observável. É o que a `jira-qa-executor` usa depois, na coluna
+"QA - Claude", para escolher o executor de QA certo (Claude in Chrome vs.
+Maestro) sem precisar adivinhar. Regra:
+
+- Mudança em código específico de uma plataforma (ex.: arquivo sob
+  `lib/**/web/`, uso de `kIsWeb`, `Platform.isAndroid`/`Platform.isIOS`,
+  platform channel, ou configuração nativa em `android/`) → label só
+  daquela plataforma.
+- Mudança em código Dart compartilhado, alcançável pelas duas plataformas
+  (o caso mais comum num app Flutter cross-platform) → aplique **os dois**
+  labels (`web` e `mobile`).
+- Só pergunte a Rafinha se ficar genuinamente incerto se o comportamento
+  alterado é observável numa plataforma específica — não deixe de aplicar
+  nenhum label por padrão só por dúvida menor.
+- Não se aplica a issues de documentação (seção 6) — essas nunca passam
+  pela `jira-qa-executor`.
 
 ### 9. Mover a issue para o status correto
 
@@ -445,6 +467,9 @@ aquela issue foi trabalhada por você e precisa de revisão dele.
 - ❌ Nunca deixar de comentar o resumo de autoria ou de aplicar a label de
   revisão — esses dois passos são obrigatórios em toda issue processada
   (exceto as puladas por pedido explícito).
+- ❌ Nunca deixar de aplicar o label de plataforma (`web`/`mobile`) numa
+  issue de código concluída — sem ele, a `jira-qa-executor` não tem como
+  saber qual executor de QA usar depois.
 - ❌ Nunca deixar de gravar o campo `Links para merge` assim que o PR é
   aberto (passo 5.6) — o link não pode existir só dentro do comentário
   "Implementação Claude".
