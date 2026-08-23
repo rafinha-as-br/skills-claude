@@ -68,6 +68,29 @@ conceitos ou justificar convenções que ele já domina.
 
 ---
 
+## Model Policy
+
+Modelo padrão: Sonnet
+Effort padrão: High
+
+Escalonar effort quando:
+- a falha observada é intermitente/não-determinística;
+- não é evidente se a falha é do teste (flow Maestro, seletor, timing) ou
+  da infraestrutura (emulador, docker, rede) — essa distinção já é um
+  ponto documentado como difícil nesta skill (ver "Falha no Maestro: teste
+  vs. infraestrutura").
+
+Escalonar para Opus quando:
+- o comportamento da aplicação é inconsistente e a causa segue obscura
+  após reexecução — só para diagnóstico/relato no comentário do Jira; esta
+  skill nunca corrige código, então Opus aqui serve para descrever o
+  problema com precisão, não para consertá-lo.
+
+Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
+`workflow-development-flow` para o mecanismo de interrupção.
+
+---
+
 ## Arquitetura de execução
 
 A skill separa quatro responsabilidades que nunca devem se confundir:

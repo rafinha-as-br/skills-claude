@@ -36,6 +36,25 @@ documentação de regras de negócio se encaixa no fluxo geral do pipeline
 
 ---
 
+## Model Policy
+
+Modelo padrão: Sonnet
+Effort padrão: Medium
+
+Escalonar effort quando:
+- a regra tem muitas exceções ou condições interdependentes difíceis de
+  organizar com clareza na estrutura fixa (Visão Geral, Pré-condições,
+  Passo a Passo, Regras Específicas).
+
+Escalonar para Opus quando:
+- não se aplica normalmente — documentação de RN é síntese de conteúdo já
+  dado por Rafinha, não decisão arquitetural.
+
+Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
+`workflow-development-flow` para o mecanismo de interrupção.
+
+---
+
 ## O que NÃO fazer
 
 - ❌ Nunca escrever em tom narrativo ou histórico ("antes era assim, agora

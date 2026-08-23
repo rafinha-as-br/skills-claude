@@ -49,6 +49,24 @@ etapa "Documentar" se encaixa no fluxo geral do pipeline.
 
 ---
 
+## Model Policy
+
+Modelo padrão: Sonnet
+Effort padrão: Medium
+
+Escalonar effort quando:
+- a tela tem muitos estados/condicionais de exibição a reconciliar com o
+  que foi observado ao vivo na navegação real.
+
+Escalonar para Opus quando:
+- não se aplica normalmente — documentação de tela descreve o que existe,
+  não decide arquitetura ou fluxo de UX.
+
+Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
+`workflow-development-flow` para o mecanismo de interrupção.
+
+---
+
 ## Quando usar (e quando não)
 
 Use esta skill quando o pedido for sobre **uma tela específica**: criar a

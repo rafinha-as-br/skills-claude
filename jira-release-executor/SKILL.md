@@ -42,6 +42,26 @@ Rafinha — isso é regra central deste ciclo, não uma formalidade.
 
 ---
 
+## Model Policy
+
+Modelo padrão: Sonnet
+Effort padrão: High
+
+Escalonar effort quando:
+- o changelog agrega mudanças de múltiplos módulos com risco real de
+  breaking change, exigindo cuidado ao categorizar a sugestão de SemVer
+  (mesmo a decisão final sendo sempre de Rafinha).
+
+Escalonar para Opus quando:
+- surge uma decisão atípica de estratégia de branch/release sem
+  precedente já coberto pelo Release Lifecycle documentado em
+  `workflow-development-flow`.
+
+Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
+`workflow-development-flow` para o mecanismo de interrupção.
+
+---
+
 ## Pré-requisitos obrigatórios
 
 ### 1. Qual projeto/Jira e repositório

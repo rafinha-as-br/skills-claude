@@ -46,6 +46,26 @@ ou equivalente para interação com Pull Requests e GitHub Actions.
 
 ---
 
+## Model Policy
+
+Modelo padrão: Sonnet
+Effort padrão: Medium
+
+Escalonar effort quando:
+- o merge encontra conflito não-trivial, exigindo entender a lógica de
+  ambos os lados antes de decidir se é mecânico ou semântico.
+
+Escalonar para Opus quando:
+- (raramente necessário aqui) um conflito semântico já tem válvula
+  própria no fluxo — a skill para e devolve a issue para "Análise -
+  Rafinha" em vez de tentar resolver sozinha; não é preciso chegar a
+  recomendar Opus para isso.
+
+Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
+`workflow-development-flow` para o mecanismo de interrupção.
+
+---
+
 ## Pré-requisitos obrigatórios
 
 ### 1. Qual projeto/Jira

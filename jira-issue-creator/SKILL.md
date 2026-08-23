@@ -37,6 +37,24 @@ esses campos definidos.
 
 ---
 
+## Model Policy
+
+Modelo padrão: Sonnet
+Effort padrão: Medium
+
+Escalonar effort quando:
+- a hierarquia (Épico/Issue/Subtask) permanece ambígua mesmo depois de
+  consultar o critério oficial em `workflow-development-flow`.
+
+Escalonar para Opus quando:
+- não se aplica normalmente — criar uma issue é triagem e registro, não
+  decisão arquitetural.
+
+Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
+`workflow-development-flow` para o mecanismo de interrupção.
+
+---
+
 ## Pré-requisito obrigatório: qual projeto/Jira
 
 Se o projeto já estiver claro pelo contexto da conversa (por exemplo, você chamou esta skill dentro de uma conversa já focada em um projeto específico), use esse projeto sem perguntar. Caso contrário, pergunte a Rafinha explicitamente qual projeto/Jira revisar antes de prosseguir — nunca assuma um projeto padrão.

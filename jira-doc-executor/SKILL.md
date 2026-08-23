@@ -42,6 +42,26 @@ qual skill — sem explicar conceitos que ele já domina.
 
 ---
 
+## Model Policy
+
+Modelo padrão: Sonnet
+Effort padrão: Medium
+
+Escalonar effort quando:
+- o mapeamento issue → página afetada não é óbvio (múltiplas páginas
+  candidatas), exigindo análise mais cuidadosa antes de confirmar com
+  Rafinha qual foi impactada.
+
+Escalonar para Opus quando:
+- não se aplica normalmente — esta skill só analisa impacto e delega,
+  nunca escreve conteúdo nem decide sozinha uma ambiguidade real (isso já
+  vai para Rafinha, não para um modelo mais caro).
+
+Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
+`workflow-development-flow` para o mecanismo de interrupção.
+
+---
+
 ## Pré-requisito: qual projeto/Jira
 
 Se já estiver claro pelo contexto da conversa, use sem perguntar. Caso

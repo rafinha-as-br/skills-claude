@@ -43,6 +43,30 @@ sem explicar conceitos ou convenções que ele já domina.
 
 ---
 
+## Model Policy
+
+Modelo padrão: Opus
+Effort padrão: High
+
+Esta é a auditoria final antes de "Concluído" — o padrão já parte de Opus
+(não do Sonnet + High global), conforme a tabela de natureza de atividade
+da Model Escalation Policy ("Auditoria final → Opus/High") em
+`workflow-development-flow`: o risco de deixar passar um problema para
+produção é maior aqui do que numa implementação comum.
+
+Escalonar effort quando:
+- há inconsistências cruzadas entre múltiplas issues da mesma sprint que
+  interagem entre si, exigindo comparação entre elas antes de aprovar.
+
+Escalonar para Opus + XHigh quando:
+- (exceção) a auditoria envolve alto risco arquitetural e Opus + High já
+  foi considerado insuficiente para uma conclusão confiável.
+
+Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
+`workflow-development-flow` para o mecanismo de interrupção.
+
+---
+
 ## Onde esta skill se encaixa no fluxo completo
 
 Esta é a última camada antes de "Concluído", num pipeline maior de

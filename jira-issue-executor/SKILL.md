@@ -62,6 +62,28 @@ Confluence (quando a issue for de documentação).
 
 ---
 
+## Model Policy
+
+Modelo padrão: Sonnet
+Effort padrão: High
+
+Escalonar effort quando:
+- a issue toca múltiplas camadas ou arquivos com abordagens de
+  implementação concorrentes plausíveis, exigindo comparação antes de
+  escrever código;
+- o diagnóstico de uma falha de teste/CI não é evidente na primeira
+  análise.
+
+Escalonar para Opus quando:
+- a implementação exige mudar um contrato entre camadas (Controller/
+  Repository/Service) ou qualquer decisão arquitetural real — não apenas
+  um arquivo grande ou muitos arquivos mecânicos.
+
+Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
+`workflow-development-flow` para o mecanismo de interrupção.
+
+---
+
 ## Pré-requisitos obrigatórios
 
 ### 1. Qual projeto/Jira

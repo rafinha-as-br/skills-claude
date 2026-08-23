@@ -580,6 +580,189 @@ coluna, já que Release não é uma etapa do issue workflow).
 
 ---
 
+## 11. Model Escalation Policy
+
+Política única de modelo (Sonnet/Opus) e effort (Medium/High/XHigh) para
+todas as skills do workflow. Objetivo: economizar quota sem reduzir
+qualidade nas etapas que realmente exigem raciocínio elevado.
+
+### 11.1 Princípio geral
+
+```text
+Configuração padrão da skill
+        ↓
+Execução normal
+        ↓
+Claude avalia a complexidade encontrada
+        ↓
+Complexidade compatível?
+    ┌───────┴───────┐
+    │               │
+   SIM             NÃO
+    │               │
+    ↓               ↓
+Continua       Interrompe
+                    ↓
+             Explica o motivo
+                    ↓
+             Recomenda configuração
+                    ↓
+             Aguarda Rafinha
+                    ↓
+          Rafinha altera manualmente
+                    ↓
+               Continua
+```
+
+Identificar a necessidade de escalonamento é responsabilidade de Claude.
+Decidir se aceita é sempre responsabilidade de Rafinha. **Claude nunca
+troca de modelo ou effort sozinho** — nem automaticamente, nem "por
+hábito", nem porque a tarefa é grande.
+
+### 11.2 Configuração padrão global
+
+```text
+Modelo: Sonnet
+Effort: High
+```
+
+Uma skill pode declarar um padrão diferente quando sua natureza
+operacional justificar (ver tabela 11.6) — isso não é escalonamento, é
+configuração de repouso daquela skill. Nenhuma skill deve usar Opus como
+padrão só porque a tarefa *pode* ficar complexa eventualmente.
+
+### 11.3 Hierarquia de escalonamento
+
+```text
+Nível 0 — Sonnet + Medium
+        ↓
+Nível 1 — Sonnet + High
+        ↓
+Nível 2 — Sonnet + XHigh
+        ↓
+Nível 3 — Opus + High
+        ↓
+Nível 4 — Opus + XHigh
+```
+
+Preferir subir effort antes de trocar de modelo, enquanto o Sonnet ainda
+for adequado ao tipo de raciocínio exigido. Só recomendar troca de modelo
+quando o problema exigir uma capacidade de raciocínio que o effort, por si
+só, não cobre.
+
+### 11.4 Quando escalar effort (Sonnet permanece adequado)
+
+Considerar quando a execução encontrar: múltiplas abordagens plausíveis
+que exigem comparação; comportamento não-determinístico; causa raiz
+difícil de isolar; dependências entre vários arquivos/módulos; risco
+real de solução incorreta sem raciocínio mais longo; tentativas repetidas
+de análise sem conclusão confiável.
+
+### 11.5 Quando escalar para Opus
+
+Considerar quando aumentar o effort do Sonnet provavelmente não resolve:
+decisão arquitetural significativa; refatoração transversal a vários
+módulos; mudança em contratos/responsabilidades arquiteturais; debugging
+extremamente difícil após investigação adequada; comparação entre
+estratégias com consequências técnicas relevantes; auditoria que exige
+achar inconsistências difíceis de detectar.
+
+**Opus + XHigh é exceção**, não o próximo passo automático depois de Opus
++ High: só quando o problema for extremamente complexo, de alto impacto
+arquitetural, com Sonnet + XHigh e Opus + High já considerados
+insuficientes.
+
+**Nunca** contam sozinhos como motivo de escalonamento: quantidade de
+arquivos, de linhas, de comandos, de mensagens, duração da tarefa, ou o
+tamanho da issue/Épico. Esses fatores podem contribuir, mas a decisão é
+sobre dificuldade de raciocínio e risco técnico, não sobre volume.
+
+### 11.6 Configuração padrão por natureza de atividade
+
+| Tipo de atividade | Modelo | Effort |
+|---|---|---|
+| Implementação comum | Sonnet | High |
+| Implementação simples | Sonnet | Medium |
+| Implementação complexa | Sonnet | XHigh |
+| Arquitetura complexa | Opus | High |
+| Debugging difícil | Opus | High |
+| Refatoração transversal | Opus | High |
+| Integração mecânica | Sonnet | Medium |
+| QA comum | Sonnet | High |
+| QA complexo | Sonnet | XHigh |
+| Documentação | Sonnet | Medium |
+| Auditoria final | Opus | High |
+
+Orientação geral — uma skill pode sobrescrevê-la com justificativa
+explícita na sua própria seção `## Model Policy`.
+
+### 11.7 Formato da interrupção
+
+Ao identificar necessidade de escalonamento, Claude para **antes** de
+continuar a parte que depende do raciocínio adicional (nunca depois de já
+ter gasto o esforço extra) e apresenta:
+
+```text
+ESCALONAMENTO NECESSÁRIO
+
+Motivo:
+[explicação objetiva do problema]
+
+Configuração atual:
+- Modelo: [modelo]
+- Effort: [effort]
+
+Configuração recomendada:
+- Modelo: [modelo recomendado]
+- Effort: [effort recomendado]
+
+Impacto esperado:
+[qual parte da tarefa depende desse escalonamento]
+
+Aguardando Rafinha alterar manualmente a configuração.
+```
+
+Depois da mensagem, Claude para e aguarda. A troca pode acontecer na
+mesma sessão (sem precisar reiniciar contexto) — Rafinha altera modelo/
+effort na configuração do Claude Code e pede para continuar.
+
+### 11.8 Depois que Rafinha aceita um escalonamento
+
+Claude tenta concluir a tarefa normalmente na nova configuração — não
+pede novos escalonamentos repetidamente sem evidência concreta. Se mesmo
+em Opus + XHigh o problema continuar sem solução segura, Claude
+interrompe e devolve a decisão técnica a Rafinha, em vez de insistir
+consumindo mais quota.
+
+### 11.9 O que cada skill declara
+
+Cada skill do pipeline declara sua própria política de repouso numa
+seção `## Model Policy` logo após `## Identidade do papel`, neste
+formato:
+
+```markdown
+## Model Policy
+
+Modelo padrão: [Sonnet ou Opus]
+Effort padrão: [Medium/High/XHigh]
+
+Escalonar effort quando:
+- [critério específico da skill]
+
+Escalonar para Opus quando:
+- [critério específico da skill]
+
+Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
+`workflow-development-flow` para o mecanismo de interrupção.
+```
+
+A política local complementa esta seção global — não pode removê-la.
+Skills fora do pipeline de execução Jira (ex.: checklists consultados por
+outra skill, ou assistentes pessoais fora deste workflow) não precisam
+declarar seção própria; herdam o modelo/effort de quem as invoca.
+
+---
+
 ## Quando Rafinha aciona esta skill diretamente
 
 Perguntas do tipo:

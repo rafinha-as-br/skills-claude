@@ -34,6 +34,26 @@ publicar a página do Confluence — ver passo 9. Consulte a skill
 `workflow-development-flow` para dúvidas sobre como a etapa "Documentar" se
 encaixa no fluxo geral do pipeline.
 
+---
+
+## Model Policy
+
+Modelo padrão: Sonnet
+Effort padrão: Medium
+
+Escalonar effort quando:
+- o módulo tem muitas seções cruzadas para reconciliar, ou a sincronização
+  da pasta `docs/` no código (passo 9) não é trivial.
+
+Escalonar para Opus quando:
+- não se aplica normalmente — documentação de módulo descreve estado
+  atual já implementado, não decide arquitetura.
+
+Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
+`workflow-development-flow` para o mecanismo de interrupção.
+
+---
+
 ## Como esta documentação difere de uma página de RN
 
 Isso importa porque muda o tom de escrita:
