@@ -139,6 +139,23 @@ Para cada issue, revise:
   no que foi implementado frente ao que a documentação exige.
 - **Se a documentação foi devidamente atualizada**, caso o escopo da issue
   exigisse isso.
+- **O estado da Validação Manual vinculada**, quando existir. Localize-a
+  pelos links `Relates` da issue (ela é a issue relacionada com a label/
+  categoria `validacao-humana` — nunca a identifique pelo tipo de issue) e
+  verifique:
+  - a validação existe? Uma issue que chegou aqui sem ter passado por
+    validação humana **não é motivo automático de reprovação** (ela pode
+    ter vindo por um fluxo anterior à camada), mas registre isso no
+    comentário de aprovação;
+  - ela está em `Concluído` com comentário `validação humana aprovada`?
+  - ela ainda carrega a label `validacao-reprovada`, ou tem cenário
+    reprovado em aberto?
+  - as issues corretivas que ela originou já foram concluídas?
+
+  Validação vinculada ainda reprovada, aberta com cenário pendente, ou com
+  issue corretiva em aberto → **reprovação** (passo 3b). Uma Validação
+  Manual reprovada não é considerada resolvida só porque a rodada de
+  testes terminou.
 
 ### 3. Decidir o resultado da revisão
 
@@ -193,6 +210,13 @@ documentação faltante:
   desse texto para funcionar.
 - ❌ Nunca aprovar uma issue sem checar também a documentação relacionada,
   quando o escopo da issue envolvia documentação.
+- ❌ Nunca concluir uma issue cuja Validação Manual vinculada ainda esteja
+  reprovada, aberta com cenário pendente, ou com issue corretiva não
+  concluída — nem quando a validação tiver sido "encerrada" sem que todos
+  os problemas fossem tratados.
+- ❌ Nunca executar, aprovar ou reprovar uma Validação Manual — isso é
+  `jira-human-validation-executor`, e o veredito é sempre de Rafinha. Aqui
+  você só confere o estado dela.
 - ❌ Nunca pular a identificação do projeto/Jira quando não estiver claro
   pelo contexto.
 - ❌ Nunca escrever o comentário de reprovação sem antes perguntar a

@@ -19,6 +19,8 @@ flowchart LR
 
 `workflow-development-flow` é a skill mãe: não executa nada, apenas responde "em qual etapa uma issue está" ou "o que vem depois de X" para as demais. Release & Versionamento (SemVer, tags, GitHub Release) é um ciclo separado, acionado sob demanda — nunca uma coluna do board.
 
+**Validação Humana Agregada.** A unidade de implementação é a Issue, mas a unidade de aceitação humana pode agregar várias: antes da `Análise final - Rafinha`, a `jira-human-validation-executor` varre a coluna, agrupa as issues por comportamento funcional e cria *Validações Manuais* contendo só os cenários que ainda exigem julgamento humano — nada do que o QA já automatizou volta como passo. Não é uma coluna nova nem um status novo, e não substitui QA, code review ou auditoria.
+
 ## Skills
 
 ### Pipeline Jira
@@ -31,6 +33,7 @@ flowchart LR
 | [`jira-integration-executor`](jira-integration-executor/SKILL.md) | Faz o merge real para `develop`, validando GitHub Actions e conflitos antes. |
 | [`jira-qa-executor`](jira-qa-executor/SKILL.md) | QA funcional/visual — Chrome real para Web, Maestro para Android — com evidências no AIO Tests. |
 | [`jira-doc-executor`](jira-doc-executor/SKILL.md) | Identifica qual documentação foi impactada e delega para a skill de escrita certa. |
+| [`jira-human-validation-executor`](jira-human-validation-executor/SKILL.md) | Agrupa as issues por comportamento e gera as Validações Manuais — só os cenários que exigem julgamento humano. Registra o veredito e roteia reprovações. |
 | [`jira-review-executor`](jira-review-executor/SKILL.md) | Auditoria final antes de "Concluído". |
 | [`jira-release-executor`](jira-release-executor/SKILL.md) | Prepara e publica releases (SemVer, changelog, tag, GitHub Release). |
 

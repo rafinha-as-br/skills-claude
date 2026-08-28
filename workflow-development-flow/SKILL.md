@@ -1,11 +1,11 @@
 ---
 name: "workflow-development-flow"
-description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, e o ciclo de Release & Versionamento (SemVer, Fix Version, Release Lifecycle) — um ciclo separado do workflow de issue, nunca uma coluna do Jira. Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
+description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo de Release & Versionamento (SemVer, Fix Version, Release Lifecycle) — um ciclo separado do workflow de issue, nunca uma coluna do Jira — e a camada de Validação Humana Agregada (a unidade de aceitação humana pode agregar várias Issues; seção 12). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
 ---
 
 ---
 name: workflow-development-flow
-description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, e o ciclo de Release & Versionamento (SemVer, Fix Version, Release Lifecycle) — um ciclo separado do workflow de issue, nunca uma coluna do Jira. Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
+description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo de Release & Versionamento (SemVer, Fix Version, Release Lifecycle) — um ciclo separado do workflow de issue, nunca uma coluna do Jira — e a camada de Validação Humana Agregada (a unidade de aceitação humana pode agregar várias Issues; seção 12). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
 ---
 
 # Fluxo de Desenvolvimento — Skill Mãe (Rafinha + Claude)
@@ -16,12 +16,14 @@ Esta é a **skill mãe** do workflow de desenvolvimento, revisão, integração,
 QA e documentação de Rafinha e Claude. Ela guarda o vocabulário e o mapa do
 processo que todas as demais skills do pipeline (`jira-issue-creator`,
 `jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`,
-`jira-doc-executor`, `jira-review-executor`, `business-rule-writer`,
-`module-doc-writer`, `screen-doc-writer`, `jira-release-executor`)
+`jira-doc-executor`, `jira-human-validation-executor`,
+`jira-review-executor`, `business-rule-writer`, `module-doc-writer`,
+`screen-doc-writer`, `jira-release-executor`)
 referenciam quando precisam entender em qual etapa uma issue está, o que
 vem antes ou depois, o que uma etapa deve produzir, ou o que fazer diante
 de incerteza sobre o fluxo — incluindo o ciclo separado de Release &
-Versionamento (seção 10).
+Versionamento (seção 10) e a camada de Validação Humana Agregada
+(seção 12).
 
 **Esta skill nunca executa ação nenhuma sozinha** — não cria, não move, não
 comenta e não transiciona issues no Jira; não escreve página no Confluence;
@@ -329,6 +331,14 @@ confirmação de comportamento e regra de negócio, aceitação ou rejeição.
 - **Reprovação** → volta direto para `Fazer - Claude`, com o problema
   encontrado registrado.
 
+**Preparação por Validação Humana Agregada (seção 12).** Quando existir uma
+`Validação Manual` cobrindo a issue, Rafinha executa esta etapa **a partir
+dela**, e não issue por issue: os cenários, as pré-condições e os pontos de
+observação já vêm prontos, e a aprovação/reprovação vale para todas as
+issues agregadas de uma vez. A pergunta central da etapa não muda; o que
+muda é que ele não precisa reconstituir o contexto de cada issue para
+responder a ela.
+
 **Resultado esperado:** `Pronto para Análise Final - Claude`
 
 ### 5.7 Análise final - Claude
@@ -339,7 +349,11 @@ confirmação de comportamento e regra de negócio, aceitação ou rejeição.
 Verifica: testes faltantes, documentação inconsistente, requisitos não
 atendidos, pendências não resolvidas, detalhes esquecidos, divergência
 entre implementação e documentação, divergência entre documentação do
-código e Confluence, evidências ausentes das etapas anteriores. Não
+código e Confluence, evidências ausentes das etapas anteriores, **e o
+estado da Validação Manual vinculada** (seção 12) — se existe, se foi
+aprovada, se há cenário reprovado em aberto, se há issue corretiva
+pendente. Uma Validação Manual reprovada não é considerada resolvida só
+porque a rodada de testes terminou. Não
 implementa correções automaticamente — pendência que exija decisão de
 Rafinha interrompe a conclusão e solicita a decisão.
 
@@ -763,6 +777,129 @@ declarar seção própria; herdam o modelo/effort de quem as invoca.
 
 ---
 
+## 12. Validação Humana Agregada
+
+Camada que prepara a etapa `Análise final - Rafinha` (seção 5.6). Não é
+uma etapa nova, não é uma coluna nova, e não altera a hierarquia
+Épico → Issue → Subtask (seção 1).
+
+### 12.1 O princípio
+
+> **A unidade de implementação é a Issue; a unidade de aceitação humana
+> pode agregar múltiplas Issues que alterem o mesmo comportamento
+> funcional.**
+
+Várias Issues podem ter sido implementadas, integradas, testadas e
+documentadas separadamente e, ainda assim, representarem um único
+comportamento do ponto de vista de quem usa o produto. Nesse caso, aceitar
+esse comportamento uma vez é mais fiel — e mais barato — do que aceitar
+cada Issue isoladamente.
+
+### 12.2 O que a Validação Manual é e o que não é
+
+A `Validação Manual` é uma **unidade de aceitação humana**: o conjunto
+mínimo de cenários que ainda exigem julgamento e observação de Rafinha,
+depois de tudo o que as camadas automatizadas já cobriram.
+
+Ela **não** substitui `Análise - Rafinha` (code review), `Integração`,
+`QA - Claude`, nem `Análise final - Claude`. Ela também **não** é uma
+funcionalidade, uma Story, uma etapa de implementação, nem um novo QA.
+
+```text
+QA - Claude              "o sistema integrado continua funcionando?"
+Validação Humana         "esse comportamento está aceitável como produto?"
+```
+
+Nenhum dos dois substitui o outro. O que a Validação Humana elimina é a
+**repetição** do que já foi testado — não o julgamento humano.
+
+> **Regra explícita:** a existência de uma Validação Manual não significa
+> que Rafinha precise reexecutar os testes que o Claude já executou. O
+> objetivo é cobertura automatizada **mais** julgamento humano dirigido,
+> nunca QA automatizado **mais** repetição manual completa.
+
+E a recíproca também vale: uma Issue sem cenário observável não deixa de
+ser aceita — ela entra numa validação de lote com a justificativa de por
+que não gera cenário. Reduzir repetição nunca significa reduzir a
+responsabilidade de Rafinha sobre a aceitação do produto (princípio 10 da
+seção 2).
+
+### 12.3 Identidade própria
+
+Uma Validação Manual **não é Subtask** de nenhuma Issue. Ela precisa de
+ciclo de vida próprio porque agrega várias Issues, sobrevive a múltiplas
+tentativas de validação, registra o feedback humano e pode originar Issues
+corretivas.
+
+Onde ela vive:
+
+| Aspecto | Convenção |
+|---|---|
+| Tipo (Jira) | `Validação Manual` onde o tipo existir; senão, `Tarefa` |
+| Identificação por máquina | label (categoria) `validacao-humana` — **nunca** o tipo |
+| Título | `Validação Manual — <fluxo funcional>` |
+| Chave | a do próprio projeto (`CPS-121`); não existe projeto `VAL` |
+| Coluna | nasce em `Análise final - Rafinha`, termina em `Concluído` |
+| Rastreabilidade | link `Relates` para cada Issue agregada |
+
+Os cinco estados possíveis mapeiam sem criar status novo: *pendente* e *em
+validação* = aberta em `Análise final - Rafinha`; *aprovada* = movida para
+`Concluído`; *reprovada* = continua aberta, com a label
+`validacao-reprovada`; *bloqueada* = label `validacao-bloqueada`.
+
+### 12.4 Quando é gerada
+
+Por **varredura em lote** da coluna `Análise final - Rafinha`, sob demanda,
+executada pela `jira-human-validation-executor`. Nunca por issue
+individual ao fim da etapa `Documentar` — agregação exige lote, e disparar
+por issue produziria uma validação para cada uma, que é exatamente o que
+esta camada existe para evitar.
+
+### 12.5 Reprovação
+
+```text
+Validação Manual reprovada
+        ↓
+classificar o problema (Claude propõe, Rafinha decide)
+        ↓
+┌───────────────────────┬───────────────────────┐
+│ pertence ao escopo    │ fora do escopo        │
+│ de uma Issue agregada │ original              │
+│        ↓              │        ↓              │
+│ a Issue original      │ nova Issue de         │
+│ volta para            │ implementação,        │
+│ Fazer - Claude        │ ligada à validação    │
+└───────────────────────┴───────────────────────┘
+        ↓
+workflow normal
+        ↓
+nova tentativa da MESMA Validação Manual
+```
+
+Regras que não podem ser violadas:
+
+- A Validação Manual **nunca vira Issue de implementação**.
+- Problema que já era escopo de uma Issue existente **não gera Issue
+  nova** — a Issue original continua sendo a unidade correta de
+  implementação, e reabri-la preserva a rastreabilidade.
+- Reprovação **não gera Subtask**. Subtask continua sendo apenas
+  decomposição interna de uma Issue (seção 1).
+- A mesma Validação Manual registra **todas** as tentativas. Ela é o
+  registro persistente da aceitação humana daquele comportamento, não um
+  ticket descartável.
+
+### 12.6 Efeito nas etapas existentes
+
+| Etapa | O que muda |
+|---|---|
+| `Documentar` | Nada. Continua movendo a issue para `Análise final - Rafinha`. |
+| `Análise final - Rafinha` | Quando existe validação, Rafinha executa a partir dela (seção 5.6). |
+| `Análise final - Claude` | Passa a auditar também o estado da validação vinculada (seção 5.7). |
+| `Fazer - Claude` | Reconhece `validação humana reprovada` como gatilho de correção, ao lado de `review reprovada por…`. |
+| Demais etapas | Nada. |
+
+---
+
 ## Quando Rafinha aciona esta skill diretamente
 
 Perguntas do tipo:
@@ -773,6 +910,8 @@ Perguntas do tipo:
 - "Qual a diferença entre o que a pipeline valida e o que o QA valida?"
 - "Como funciona o ciclo de release?" / "Quando uma issue concluída vira
   uma versão?"
+- "O que é uma Validação Manual?" / "Ela substitui o QA?" / "O que acontece
+  quando eu reprovo uma validação?"
 - Qualquer dúvida sobre nomenclatura de colunas, ordem das etapas, ou
   regra de bloqueio de avanço.
 
