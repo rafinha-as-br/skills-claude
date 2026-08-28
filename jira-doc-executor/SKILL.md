@@ -144,6 +144,12 @@ Publique um comentário na issue com:
 Sempre para **"Análise final - Rafinha"**, independentemente de ter havido
 delegação ou não.
 
+Lá a issue **aguarda a varredura de Validação Humana Agregada** (skill
+`jira-human-validation-executor`), que agrupa as issues da coluna por
+comportamento funcional. Não crie nem proponha Validação Manual aqui — a
+agregação exige o lote inteiro, e disparar por issue produziria uma
+validação para cada uma.
+
 ---
 
 ## O que NÃO fazer

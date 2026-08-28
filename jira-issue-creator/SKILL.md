@@ -78,6 +78,21 @@ rascunho do passo 5 e é gravado, **sem exceção**, no campo `Link para
 GitHub Issue` ao criar a issue (passo 7). As perguntas abaixo continuam se
 aplicando normalmente; só a origem do "do que se trata" muda.
 
+**Gatilho de origem — Validação Manual.** Se a necessidade nasceu de um
+problema encontrado por Rafinha durante uma `Validação Manual` e
+classificado como **fora do escopo** das issues agregadas (requisito novo,
+comportamento não previsto, melhoria, ou defeito sem origem atribuível),
+use o cenário reprovado e o feedback dele como base do rascunho. Guarde a
+chave da Validação Manual — ao criar a issue (passo 7), grave um link
+`Relates` para ela, **sem exceção**. É esse link que permite auditar
+depois, na `Análise final - Claude`, se todos os problemas levantados por
+aquela validação foram tratados.
+
+Nunca crie issue nova para um problema classificado como **pertencente ao
+escopo original** de uma issue já existente — nesse caso a issue original
+é reaberta pela `jira-human-validation-executor`, e criar uma issue nova
+quebraria a rastreabilidade.
+
 Verifique o que já está respondido pelo que ele escreveu (ou pelo conteúdo
 da GitHub Issue, quando for o caso):
 
@@ -154,7 +169,7 @@ Descrição:
 
 Labels: [labels propostas]
 Destino: [Backlog | Sprint atual] — [se foi Rafinha quem definiu ou se foi decidido automaticamente, e por quê]
-Origem: [GitHub Issue #N (link), se aplicável | Chat]
+Origem: [GitHub Issue #N (link) | Validação Manual CHAVE (cenário reprovado) | Chat]
 ```
 
 Apresente esse rascunho a Rafinha e **aguarde a aprovação dele antes de
@@ -213,6 +228,13 @@ breve do que foi registrado.
 - ❌ Nunca deixar de gravar o campo `Link para GitHub Issue` quando a issue
   teve origem numa GitHub Issue (passo 1) — sem ele, `jira-issue-executor`
   não consegue referenciá-la no PR nem fechá-la automaticamente.
+- ❌ Nunca deixar de criar o link `Relates` para a Validação Manual quando
+  a issue nasceu de um problema fora do escopo encontrado nela (passo 1) —
+  sem ele, a `jira-review-executor` não consegue auditar se a validação foi
+  inteiramente tratada.
+- ❌ Nunca criar issue nova para um problema de Validação Manual que
+  pertence ao escopo original de uma issue existente — a issue original é
+  reaberta, não substituída.
 - ❌ Nunca, sob nenhuma circunstância, implementar código, escrever
   documentação, ou fazer qualquer trabalho além de criar a issue — mesmo que
   Rafinha peça isso na sequência da mesma mensagem. Essa é a regra mais

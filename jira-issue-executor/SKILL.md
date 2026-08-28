@@ -142,10 +142,21 @@ Para cada issue, leia todos os comentários antes de decidir o que fazer:
 - Se **não há** nenhum comentário de review → trate como issue nova (vá
   para o passo 4a).
 - Se **há** comentário de review reprovando o trabalho (ex.: "review
-  reprovada por rafinha", "review reprovada por claude", ou "Teste de QA -
-  Claude falharam" — essa última vem da `jira-qa-executor`, quando o QA
-  funcional/visual reprova a issue já integrada em `develop`) → trate como
-  correção (vá para o passo 4b).
+  reprovada por rafinha", "review reprovada por claude", "Teste de QA -
+  Claude falharam" — essa vem da `jira-qa-executor`, quando o QA
+  funcional/visual reprova a issue já integrada em `develop` — ou
+  "validação humana reprovada" — essa vem da
+  `jira-human-validation-executor`, quando Rafinha reprova um cenário de
+  uma Validação Manual que agrega esta issue) → trate como correção (vá
+  para o passo 4b).
+
+  **No caso da validação humana**, o comentário aponta a Validação Manual
+  de origem, o cenário reprovado e o feedback de Rafinha. Leia a
+  validação vinculada antes de corrigir: o problema foi classificado como
+  pertencente ao escopo **desta** issue, então a correção é aqui — não
+  crie issue nova nem subtask para ela. Depois de corrigida, a issue
+  segue o fluxo normal e a **mesma** Validação Manual ganha uma nova
+  tentativa quando ela voltar a `Análise final - Rafinha`.
 - Se **há** um comentário de Rafinha pedindo explicitamente para **segurar**
   a implementação (ex.: "não implementa ainda", "segura essa issue",
   "aguardar resolução de dependência") → **não implemente nada**. Deixe a
