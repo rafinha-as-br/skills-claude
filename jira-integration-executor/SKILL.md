@@ -94,6 +94,15 @@ trabalho:
   seguido de esquecimento, etc.) alterações não commitadas sem confirmação
   explícita dele.
 
+### 4. Recovery Check (Execution State)
+
+Antes de processar uma issue (passo 2), verifique se existe
+`.claude/execution-state/{CHAVE}.md` — arquivo **local, nunca commitado**
+nesta etapa (ela opera direto sobre a branch da issue e depois sobre
+`develop`, sem branch isolada própria para ancorar um commit). Ver
+`workflow-development-flow`, seção 13, para o mecanismo completo e o
+motivo de não commitar aqui.
+
 ---
 
 ## Passo a passo geral
@@ -150,8 +159,10 @@ Resultado:
   → resolva sozinha, registrando no comentário da issue exatamente o que
   foi reconciliado.
 - **Conflito semântico real** (duas implementações incompatíveis da mesma
-  lógica) → **pare e pergunte a Rafinha**, mostrando os trechos em
-  conflito, antes de decidir qual versão prevalece ou como combiná-las.
+  lógica) → grave `.claude/execution-state/{CHAVE}.md` com
+  `Estado: AGUARDANDO_RAFINHA` e os trechos em conflito em "Bloqueios",
+  depois **pare e pergunte a Rafinha**, mostrando os trechos em conflito,
+  antes de decidir qual versão prevalece ou como combiná-las.
 
 Depois de qualquer resolução de conflito (mecânica ou semântica):
 - `git push` normal (**nunca `--force`**).
@@ -194,6 +205,10 @@ comentário deve conter:
   (pré-requisito) → **não mova**, deixe onde está, e destaque isso no
   resumo final.
 
+Em qualquer caso que mova a issue (sucesso ou devolução), apague
+`.claude/execution-state/{CHAVE}.md` se existir — a partir daqui, Jira e
+Git já são a fonte de verdade permanente.
+
 ---
 
 ## O que NÃO fazer
@@ -221,6 +236,12 @@ comentário deve conter:
   do QA - Claude.
 - ❌ Nunca pular a pergunta sobre qual projeto/Jira processar, nem sobre o
   repositório de código quando não estiver claro.
+- ❌ Nunca commitar `.claude/execution-state/{CHAVE}.md` — esta etapa opera
+  sobre `develop`, e commitar cairia na regra de nunca commitar direto no
+  trunk (ver seção 13.3 de `workflow-development-flow`).
+- ❌ Nunca confiar cegamente num Execution State encontrado — sempre
+  reconciliar com o estado real do Git/GitHub/Jira antes de continuar a
+  partir dele.
 
 ---
 

@@ -117,6 +117,15 @@ específico), use esse projeto sem perguntar. Caso contrário, pergunte a
 Rafinha explicitamente qual projeto/Jira revisar antes de prosseguir — nunca
 assuma um projeto padrão.
 
+## Recovery Check (Execution State)
+
+Antes de revisar uma issue (passo 2), verifique se existe
+`.claude/execution-state/{CHAVE}.md` — sobretudo relevante para o passo 3b
+(reprovação), onde a skill já parou uma vez esperando decisão de Rafinha no
+chat: se a sessão morrer nesse meio-tempo, o arquivo evita reabrir a
+investigação do zero. Arquivo **local, nunca commitado** (esta etapa não
+trabalha em branch isolada). Ver `workflow-development-flow`, seção 13.
+
 ---
 
 ## Passo a passo
@@ -166,20 +175,25 @@ Se não há nenhuma ponta solta ou pendência:
 1. Comente na issue: **"claude review aprovado"**, com um breve resumo do
    que foi conferido.
 2. Mova o ticket para **"Concluído"**.
+3. Apague `.claude/execution-state/{CHAVE}.md` se existir — o Jira já é o
+   registro permanente a partir daqui.
 
 #### 3b. Issue reprovada (há pendência ou necessidade de decisão)
 
 Se há qualquer ponta solta, ambiguidade, divergência com a documentação, ou
 documentação faltante:
 
-1. **Antes de escrever qualquer comentário na issue**, pare o fluxo e
-   pergunte a Rafinha, no chat, sobre a(s) pendência(s) encontrada(s) nessa
-   issue especificamente — não acumule para o final, pergunte issue por
-   issue, assim que uma reprovação é identificada. Para cada pendência,
-   explique com clareza o que foi observado e pergunte objetivamente o que
-   deve ser feito a respeito (ex.: qual das opções seguir, se é para
-   corrigir de um jeito específico, ignorar, ajustar a documentação, etc.).
-   Espere a resposta dele antes de prosseguir.
+1. **Antes de escrever qualquer comentário na issue**, grave
+   `.claude/execution-state/{CHAVE}.md` com `Estado: AGUARDANDO_RAFINHA` e
+   a(s) pendência(s) já observada(s) em "Bloqueios / decisões pendentes de
+   Rafinha", depois pare o fluxo e pergunte a Rafinha, no chat, sobre a(s)
+   pendência(s) encontrada(s) nessa issue especificamente — não acumule
+   para o final, pergunte issue por issue, assim que uma reprovação é
+   identificada. Para cada pendência, explique com clareza o que foi
+   observado e pergunte objetivamente o que deve ser feito a respeito
+   (ex.: qual das opções seguir, se é para corrigir de um jeito específico,
+   ignorar, ajustar a documentação, etc.). Espere a resposta dele antes de
+   prosseguir.
 2. Só depois de ter a decisão de Rafinha, comente na issue descrevendo
    **o que foi revisado, qual a pendência encontrada, e a decisão que
    Rafinha já tomou a respeito** — de forma clara o suficiente para que,
@@ -193,6 +207,8 @@ documentação faltante:
    Rafinha já foi obtida no chat (item 1, antes mesmo de escrever o
    comentário), não há necessidade de uma parada intermediária adicional:
    a issue já pode seguir direto para a fila de execução.
+5. Apague `.claude/execution-state/{CHAVE}.md` se existir — o comentário
+   já registra a pendência e a decisão de forma permanente.
 
 ---
 
@@ -222,6 +238,12 @@ documentação faltante:
 - ❌ Nunca escrever o comentário de reprovação sem antes perguntar a
   Rafinha, no chat e issue por issue (nunca em lote no final), o que deve
   ser feito a respeito de cada pendência encontrada.
+- ❌ Nunca commitar `.claude/execution-state/{CHAVE}.md` — esta skill não
+  opera em branch isolada; o arquivo é sempre local (ver seção 13.3 de
+  `workflow-development-flow`).
+- ❌ Nunca confiar cegamente num Execution State encontrado — sempre
+  reconciliar com o estado real do Jira/Confluence antes de continuar a
+  partir dele.
 
 ---
 

@@ -67,6 +67,15 @@ Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
 Se já estiver claro pelo contexto da conversa, use sem perguntar. Caso
 contrário, pergunte a Rafinha explicitamente antes de prosseguir.
 
+## Recovery Check (Execution State)
+
+Antes de processar uma issue (passo 2), verifique se existe
+`.claude/execution-state/{CHAVE}.md` — útil sobretudo quando a issue gera
+mais de uma delegação (passo 4) e a execução é interrompida no meio.
+Arquivo **local, nunca commitado** (esta etapa não trabalha em branch
+isolada). Ver `workflow-development-flow`, seção 13, para o mecanismo
+completo.
+
 ---
 
 ## Passo a passo
@@ -129,6 +138,11 @@ mudança também exige atualização da pasta `docs/` dentro do código
 Uma mesma issue pode gerar mais de uma delegação (ex.: atualizar a página
 de módulo **e** a de uma tela específica).
 
+*Checkpoint:* ao concluir cada delegação, atualize
+`.claude/execution-state/{CHAVE}.md` com as páginas já atualizadas e as
+que ainda faltam — se a execução for interrompida no meio de várias
+delegações, a próxima sessão retoma só as pendentes.
+
 ### 5. Comentário obrigatório de resumo
 
 Publique um comentário na issue com:
@@ -142,7 +156,9 @@ Publique um comentário na issue com:
 ### 6. Mover a issue
 
 Sempre para **"Análise final - Rafinha"**, independentemente de ter havido
-delegação ou não.
+delegação ou não. Apague `.claude/execution-state/{CHAVE}.md` se existir —
+o comentário no Jira e as páginas do Confluence já são o registro
+permanente a partir daqui.
 
 Lá a issue **aguarda a varredura de Validação Humana Agregada** (skill
 `jira-human-validation-executor`), que agrupa as issues da coluna por
@@ -166,6 +182,12 @@ validação para cada uma.
   `jira-issue-executor`.
 - ❌ Nunca pular a pergunta sobre qual projeto/Jira processar quando não
   estiver claro.
+- ❌ Nunca commitar `.claude/execution-state/{CHAVE}.md` — esta skill não
+  opera em branch isolada; o arquivo é sempre local (ver seção 13.3 de
+  `workflow-development-flow`).
+- ❌ Nunca confiar cegamente num Execution State encontrado — sempre
+  reconciliar com o estado real do Confluence/Jira antes de continuar a
+  partir dele.
 
 ---
 

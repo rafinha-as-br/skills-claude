@@ -21,13 +21,15 @@ flowchart LR
 
 **Validação Humana Agregada.** A unidade de implementação é a Issue, mas a unidade de aceitação humana pode agregar várias: antes da `Análise final - Rafinha`, a `jira-human-validation-executor` varre a coluna, agrupa as issues por comportamento funcional e cria *Validações Manuais* contendo só os cenários que ainda exigem julgamento humano — nada do que o QA já automatizou volta como passo. Não é uma coluna nova nem um status novo, e não substitui QA, code review ou auditoria.
 
+**Execution State.** O chat não é fonte de verdade: uma issue em execução pode ser retomada por uma sessão nova do Claude Code — troca de conta, esgotamento de quota, encerramento inesperado — sem depender do transcript anterior. `jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`, `jira-doc-executor` e `jira-review-executor` mantêm um arquivo `.claude/execution-state/<CHAVE>.md` com o ponto de retomada, reconciliado com Jira/Git/GitHub antes de qualquer ação — nunca uma instrução cega. Não é uma etapa nem uma coluna nova.
+
 ## Skills
 
 ### Pipeline Jira
 
 | Skill | O que faz |
 |---|---|
-| [`workflow-development-flow`](workflow-development-flow/SKILL.md) | Referência do fluxo: hierarquia Épico/Issue/Subtask, as 8 etapas, gates de passagem, ciclo de release. |
+| [`workflow-development-flow`](workflow-development-flow/SKILL.md) | Referência do fluxo: hierarquia Épico/Issue/Subtask, as 8 etapas, gates de passagem, ciclo de release, Execution State (continuidade de uma issue entre sessões diferentes do Claude Code). |
 | [`jira-issue-creator`](jira-issue-creator/SKILL.md) | Cria issues/subtasks no Jira a partir de um pedido ou de uma GitHub Issue apontada. |
 | [`jira-issue-executor`](jira-issue-executor/SKILL.md) | Implementa as issues de "Fazer - Claude": código + testes + review automatizado + PR. |
 | [`jira-integration-executor`](jira-integration-executor/SKILL.md) | Faz o merge real para `develop`, validando GitHub Actions e conflitos antes. |

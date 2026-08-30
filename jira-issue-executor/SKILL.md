@@ -1,6 +1,6 @@
 ---
 name: jira-issue-executor
-description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Interpreta a hierarquia Épico/Issue/Subtask do item recebido (consultando workflow-development-flow em caso de dúvida) e lê o campo tipo (código/documentação) já definido por jira-issue-creator — só pergunta como fallback se o campo não existir ou estiver ambíguo. Issues de código são implementadas de verdade (branch + commit + code review automatizado via `/code-review` e `/ponytail:ponytail-review` + testes obrigatórios e proporcionais ao risco + push + abertura automática de Pull Request referenciando a Issue do Jira e, quando houver GitHub Issue de origem vinculada no campo Link para GitHub Issue, fechando-a via Closes #N). Grava o link do PR no campo Links para merge, mantém o campo Resumo da issue atualizado com uma versão breve do que foi desenvolvido, aplica a label de revisão e, para issues de código, também a label de plataforma (web/mobile, conforme o código tocado) que a jira-qa-executor usa depois para escolher o executor de QA certo, além de publicar tudo no comentário \"Implementação Claude\". Issues de documentação são delegadas à business-rule-writer (RN), module-doc-writer (módulo) ou screen-doc-writer (tela/UI). Roda via Claude Code no repositório real dele. Abre o Pull Request automaticamente após o push; mergear continua fora do escopo desta skill."
+description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Interpreta a hierarquia Épico/Issue/Subtask do item recebido (consultando workflow-development-flow em caso de dúvida) e lê o campo tipo (código/documentação) já definido por jira-issue-creator — só pergunta como fallback se o campo não existir ou estiver ambíguo. Issues de código são implementadas de verdade (branch + commit + code review automatizado via `/code-review` e `/ponytail:ponytail-review` + testes obrigatórios e proporcionais ao risco + push + abertura automática de Pull Request referenciando a Issue do Jira e, quando houver GitHub Issue de origem vinculada no campo Link para GitHub Issue, fechando-a via Closes #N). Mantém um Execution State (`.claude/execution-state/<CHAVE>.md`, ver workflow-development-flow seção 13) durante a implementação de issues de código, permitindo retomar de onde parou numa sessão nova sem depender do transcript da anterior. Grava o link do PR no campo Links para merge, mantém o campo Resumo da issue atualizado com uma versão breve do que foi desenvolvido, aplica a label de revisão e, para issues de código, também a label de plataforma (web/mobile, conforme o código tocado) que a jira-qa-executor usa depois para escolher o executor de QA certo, além de publicar tudo no comentário \"Implementação Claude\". Issues de documentação são delegadas à business-rule-writer (RN), module-doc-writer (módulo) ou screen-doc-writer (tela/UI). Roda via Claude Code no repositório real dele. Abre o Pull Request automaticamente após o push; mergear continua fora do escopo desta skill."
 ---
 
 # Executor de Issues — Coluna "Fazer - Claude" (Jira genérico)
@@ -113,6 +113,14 @@ trabalho:
   seguido de esquecimento, etc.) alterações não commitadas sem
   confirmação explícita dele.
 
+### 4. Recovery Check (Execution State) — apenas issues de código
+
+Antes de começar a implementação de uma issue de código (passo 5.0), esta
+skill verifica se já existe um arquivo de continuidade dessa issue e, se
+existir, reconcilia com a realidade antes de continuar. Ver
+`workflow-development-flow`, seção 13, para o mecanismo completo (formato
+do arquivo, Recovery Check genérico, política de Git).
+
 ---
 
 ## Passo a passo geral
@@ -224,6 +232,26 @@ mudanças não solicitadas na review.
 
 Quando a issue pede código, siga esta sequência — nesta ordem:
 
+**5.0 Recovery Check (Execution State).** Depois de confirmar o
+repositório (pré-requisito 2), verifique se existe
+`.claude/execution-state/{CHAVE-DA-ISSUE}.md`. Se não existir, siga
+normalmente a partir do passo 5.1. Se existir, leia-o e reconcilie com a
+realidade antes de continuar (branch/commit citados ainda existem? o Jira
+ainda está na mesma coluna? o código já reflete o que o arquivo descreve
+como concluído?) — siga o Recovery Check de `workflow-development-flow`
+(seção 13.4). Diverge de um jeito que arrisque decisão ou trabalho? Pare e
+pergunte a Rafinha. Não diverge? Continue a partir do campo "Próxima ação"
+do arquivo em vez de recomeçar do zero, e atualize-o normalmente daqui em
+diante (ver checkpoints abaixo).
+
+Sempre que esta skill parar para perguntar algo a Rafinha durante a
+implementação de uma issue de código (ambiguidade de escopo, dependência
+não resolvida, divergência encontrada no code review automatizado, etc.),
+grave o Execution State com `Estado: AGUARDANDO_RAFINHA` e a pergunta feita
+em "Bloqueios / decisões pendentes de Rafinha" antes de aguardar a
+resposta — assim uma sessão diferente, se precisar retomar, sabe
+exatamente o que está pendente sem repetir a investigação.
+
 **5.1 Checar dependências não resolvidas.** Se a issue menciona
 explicitamente depender de outra issue (ex.: "depende de EP-02"), verifique
 se essa pré-requisito já foi implementada e commitada em uma execução
@@ -259,6 +287,10 @@ Verifique nesta ordem:
 
 Nunca commite em `main`, em `develop` diretamente, ou em uma branch que não
 siga essa convenção.
+
+*Checkpoint:* grave/atualize `.claude/execution-state/{CHAVE}.md` com
+`Estado: EM_EXECUÇÃO`, o objetivo da issue e "Próxima ação: implementar"
+antes de seguir para 5.3.
 
 **5.3 Implementar.** Escreva o código de verdade, seguindo a arquitetura já
 estabelecida no projeto. Para projetos Flutter/Dart, invoque e aplique
@@ -300,6 +332,10 @@ passo 7 para Rafinha decidir, em vez de arriscar uma mudança não solicitada.
 Guarde o resultado dos dois reviews (achados corrigidos, achados deixados
 como nota, ou "sem achados") para incluir no comentário de resumo do passo 7.
 
+*Checkpoint:* atualize o Execution State com o que já foi concluído até
+aqui (implementação, autorevisão, reviews) e "Próxima ação: gate de
+qualidade (5.4)".
+
 **5.4 Gate de qualidade antes de commitar.** Depois do code review
 automatizado do passo 5.3c, rode as ferramentas de análise estática e os
 testes automatizados do projeto antes de qualquer commit. Testes deixaram
@@ -331,7 +367,9 @@ sem avisar isso de forma destacada.
 **5.5 Commitar e dar push.** Mensagem de commit no formato
 `{CHAVE-DA-ISSUE}: <resumo curto e específico do que foi feito>`. Pode haver
 mais de um commit por issue se fizer sentido dividir o trabalho em partes
-logicamente separadas.
+logicamente separadas. Inclua `.claude/execution-state/{CHAVE}.md` (já
+atualizado nos checkpoints anteriores) no mesmo commit — ele viaja junto do
+código, sem commit dedicado só para ele.
 
 Depois de commitar, dê push na branch:
 - Branch nova (criada nesta execução) → `git push -u origin {branch}`, para
@@ -360,6 +398,13 @@ merge` da issue (via `editJiraIssue` ou equivalente) — este é o único
 momento em que a skill escreve nesse campo. Não deixe essa informação só
 no comentário do passo 7; é o campo que torna o link reportável/filtrável
 no board, sem precisar abrir cada issue para achá-lo.
+
+**5.7 Encerrar o Execution State desta issue.** Com o PR já aberto, a
+implementação está com evidência permanente no Git/Jira/GitHub — apague
+`.claude/execution-state/{CHAVE}.md`, commite
+(`{CHAVE-DA-ISSUE}: remove execution-state (Fazer - Claude concluída)`) e
+dê push. Isso evita que o arquivo chegue a `develop` quando a branch for
+mergeada na etapa de Integração.
 
 ### 6. Issues de documentação: delegar para business-rule-writer, module-doc-writer ou screen-doc-writer
 
@@ -509,6 +554,14 @@ Maestro) sem precisar adivinhar. Regra:
 - ❌ Nunca deixar de atualizar o campo `Resumo` da issue (passo 7) — mesmo
   com o comentário de resumo já publicado, o campo precisa refletir o
   estado atual do que foi feito.
+- ❌ Nunca confiar cegamente num `.claude/execution-state/{CHAVE}.md`
+  encontrado — sempre reconciliar com o estado real do Git/Jira antes de
+  continuar a partir dele (passo 5.0).
+- ❌ Nunca deixar `.claude/execution-state/{CHAVE}.md` sobreviver depois do
+  PR aberto — apagar e commitar a remoção (passo 5.7) antes da issue seguir
+  para Integração.
+- ❌ Nunca registrar credencial, token ou qualquer segredo no Execution
+  State.
 
 ---
 

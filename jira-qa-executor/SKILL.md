@@ -203,7 +203,16 @@ integrado do sistema (ver "Identidade do papel"), nunca a branch isolada da
 issue; testar contra uma `develop` local desatualizada invalida o resultado
 tanto no build web (`flutter run -d chrome`) quanto no build do APK.
 
-### 6. Ambiente local sobe via docker compose
+### 6. Recovery Check (Execution State)
+
+Antes de começar os testes de uma issue, verifique se existe
+`.claude/execution-state/{CHAVE}.md` — arquivo **local, nunca commitado**
+(esta etapa roda sobre `develop`, sem branch isolada própria; ver
+`workflow-development-flow`, seção 13.3). Útil sobretudo quando uma rodada
+de QA Android via emulador é interrompida no meio de uma bateria de casos
+— o arquivo evita reexecutar do zero os fluxos já validados.
+
+### 7. Ambiente local sobe via docker compose
 
 O backend/API necessário para os testes precisa estar rodando localmente
 (ex.: `docker compose up`) antes de cada rodada de testes, para as duas
@@ -606,6 +615,10 @@ não executada — issue exclusiva de Web").
   aguarde decisão — nunca mova para "Documentar" nem para "Fazer - Claude"
   quando não houver condições de um QA confiável.
 
+Sempre que a issue for movida (aprovada ou reprovada), apague
+`.claude/execution-state/{CHAVE}.md` se existir — o comentário no Jira já
+é o registro permanente a partir daqui.
+
 ---
 
 ## O que NÃO fazer
@@ -654,6 +667,13 @@ não executada — issue exclusiva de Web").
 * ❌ Nunca modificar um flow Maestro permanente durante uma execução de QA
   sem registrar que o teste foi alterado, nem transformar um único flow em
   suíte gigante.
+* ❌ Nunca commitar `.claude/execution-state/{CHAVE}.md` — esta etapa roda
+  sobre `develop`, e o arquivo é sempre local (ver seção 13.3 de
+  `workflow-development-flow`); a exceção de commit/push desta skill
+  continua sendo só `.maestro/**`.
+* ❌ Nunca confiar cegamente num Execution State encontrado — sempre
+  reconciliar com o estado real do AIO Tests/Jira antes de continuar a
+  partir dele.
 
 ---
 

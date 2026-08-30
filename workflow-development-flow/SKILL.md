@@ -1,11 +1,11 @@
 ---
 name: "workflow-development-flow"
-description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo de Release & Versionamento (SemVer, Fix Version, Release Lifecycle) — um ciclo separado do workflow de issue, nunca uma coluna do Jira — e a camada de Validação Humana Agregada (a unidade de aceitação humana pode agregar várias Issues; seção 12). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
+description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo de Release & Versionamento (SemVer, Fix Version, Release Lifecycle) — um ciclo separado do workflow de issue, nunca uma coluna do Jira —, a camada de Validação Humana Agregada (a unidade de aceitação humana pode agregar várias Issues; seção 12) e o Execution State (continuidade/recuperação de uma issue em execução entre sessões diferentes do Claude Code, sem depender do transcript da sessão anterior; seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
 ---
 
 ---
 name: workflow-development-flow
-description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo de Release & Versionamento (SemVer, Fix Version, Release Lifecycle) — um ciclo separado do workflow de issue, nunca uma coluna do Jira — e a camada de Validação Humana Agregada (a unidade de aceitação humana pode agregar várias Issues; seção 12). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
+description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo de Release & Versionamento (SemVer, Fix Version, Release Lifecycle) — um ciclo separado do workflow de issue, nunca uma coluna do Jira —, a camada de Validação Humana Agregada (a unidade de aceitação humana pode agregar várias Issues; seção 12) e o Execution State (continuidade/recuperação de uma issue em execução entre sessões diferentes do Claude Code, sem depender do transcript da sessão anterior; seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
 ---
 
 # Fluxo de Desenvolvimento — Skill Mãe (Rafinha + Claude)
@@ -22,8 +22,8 @@ processo que todas as demais skills do pipeline (`jira-issue-creator`,
 referenciam quando precisam entender em qual etapa uma issue está, o que
 vem antes ou depois, o que uma etapa deve produzir, ou o que fazer diante
 de incerteza sobre o fluxo — incluindo o ciclo separado de Release &
-Versionamento (seção 10) e a camada de Validação Humana Agregada
-(seção 12).
+Versionamento (seção 10), a camada de Validação Humana Agregada
+(seção 12) e o Execution State (seção 13).
 
 **Esta skill nunca executa ação nenhuma sozinha** — não cria, não move, não
 comenta e não transiciona issues no Jira; não escreve página no Confluence;
@@ -900,6 +900,138 @@ Regras que não podem ser violadas:
 
 ---
 
+## 13. Execution State & Continuidade
+
+Objetivo: uma issue em execução deve poder ser retomada por uma **nova
+sessão** do Claude Code — troca de conta, esgotamento de quota,
+encerramento inesperado, reinício da máquina — sem depender do transcript
+da sessão anterior. **O chat não é fonte de verdade**, é contexto
+temporário; a fonte de verdade de uma execução em andamento é a combinação
+de Jira + Git + GitHub/Confluence + o arquivo local desta seção.
+
+### 13.1 O que é e o que não é
+
+Não é uma nova etapa nem uma nova coluna do Jira — é uma camada
+transversal usada dentro das etapas que a declaram (13.5). Não substitui
+Jira (fonte de verdade do workflow), Git (fonte de verdade do código),
+PR/GitHub Actions (fonte de verdade da integração) ou Confluence (fonte de
+verdade da documentação) — só registra o que essas fontes não guardam: o
+ponto exato de retomada, o que não repetir, e decisões/bloqueios que ainda
+não viraram comentário formal.
+
+### 13.2 Localização e formato
+
+`.claude/execution-state/<CHAVE-DA-ISSUE>.md`, no repositório do projeto
+(nunca neste repositório de skills). Um arquivo por issue, **sobrescrito**
+a cada checkpoint — nunca um log anexado.
+
+```markdown
+# Execution State — <CHAVE>
+
+## Estado
+EM_EXECUÇÃO | BLOQUEADO | AGUARDANDO_RAFINHA | PRONTO_PARA_PRÓXIMA_ETAPA
+
+## Objetivo atual / contexto de retomada
+<2-4 linhas>
+
+## Próxima ação
+<ação concreta>
+
+## Não repetir
+- ...
+
+## Decisões técnicas
+- ...
+
+## Bloqueios / decisões pendentes de Rafinha
+- ...
+
+## Última atualização
+<data/hora>
+```
+
+Seção sem conteúdo real usa "Nenhum" — nunca inventar conteúdo só para
+preencher o template (ver 13.4).
+
+Deliberadamente **não inclui** branch, commit, PR, ou resultado de
+teste/análise estática: essas informações já são reconstruídas ao vivo, a
+cada execução, pela própria skill (convenção de nome de branch, `git log`,
+`gh pr view`, campos do Jira) — duplicá-las no arquivo criaria uma segunda
+fonte que pode divergir da real.
+
+### 13.3 Política de Git
+
+Só é **commitado** quando a etapa opera numa branch isolada da issue
+(`Fazer - Claude`, via `jira-issue-executor`) — nesse caso o arquivo viaja
+junto dos commits normais da issue, e é removido (com commit próprio)
+antes de a issue seguir para `Análise - Rafinha`/Integração, para nunca
+chegar a `develop` por merge.
+
+Nas etapas que operam **depois do merge**, direto sobre `develop`/`main`
+(`Integração`, `QA - Claude`, `Documentar`, `Análise final - Claude`), o
+arquivo **nunca é commitado** — cairia na regra existente de nunca
+commitar direto no trunk. Ele existe só localmente (adicionar
+`.claude/execution-state/` ao `.gitignore` do projeto, na primeira vez que
+a etapa criar o diretório) — isso ainda cobre o cenário central da
+proposta (mesma pasta de trabalho, nova sessão, troca de conta); só não
+sobrevive a uma máquina diferente, cenário que a proposta não exige.
+
+### 13.4 Recovery Check
+
+Toda etapa que declara Execution State (13.5) verifica, antes de agir
+sobre uma issue:
+
+```text
+Existe .claude/execution-state/<CHAVE>.md?
+        ↓                          ↓
+       NÃO                        SIM
+        ↓                          ↓
+  fluxo normal da etapa    Ler o arquivo e reconciliar com a realidade:
+                            - Jira ainda está na mesma coluna?
+                            - (quando aplicável) branch/commit citados
+                              ainda existem?
+                            - "Próxima ação" ainda faz sentido dado o
+                              estado real do código/PR/Confluence agora?
+                                 ↓
+                    Diverge de um jeito que arrisca decisão ou trabalho?
+                    SIM → parar e perguntar a Rafinha
+                    NÃO → seguir a partir de "Próxima ação", atualizando
+                          o arquivo
+```
+
+**O arquivo nunca é instrução cega** — ele indica o que provavelmente
+aconteceu; a etapa confirma o que realmente aconteceu antes de agir. Jira,
+Git, GitHub e Confluence sempre prevalecem sobre o que está escrito nele.
+
+### 13.5 Onde se aplica
+
+| Etapa | Skill | Commitado? |
+|---|---|---|
+| Fazer - Claude | `jira-issue-executor` | Sim (branch da issue) |
+| Integração | `jira-integration-executor` | Não (local) |
+| QA - Claude | `jira-qa-executor` | Não (local) |
+| Documentar | `jira-doc-executor` | Não (local) |
+| Análise final - Claude | `jira-review-executor` | Não (local) |
+
+Cada uma dessas skills declara os próprios pontos de checkpoint (marcos
+relevantes da própria etapa) e o momento de apagar o arquivo — sempre ao
+mover a issue adiante, porque Jira/Git/PR/Confluence já viram a fonte de
+verdade permanente a partir dali.
+
+### 13.6 Checkpoints, não log
+
+Atualizar apenas em marcos relevantes (início, decisão tomada, bloco de
+trabalho concluído, bloqueio encontrado, antes de mover a issue) — nunca a
+cada comando. O arquivo descreve o **estado atual**, não o histórico da
+execução.
+
+### 13.7 Segurança
+
+Nunca registrar credencial, token, senha ou qualquer segredo no arquivo —
+só texto operacional (estado, próxima ação, decisões, bloqueios).
+
+---
+
 ## Quando Rafinha aciona esta skill diretamente
 
 Perguntas do tipo:
@@ -912,6 +1044,8 @@ Perguntas do tipo:
   uma versão?"
 - "O que é uma Validação Manual?" / "Ela substitui o QA?" / "O que acontece
   quando eu reprovo uma validação?"
+- "Como uma nova sessão retoma uma issue interrompida?" / "O que é o
+  Execution State?"
 - Qualquer dúvida sobre nomenclatura de colunas, ordem das etapas, ou
   regra de bloqueio de avanço.
 
