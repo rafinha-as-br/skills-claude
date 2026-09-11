@@ -124,11 +124,22 @@ usado na Integração — respondem perguntas diferentes ("essa alteração
 pode entrar no sistema?" vs. "este conjunto específico de código está
 pronto para virar uma versão oficial?").
 
-Se não existir, **instale a partir do template de referência** (o
-`release.yml` do Compass System é a implementação de referência),
-adaptando aos componentes do manifesto. Isso é uma tarefa de setup normal:
-apresente o arquivo a Rafinha e só siga com a release depois que ele
-estiver mergeado e tiver rodado verde pelo menos uma vez.
+Se não existir, **instale a partir dos templates que esta skill carrega**
+em `templates/`, adaptando os pontos marcados com `[ADAPTAR]`:
+
+| Template | Vai para |
+| --- | --- |
+| `templates/release.yml` | `.github/workflows/release.yml` |
+| `templates/release-components.yml` | `.github/release-components.yml` |
+| `templates/release-notes-README.md` | `.github/release-notes/README.md` |
+
+Os templates são a fonte de verdade do que se instala — **não copie de
+outro projeto**, nem do Compass System. Um projeto pode ter divergido do
+padrão, e copiar dele propaga a divergência silenciosamente.
+
+Isso é uma tarefa de setup normal: apresente os arquivos a Rafinha e só
+siga com a release depois que estiverem mergeados e o workflow tiver
+rodado verde pelo menos uma vez (com `publish=false` na primeira).
 
 > ⚠️ O `workflow_dispatch` só aparece se o arquivo existir na **branch
 > padrão** do repositório. Num fluxo `develop → main`, o `release.yml`
@@ -353,6 +364,10 @@ notas da GitHub Release saíram legíveis.
   crua que se quer evitar.
 - ❌ Nunca preencher uma nota de release inventando o que a issue fez
   porque o campo `Resumo` estava vazio — pergunte a Rafinha.
+- ❌ Nunca instalar o `release.yml` copiando de outro projeto em vez dos
+  templates desta skill — projetos divergem, e copiar de um deles propaga
+  a divergência. Se um projeto precisou de algo que o template não cobre,
+  a melhoria volta para o template.
 - ❌ Nunca marcar como totalmente entregue uma issue cujos componentes não
   foram todos lançados.
 - ❌ Nunca usar `git push --force` ou `--force-with-lease`.

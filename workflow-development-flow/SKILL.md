@@ -696,9 +696,15 @@ Release não é uma etapa do issue workflow).
 
 **Cada projeto tem o seu próprio `.github/workflows/release.yml`,
 autocontido.** Ele cria branches, tags e Releases dentro do próprio
-repositório e não depende de nenhum repo externo. Instalar a
-funcionalidade num projeto novo é copiar o arquivo e escrever o
-manifesto da seção 10.2.
+repositório e não depende de nenhum repo externo em tempo de execução.
+
+Instalar num projeto novo é copiar os templates que a
+`jira-release-executor` carrega em `templates/` (workflow, manifesto e
+README das notas) e adaptar os pontos marcados. **O template é a fonte de
+verdade, não o arquivo de outro projeto** — copiar do Compass System, ou
+de qualquer projeto já configurado, propaga silenciosamente qualquer
+divergência que ele tenha acumulado. Melhoria descoberta num projeto volta
+para o template.
 
 É separado do `ci.yml` da etapa de Integração — respondem perguntas
 diferentes ("essa alteração pode entrar no sistema?" vs. "este conjunto
