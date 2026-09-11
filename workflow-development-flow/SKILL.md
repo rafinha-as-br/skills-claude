@@ -1,11 +1,11 @@
 ---
 name: "workflow-development-flow"
-description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo de Release & Versionamento (SemVer, Fix Version, Release Lifecycle) — um ciclo separado do workflow de issue, nunca uma coluna do Jira —, a camada de Validação Humana Agregada (a unidade de aceitação humana pode agregar várias Issues; seção 12) e o Execution State (continuidade/recuperação de uma issue em execução entre sessões diferentes do Claude Code, sem depender do transcript da sessão anterior; seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
+description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo de Release & Versionamento (SemVer por componente, tags namespaced `<componente>/vX.Y.Z`, Fix Version multi-valorada, Release Lifecycle dividido entre skill e GitHub Action) — um ciclo separado do workflow de issue, nunca uma coluna do Jira —, a camada de Validação Humana Agregada (a unidade de aceitação humana pode agregar várias Issues; seção 12) e o Execution State (continuidade/recuperação de uma issue em execução entre sessões diferentes do Claude Code, sem depender do transcript da sessão anterior; seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
 ---
 
 ---
 name: workflow-development-flow
-description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo de Release & Versionamento (SemVer, Fix Version, Release Lifecycle) — um ciclo separado do workflow de issue, nunca uma coluna do Jira —, a camada de Validação Humana Agregada (a unidade de aceitação humana pode agregar várias Issues; seção 12) e o Execution State (continuidade/recuperação de uma issue em execução entre sessões diferentes do Claude Code, sem depender do transcript da sessão anterior; seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
+description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo de Release & Versionamento (SemVer por componente, tags namespaced `<componente>/vX.Y.Z`, Fix Version multi-valorada, Release Lifecycle dividido entre skill e GitHub Action) — um ciclo separado do workflow de issue, nunca uma coluna do Jira —, a camada de Validação Humana Agregada (a unidade de aceitação humana pode agregar várias Issues; seção 12) e o Execution State (continuidade/recuperação de uma issue em execução entre sessões diferentes do Claude Code, sem depender do transcript da sessão anterior; seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
 ---
 
 # Fluxo de Desenvolvimento — Skill Mãe (Rafinha + Claude)
@@ -502,31 +502,72 @@ completamente separados.
   Agrupa várias issues concluídas numa versão publicada.
 
 ```text
-ISSUE WORKFLOW (inalterado)                RELEASE WORKFLOW (novo)
+ISSUE WORKFLOW (inalterado)                RELEASE WORKFLOW
 
 Fazer - Claude                             Issues concluídas
       ↓                                           ↓
-Análise - Rafinha                          Agrupamento de mudanças
+Análise - Rafinha                          Agrupamento por componente
       ↓                                           ↓
-Integração                                 Definição da versão
+Integração                                 Definição das versões
       ↓                                           ↓
 QA - Claude                                Release Candidate
       ↓                                           ↓
 Documentar                                 Validação final
       ↓                                           ↓
-Análise final - Rafinha                    Tag
+Análise final - Rafinha                    Tags
       ↓                                           ↓
-Análise final - Claude                     GitHub Release
+Análise final - Claude                     GitHub Releases
       ↓                                           ↓
-Concluído                                  Versão publicada
+Concluído                                  Versões publicadas
 ```
 
 **Regra explícita:** Release nunca vira uma nona coluna do Jira depois de
 `Análise final - Claude` — misturaria duas unidades de trabalho diferentes.
 
-### 10.2 Versionamento (SemVer)
+### 10.2 Componente: a unidade de versionamento
 
-Convenção `vMAJOR.MINOR.PATCH`:
+**A unidade que recebe uma versão é o componente, não o repositório.** Um
+repositório pode conter vários artefatos buildáveis e independentes — o
+Compass System tem três (`compass-api`, `routecraft_app`,
+`travel_matrix`). Cada um evolui no seu próprio ritmo: a API pode ir a
+PATCH sem forçar versão nova em nenhum app.
+
+Todo projeto declara seus componentes num manifesto versionado junto com
+o código, em `.github/release-components.yml`:
+
+```yaml
+components:
+  - name: compass-api
+    path: compass-api
+    type: maven          # maven | flutter | node | ...
+  - name: routecraft_app
+    path: routecraft_app
+    type: flutter
+```
+
+Projeto de artefato único declara **um** componente — mesmo formato, sem
+caso especial.
+
+**Quem consome o manifesto é a `jira-release-executor`** — para saber o
+que versionar, como filtrar escopo e como mapear issue → componente. O
+`release.yml` ainda tem os steps de build escritos explicitamente por
+componente, porque buildar Maven e buildar Flutter são comandos
+diferentes; o manifesto e o workflow precisam ser mantidos em sincronia
+na mão. Tornar o workflow orientado pelo manifesto é uma evolução
+possível, não o estado atual.
+
+O `path` é também o que mapeia **issue → componente**: os arquivos
+tocados pelo Pull Request da issue (campo `Links para merge`) dizem a
+quais componentes ela pertence.
+
+> ⚠️ Não confundir componente com a label de plataforma (`web`/`mobile`)
+> que a `jira-issue-executor` aplica. São eixos diferentes — plataforma
+> serve para a `jira-qa-executor` escolher o executor de QA; componente
+> serve para versionar. Reaproveitar um como o outro quebra os dois.
+
+### 10.3 Versionamento (SemVer), por componente
+
+Convenção `MAJOR.MINOR.PATCH`:
 - **MAJOR** — mudança incompatível.
 - **MINOR** — nova funcionalidade compatível.
 - **PATCH** — correção compatível.
@@ -535,7 +576,20 @@ Projetos em desenvolvimento inicial começam em `0.x.y` — faixa reservada
 pelo próprio SemVer para quando a API/contrato ainda não é considerada
 estável, não significa que o projeto está incompleto.
 
-### 10.3 Quem decide o incremento de versão
+**A tag é sempre namespaced pelo componente:**
+
+```text
+compass-api/v0.1.0
+routecraft_app/v1.2.0
+travel_matrix/v0.4.0
+```
+
+Nunca `v1.2.0` solto num projeto multi-componente — três componentes
+podem estar em `0.0.1` ao mesmo tempo, e uma tag sem prefixo colide.
+Projetos de componente único podem usar `vX.Y.Z` simples, mas usar o
+prefixo mesmo assim mantém tudo uniforme e não custa nada.
+
+### 10.4 Quem decide o incremento de versão
 
 **Sempre Rafinha** — nunca o Claude sozinho. O incremento de versão
 envolve significado de produto, não é decisão puramente técnica. O Claude
@@ -543,7 +597,10 @@ pode e deve sugerir com justificativa (ex.: "recomendo MINOR porque foram
 adicionadas funcionalidades compatíveis"), mas a decisão final é sempre
 dele.
 
-### 10.4 Nem toda issue concluída gera uma release
+Com versionamento por componente isso vira **N decisões independentes**,
+uma por componente no escopo — não uma decisão só aplicada a todos.
+
+### 10.5 Nem toda issue concluída gera uma release
 
 Uma release representa uma entrega de software, não uma issue. Concluir
 várias issues não significa gerar uma versão para cada uma — pode virar
@@ -551,7 +608,12 @@ uma única release agrupando todas. Todo projeto **deve** ter
 versionamento; nenhuma issue concluída **deve** gerar automaticamente uma
 release.
 
-### 10.5 A entidade "Release" no Jira
+**Também é legítimo versionar um componente só.** Se Rafinha pedir "gera
+versão só do routecraft", apenas esse componente recebe versão, tag e
+Release — os demais ficam como estão, e suas issues seguem esperando a
+release do componente delas.
+
+### 10.6 A entidade "Release" no Jira
 
 Usa a estrutura nativa de Releases/Versions do Jira (**Fix Version**). Uma
 Release agrupa issues concluídas — mas **não é pai hierárquico** de
@@ -571,26 +633,134 @@ SUBTASK
 
 São perguntas diferentes — não confundir as duas hierarquias.
 
-### 10.6 Release Lifecycle (processo completo)
+**O nome da versão no Jira é namespaced**, igual à tag:
+`routecraft_app 0.2.0`, nunca `0.2.0` solto. Sem o prefixo, três
+componentes na mesma versão colapsam numa Fix Version só e a
+rastreabilidade se perde.
 
-1. Selecionar issues concluídas.
-2. Definir escopo da release.
-3. Definir versão.
-4. Criar release branch, quando aplicável.
-5. Atualizar versão do projeto.
-6. Atualizar changelog.
-7. Executar Release CI.
-8. Criar/validar Release Candidate, quando aplicável.
-9. Validar funcionalmente.
-10. Merge para `main`.
-11. Criar tag `vX.Y.Z`.
-12. Criar GitHub Release.
-13. Associar a versão no Jira.
-14. Registrar documentação.
+**Fix Version é multi-valorada, e isso importa.** Uma issue que tocou
+dois componentes (adicionou um endpoint na API *e* consumiu ele no app —
+o caso comum, não a exceção) recebe **uma Fix Version por componente**, à
+medida que cada um for lançado:
 
-Quem executa esse ciclo na prática é a skill `jira-release-executor`,
-acionada sob demanda por Rafinha (nunca por varredura automática de
-coluna, já que Release não é uma etapa do issue workflow).
+```text
+CPS-107  Fix Version: routecraft_app 0.2.0     ← lançado hoje
+                      compass-api 0.1.0        ← lançado depois
+```
+
+A issue só está **inteiramente entregue** quando todos os componentes que
+ela tocou saíram. Marcar a issue como lançada na primeira Fix Version é
+erro — perde a rastreabilidade de que metade dela ainda não chegou a
+ninguém.
+
+### 10.7 Release Lifecycle e a fronteira skill/Action
+
+O ciclo é dividido entre duas responsabilidades, e a divisão é o
+princípio central deste processo:
+
+> **A Action faz o que é determinístico. A skill faz o que exige contexto
+> do Jira. A skill dispara a Action — nunca reimplementa o que ela faz.**
+
+```text
+┌─ SKILL (jira-release-executor) ──────────────────────────┐
+│ 1. Levantar issues concluídas sem Fix Version            │
+│ 2. Mapear cada issue → componente (arquivos do PR)       │
+│ 3. Propor escopo + incremento por componente → Rafinha   │
+│ 4. Escrever as notas de release, CHANGELOG.md e README,  │
+│    e commitar tudo antes do dispatch                     │
+└──────────────────────────────────────────────────────────┘
+                          ↓  gh workflow run release.yml
+┌─ ACTION (.github/workflows/release.yml) ─────────────────┐
+│ 5. Criar a release branch                                │
+│ 6. Bump da versão de cada componente no escopo           │
+│ 7. Buildar todos os componentes                          │
+│ 8. Publicar artefatos da execução                        │
+│ 9. Criar tag <componente>/vX.Y.Z e GitHub Release        │
+└──────────────────────────────────────────────────────────┘
+                          ↓
+┌─ SKILL ──────────────────────────────────────────────────┐
+│ 10. Validação funcional de Rafinha (gate obrigatório)    │
+│ 11. Criar/associar Fix Version namespaced no Jira        │
+│ 12. Atualizar a página de Versionamento do projeto       │
+└──────────────────────────────────────────────────────────┘
+```
+
+Release Candidate (`X.Y.Z-rc.1`), quando o porte do projeto justificar,
+entra entre os passos 9 e 10 — iterando com QA até estabilizar.
+
+Quem executa os passos de skill é a `jira-release-executor`, acionada sob
+demanda por Rafinha (nunca por varredura automática de coluna, já que
+Release não é uma etapa do issue workflow).
+
+### 10.8 A Action de release vive em cada repositório
+
+**Cada projeto tem o seu próprio `.github/workflows/release.yml`,
+autocontido.** Ele cria branches, tags e Releases dentro do próprio
+repositório e não depende de nenhum repo externo. Instalar a
+funcionalidade num projeto novo é copiar o arquivo e escrever o
+manifesto da seção 10.2.
+
+É separado do `ci.yml` da etapa de Integração — respondem perguntas
+diferentes ("essa alteração pode entrar no sistema?" vs. "este conjunto
+específico de código está pronto para virar uma versão oficial?").
+
+**O gatilho é `workflow_dispatch`**, com um campo de versão por
+componente. Campo em branco pula aquele componente na rodada.
+
+Duas consequências que são propriedade do desenho, não detalhe:
+
+1. **Rafinha pode fechar uma versão sem o Claude**, pela aba Actions do
+   GitHub. A skill é acelerador, não gargalo. O que se perde rodando sem
+   ela é a qualidade das release notes e a associação da Fix Version no
+   Jira.
+2. **Os dois caminhos não podem divergir**, porque a skill dispara
+   exatamente o mesmo botão. A skill nunca faz `git tag` na mão.
+
+> ⚠️ Restrição do GitHub: `workflow_dispatch` só aparece se o arquivo
+> existir na **branch padrão** do repositório. Num fluxo
+> `develop → main`, o `release.yml` precisa estar nas duas — na `main`
+> para habilitar o gatilho, na `develop` porque é o código dela que vai
+> ser buildado.
+
+### 10.9 As notas de release são texto, não lista de issues
+
+A GitHub Release de cada componente carrega uma descrição **escrita para
+qualquer pessoa ler** — inclusive quem não acompanhou a sprint e não sabe
+o que é CPS-107. Listar as issues ou os Pull Requests mergeados não
+cumpre esse papel.
+
+O mecanismo: a `jira-release-executor` escreve
+`.github/release-notes/<componente>-<versao>.md` a partir do campo
+`Resumo` das issues e commita **antes** do dispatch; o `release.yml` usa
+esse arquivo como corpo da Release (`gh release create --notes-file`).
+
+Sem o arquivo — dispatch manual, sem o Claude no circuito — a Action cai
+no `--generate-notes` automático do GitHub, que produz a lista crua de
+Pull Requests. Funciona, mas é o resultado pior; é o preço de rodar sem a
+skill, não o padrão aceitável.
+
+Princípios do texto:
+- descrever a mudança do ponto de vista de **quem usa o sistema**;
+- agrupar por tema, não por issue (três issues do mesmo assunto viram um
+  parágrafo só);
+- chaves de issue, quando presentes, ficam no fim como referência —
+  nunca no lugar da explicação;
+- sem jargão interno (nome de branch, de arquivo, de classe).
+
+### 10.10 Documentação de versionamento do projeto
+
+Todo projeto com o workflow Rafinha-Claude tem, no seu space do
+Confluence, uma página **"Versionamento"** dedicada, contendo:
+
+- a versão atual de cada componente;
+- onde fica a Action de release e como acioná-la;
+- a convenção de tag do projeto;
+- o link para a aba Releases do repositório.
+
+Essa página é a resposta para "em que versão está cada parte do
+projeto?" sem precisar abrir o GitHub. Quem a mantém atualizada é a
+`jira-release-executor`, no passo 12 do ciclo — não é documentação
+escrita à mão.
 
 ---
 
@@ -1042,6 +1212,11 @@ Perguntas do tipo:
 - "Qual a diferença entre o que a pipeline valida e o que o QA valida?"
 - "Como funciona o ciclo de release?" / "Quando uma issue concluída vira
   uma versão?"
+- "Posso versionar só um dos componentes?" / "Dá pra fechar versão só do
+  app sem mexer na API?"
+- "E uma issue que tocou dois componentes, entra em qual versão?"
+- "Consigo fechar uma versão sem o Claude?" / "Onde fica o botão de gerar
+  versão?"
 - "O que é uma Validação Manual?" / "Ela substitui o QA?" / "O que acontece
   quando eu reprovo uma validação?"
 - "Como uma nova sessão retoma uma issue interrompida?" / "O que é o
@@ -1060,4 +1235,4 @@ Perguntas do tipo:
   consultou deve perguntar a Rafinha, não inferir.
 - ❌ Não decide (nem sugere sozinha, fora do contexto de uma execução real
   de `jira-release-executor`) o incremento de versão de uma release — essa
-  decisão é sempre de Rafinha (seção 10.3).
+  decisão é sempre de Rafinha (seção 10.4).

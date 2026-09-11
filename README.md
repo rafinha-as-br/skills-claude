@@ -19,6 +19,8 @@ flowchart LR
 
 `workflow-development-flow` é a skill mãe: não executa nada, apenas responde "em qual etapa uma issue está" ou "o que vem depois de X" para as demais. Release & Versionamento (SemVer, tags, GitHub Release) é um ciclo separado, acionado sob demanda — nunca uma coluna do board.
 
+**Release por componente.** A unidade versionada é o componente, não o repositório: um repo pode ter vários artefatos buildáveis independentes (o Compass System tem três), declarados em `.github/release-components.yml`, cada um com sua própria versão e tag `<componente>/vX.Y.Z`. Lançar um componente só é legítimo. A parte determinística — criar branch, bump, build, tag, GitHub Release — vive num `release.yml` autocontido em cada repositório, acionado por `workflow_dispatch`. **Rafinha consegue fechar uma versão sozinho pela aba Actions, sem o Claude**; a `jira-release-executor` dispara exatamente o mesmo botão, e o que ela acrescenta é o escopo vindo do Jira, os incrementos sugeridos e as notas de release escritas em texto corrido — não uma lista de Pull Requests.
+
 **Validação Humana Agregada.** A unidade de implementação é a Issue, mas a unidade de aceitação humana pode agregar várias: antes da `Análise final - Rafinha`, a `jira-human-validation-executor` varre a coluna, agrupa as issues por comportamento funcional e cria *Validações Manuais* contendo só os cenários que ainda exigem julgamento humano — nada do que o QA já automatizou volta como passo. Não é uma coluna nova nem um status novo, e não substitui QA, code review ou auditoria.
 
 **Execution State.** O chat não é fonte de verdade: uma issue em execução pode ser retomada por uma sessão nova do Claude Code — troca de conta, esgotamento de quota, encerramento inesperado — sem depender do transcript anterior. `jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`, `jira-doc-executor` e `jira-review-executor` mantêm um arquivo `.claude/execution-state/<CHAVE>.md` com o ponto de retomada, reconciliado com Jira/Git/GitHub antes de qualquer ação — nunca uma instrução cega. Não é uma etapa nem uma coluna nova.
@@ -37,7 +39,7 @@ flowchart LR
 | [`jira-doc-executor`](jira-doc-executor/SKILL.md) | Identifica qual documentação foi impactada e delega para a skill de escrita certa. |
 | [`jira-human-validation-executor`](jira-human-validation-executor/SKILL.md) | Agrupa as issues por comportamento e gera as Validações Manuais — só os cenários que exigem julgamento humano. Registra o veredito e roteia reprovações. |
 | [`jira-review-executor`](jira-review-executor/SKILL.md) | Auditoria final antes de "Concluído". |
-| [`jira-release-executor`](jira-release-executor/SKILL.md) | Prepara e publica releases (SemVer, changelog, tag, GitHub Release). |
+| [`jira-release-executor`](jira-release-executor/SKILL.md) | Prepara e publica releases por componente: levanta o escopo no Jira, mapeia issue → componente pelos arquivos do PR, sugere os incrementos, escreve as notas de release e dispara a Action do repositório. |
 
 ### Documentação (Confluence)
 

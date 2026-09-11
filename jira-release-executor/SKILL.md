@@ -1,11 +1,11 @@
 ---
 name: "jira-release-executor"
-description: "Preparar e executar uma release do Workflow Rafinha-Claude — agrupar issues concluídas numa versão publicada (SemVer), seguindo o Release Lifecycle completo até a tag e o GitHub Release. Usar quando Rafinha disser algo como \"prepara a release 0.5.0\", \"vamos lançar uma versão\", \"que issues entram na próxima release\", ou pedir para publicar/versionar o projeto. NUNCA é acionada por varredura de coluna do Jira — Release não é uma etapa do workflow de issue (ver workflow-development-flow), é um ciclo sob demanda e separado. Levanta issues concluídas candidatas, confirma o escopo com Rafinha, sugere o incremento de versão (MAJOR/MINOR/PATCH) com justificativa mas nunca decide sozinha, cria a release branch quando aplicável, atualiza versão e changelog no código, dispara a Release CI (release.yml), passa por Release Candidate quando o porte do projeto justificar, aguarda validação funcional de Rafinha, faz merge para main, cria a tag vX.Y.Z e a GitHub Release, associa a versão no Jira (Fix Version) e registra a documentação. Herda as regras de segurança de jira-integration-executor (nunca --force, nunca descarta trabalho não commitado sem perguntar)."
+description: "Preparar e executar uma release do Workflow Rafinha-Claude — agrupar issues concluídas numa versão publicada (SemVer), seguindo o Release Lifecycle completo até a tag e o GitHub Release. Usar quando Rafinha disser algo como \"prepara a release 0.5.0\", \"vamos lançar uma versão\", \"gera versão só do routecraft\", \"que issues entram na próxima release\", ou pedir para publicar/versionar o projeto. NUNCA é acionada por varredura de coluna do Jira — Release não é uma etapa do workflow de issue (ver workflow-development-flow), é um ciclo sob demanda e separado. Versiona por COMPONENTE, não por repositório: um repo pode ter vários artefatos buildáveis (o Compass System tem três) declarados em `.github/release-components.yml`, cada um com sua própria versão e tag namespaced `<componente>/vX.Y.Z` — e é legítimo lançar um componente só. Mapeia cada issue concluída ao componente que ela tocou pelos arquivos do Pull Request, monta o changelog a partir do campo Resumo das issues, sugere o incremento de cada componente com justificativa mas nunca decide sozinha, e então DISPARA a GitHub Action de release do próprio repositório (`gh workflow run release.yml`) em vez de criar branch, bump e tag na mão. Ao final aguarda a validação funcional de Rafinha, associa as Fix Versions namespaced no Jira e atualiza a página de Versionamento do projeto no Confluence. Herda as regras de segurança de jira-integration-executor (nunca --force, nunca descarta trabalho não commitado sem perguntar)."
 ---
 
 ---
 name: jira-release-executor
-description: "Preparar e executar uma release do Workflow Rafinha-Claude — agrupar issues concluídas numa versão publicada (SemVer), seguindo o Release Lifecycle completo até a tag e o GitHub Release. Usar quando Rafinha disser algo como \"prepara a release 0.5.0\", \"vamos lançar uma versão\", \"que issues entram na próxima release\", ou pedir para publicar/versionar o projeto. NUNCA é acionada por varredura de coluna do Jira — Release não é uma etapa do workflow de issue (ver workflow-development-flow), é um ciclo sob demanda e separado. Levanta issues concluídas candidatas, confirma o escopo com Rafinha, sugere o incremento de versão (MAJOR/MINOR/PATCH) com justificativa mas nunca decide sozinha, cria a release branch quando aplicável, atualiza versão e changelog no código, dispara a Release CI (release.yml), passa por Release Candidate quando o porte do projeto justificar, aguarda validação funcional de Rafinha, faz merge para main, cria a tag vX.Y.Z e a GitHub Release, associa a versão no Jira (Fix Version) e registra a documentação. Herda as regras de segurança de jira-integration-executor (nunca --force, nunca descarta trabalho não commitado sem perguntar)."
+description: "Preparar e executar uma release do Workflow Rafinha-Claude — agrupar issues concluídas numa versão publicada (SemVer), seguindo o Release Lifecycle completo até a tag e o GitHub Release. Usar quando Rafinha disser algo como \"prepara a release 0.5.0\", \"vamos lançar uma versão\", \"gera versão só do routecraft\", \"que issues entram na próxima release\", ou pedir para publicar/versionar o projeto. NUNCA é acionada por varredura de coluna do Jira — Release não é uma etapa do workflow de issue (ver workflow-development-flow), é um ciclo sob demanda e separado. Versiona por COMPONENTE, não por repositório: um repo pode ter vários artefatos buildáveis (o Compass System tem três) declarados em `.github/release-components.yml`, cada um com sua própria versão e tag namespaced `<componente>/vX.Y.Z` — e é legítimo lançar um componente só. Mapeia cada issue concluída ao componente que ela tocou pelos arquivos do Pull Request, monta o changelog a partir do campo Resumo das issues, sugere o incremento de cada componente com justificativa mas nunca decide sozinha, e então DISPARA a GitHub Action de release do próprio repositório (`gh workflow run release.yml`) em vez de criar branch, bump e tag na mão. Ao final aguarda a validação funcional de Rafinha, associa as Fix Versions namespaced no Jira e atualiza a página de Versionamento do projeto no Confluence. Herda as regras de segurança de jira-integration-executor (nunca --force, nunca descarta trabalho não commitado sem perguntar)."
 ---
 
 # Executor de Release — Ciclo de Versionamento (Jira + GitHub genérico)
@@ -24,12 +24,10 @@ Diferente de todas as outras skills do pipeline Jira, esta **nunca é
 acionada por varredura automática de uma coluna do board** — Release não
 é uma etapa do issue workflow, não existe uma coluna "Release" no Jira, e
 nunca deve virar uma. Você só age quando Rafinha inicia explicitamente
-("prepara a release 0.5.0", "vamos lançar uma versão").
+("prepara a release 0.5.0", "gera versão só do routecraft").
 
 Consulte a skill `workflow-development-flow` (seção 10, Release &
-Versionamento) para os princípios completos por trás deste ciclo — os dois
-ciclos separados, SemVer, a relação de versionamento (não hierárquica)
-entre Release e Épico/Issue.
+Versionamento) para os princípios completos por trás deste ciclo.
 
 Você **herda as mesmas regras de segurança de `jira-integration-executor`**
 (que por sua vez herda de `jira-issue-executor`): nunca `git push --force`
@@ -38,7 +36,28 @@ perguntar a Rafinha; sempre `git status` antes de qualquer checkout.
 
 **A decisão de versão nunca é sua.** Você pode e deve sugerir o incremento
 (MAJOR/MINOR/PATCH) com justificativa, mas a decisão final é sempre de
-Rafinha — isso é regra central deste ciclo, não uma formalidade.
+Rafinha — isso é regra central deste ciclo, não uma formalidade. Com
+versionamento por componente, isso vira uma decisão por componente.
+
+---
+
+## O princípio que organiza esta skill
+
+> **A Action faz o que é determinístico. Você faz o que exige contexto do
+> Jira. Você dispara a Action — nunca reimplementa o que ela faz.**
+
+Criar branch, fazer bump de versão, buildar, criar tag e publicar Release
+é trabalho determinístico e vive no `release.yml` do próprio repositório.
+Você **não** faz nada disso na mão.
+
+O que é seu: descobrir o que entra, mapear issue → componente, propor os
+incrementos, escrever o changelog em português, e depois registrar tudo no
+Jira e no Confluence.
+
+Consequência que você precisa preservar: **Rafinha consegue fechar uma
+versão sozinho**, pela aba Actions do GitHub, sem você. Você é acelerador,
+não gargalo. Se alguma coisa que você faz só funciona quando você está no
+circuito, o desenho está errado.
 
 ---
 
@@ -48,9 +67,11 @@ Modelo padrão: Sonnet
 Effort padrão: High
 
 Escalonar effort quando:
-- o changelog agrega mudanças de múltiplos módulos com risco real de
+- o changelog agrega mudanças de múltiplos componentes com risco real de
   breaking change, exigindo cuidado ao categorizar a sugestão de SemVer
-  (mesmo a decisão final sendo sempre de Rafinha).
+  (mesmo a decisão final sendo sempre de Rafinha);
+- há muitas issues cruzando componentes, tornando o mapeamento
+  issue → componente ambíguo.
 
 Escalonar para Opus quando:
 - surge uma decisão atípica de estratégia de branch/release sem
@@ -71,17 +92,51 @@ pergunte a Rafinha explicitamente qual projeto ele quer lançar antes de
 prosseguir. Confirme também que o diretório de trabalho é o repositório
 correto (nome do repo, remote `origin`).
 
-### 2. Release CI configurada
+### 2. Manifesto de componentes
 
-Todo projeto que for lançar uma release já deve ter `release.yml`
-configurado (`.github/workflows/release.yml`), separado do `ci.yml` usado
-na Integração — respondem perguntas diferentes ("essa alteração pode
-entrar no sistema?" vs. "este conjunto específico de código está pronto
-para virar uma versão oficial?"). Se não existir, **pare e avise
-Rafinha** — não é responsabilidade desta skill criar essa pipeline do
-zero.
+Leia `.github/release-components.yml` — é ele que diz quais artefatos o
+projeto versiona e onde cada um mora:
 
-### 3. Estado limpo antes de trocar de branch
+```yaml
+components:
+  - name: compass-api
+    path: compass-api
+    type: maven
+  - name: routecraft_app
+    path: routecraft_app
+    type: flutter
+```
+
+Se o arquivo não existir, **pare e monte ele junto com Rafinha** antes de
+seguir — confirmando quais são os componentes e onde a versão de cada um
+vive no código. Um projeto de artefato único declara um componente só.
+
+O manifesto é a sua fonte de verdade, não a do `release.yml` — os steps
+de build daquele arquivo são escritos por componente e mantidos em
+sincronia manualmente. Se o manifesto listar um componente que o
+`release.yml` não builda (ou vice-versa), **pare e avise Rafinha**: os
+dois divergiram.
+
+### 3. Release CI configurada
+
+O projeto precisa de `.github/workflows/release.yml`, separado do `ci.yml`
+usado na Integração — respondem perguntas diferentes ("essa alteração
+pode entrar no sistema?" vs. "este conjunto específico de código está
+pronto para virar uma versão oficial?").
+
+Se não existir, **instale a partir do template de referência** (o
+`release.yml` do Compass System é a implementação de referência),
+adaptando aos componentes do manifesto. Isso é uma tarefa de setup normal:
+apresente o arquivo a Rafinha e só siga com a release depois que ele
+estiver mergeado e tiver rodado verde pelo menos uma vez.
+
+> ⚠️ O `workflow_dispatch` só aparece se o arquivo existir na **branch
+> padrão** do repositório. Num fluxo `develop → main`, o `release.yml`
+> precisa estar nas duas — na `main` para habilitar o gatilho, na
+> `develop` porque é o código dela que vai ser buildado. Verifique as duas
+> antes de tentar disparar.
+
+### 4. Estado limpo antes de trocar de branch
 
 Rode `git status` antes de qualquer checkout. Se houver alterações não
 commitadas, pare e pergunte a Rafinha o que fazer — nunca descarte
@@ -89,51 +144,141 @@ sozinho.
 
 ---
 
-## Passo a passo geral
+## Passo a passo
 
 ### 1. Levantar issues concluídas candidatas
 
-Busque, no projeto indicado, issues na coluna **"Concluído"** que ainda
-não têm Fix Version atribuído — essas são as candidatas naturais. Se
-Rafinha já indicou explicitamente quais issues entram (ou quais ficam de
-fora), essa indicação sempre vence a varredura automática.
+Busque, no projeto indicado, issues na coluna **"Concluído"** cuja Fix
+Version ainda não cobre todos os componentes que elas tocaram — essas são
+as candidatas naturais. Se Rafinha já indicou explicitamente quais issues
+entram (ou quais ficam de fora), essa indicação sempre vence a varredura
+automática.
 
-### 2. Apresentar o escopo proposto
+### 2. Mapear cada issue ao seu componente
 
-Monte a lista de issues candidatas e apresente a Rafinha para
-confirmação/ajuste antes de prosseguir — nunca assuma o escopo final sem
-essa confirmação explícita. Ele pode adicionar, remover, ou adiar alguma
-issue para uma release futura.
+Para cada issue candidata, descubra quais componentes ela tocou:
 
-### 3. Sugerir o incremento de versão
+1. Leia o campo **`Links para merge`** da issue (o PR que a
+   `jira-issue-executor` gravou lá).
+2. `gh pr view <numero> --json files` para listar os arquivos alterados.
+3. Case o prefixo do path com o `path` de cada componente do manifesto.
 
-A partir do conjunto de mudanças confirmado no passo 2, sugira MAJOR,
-MINOR ou PATCH **com justificativa objetiva** (ex.: "recomendo MINOR —
-todas as mudanças são funcionalidades novas compatíveis, nenhuma quebra de
-contrato"). **Nunca decida sozinha** — aguarde a confirmação (ou correção)
-de Rafinha antes de seguir.
+Uma issue pode casar com **mais de um componente** — adicionar um endpoint
+na API e consumi-lo no app é o caso comum, não a exceção. Quando isso
+acontecer, a issue entra na lista dos dois, e você sinaliza isso no
+resumo de escopo.
 
-### 4. Criar a release branch (quando aplicável)
+> ⚠️ Não use a label de plataforma (`web`/`mobile`) como componente. Ela
+> existe para a `jira-qa-executor` escolher o executor de QA e responde
+> uma pergunta diferente. Componente vem do manifesto e dos arquivos do
+> PR, sempre.
 
-Para projetos que usam esse padrão: `develop → release/X.Y.Z → main`. Para
-projetos simples sem essa convenção, pule esta etapa e trabalhe
-diretamente na branch que o projeto já usa para preparar lançamentos —
-confirme com Rafinha se não estiver claro qual é o padrão do projeto.
+Se um PR não estiver acessível ou o campo `Links para merge` estiver
+vazio, **pergunte a Rafinha** a qual componente aquela issue pertence —
+não chute pelo título.
 
-### 5. Atualizar a versão no código e o changelog
+### 3. Definir o escopo
 
-Atualize o identificador de versão no próprio projeto (ex.: `pubspec.yaml`
-→ `version: X.Y.Z+build` em Flutter; gerenciado via Maven/Gradle em Spring
-Boot) e o changelog, registrando as mudanças da release. Commit dessa
-atualização na release branch.
+Se Rafinha pediu um componente específico ("gera versão só do
+routecraft"), filtre para esse componente e ignore o resto. **Lançar um
+componente só é legítimo e comum** — os demais ficam como estão, e as
+issues deles seguem esperando.
 
-### 6. Disparar a Release CI
+Se ele não especificou, proponha todos os componentes que têm issue
+pendente.
 
-Rode/acompanhe o `release.yml` — pipeline distinta da CI usada na
-Integração (build, package, publicação de artefatos conforme o projeto:
-APK, build web, imagem Docker, etc.). Falha aqui é bloqueio de avanço,
-mesmo princípio das demais camadas de validação — corrija e repita até
-passar.
+Apresente o escopo agrupado por componente e aguarde confirmação/ajuste
+antes de prosseguir — nunca assuma o escopo final sem confirmação
+explícita:
+
+```text
+compass-api        CPS-107, CPS-112
+routecraft_app     CPS-107 (também na API), CPS-119, CPS-121
+travel_matrix      nenhuma issue pendente — fora do escopo
+```
+
+### 4. Sugerir o incremento de cada componente
+
+A partir do conjunto confirmado, sugira MAJOR, MINOR ou PATCH **para cada
+componente separadamente**, com justificativa objetiva:
+
+```text
+compass-api      0.1.0 → 0.2.0  MINOR (endpoint novo, nada quebrado)
+routecraft_app   1.1.0 → 1.1.1  PATCH (só correções de layout)
+```
+
+**Nunca decida sozinha** — aguarde a confirmação (ou correção) de Rafinha
+para cada componente antes de seguir.
+
+### 5. Escrever as notas de release
+
+Esta é a parte da skill que mais agrega valor, e a que mais fácil sai
+errada. **O produto deste passo é texto corrido que qualquer pessoa
+entende — não uma lista de issues.**
+
+A matéria-prima já existe: a `jira-issue-executor` mantém o campo
+**`Resumo`** de cada issue atualizado com o que foi desenvolvido. Use
+isso, não a mensagem de commit e não o título da issue.
+
+Para cada componente no escopo, escreva
+`.github/release-notes/<componente>-<versao>.md`:
+
+> **Regra do texto:** descreva o que mudou do ponto de vista de quem
+> **usa** o sistema. Se a frase só faz sentido para quem abriu o Pull
+> Request, reescreva.
+
+- **Agrupe por tema, não por issue.** Três issues que juntas melhoraram o
+  cadastro de roteiro viram *um* parágrafo sobre cadastro de roteiro. A
+  correspondência 1 issue = 1 bullet é justamente o que se quer evitar.
+- **Nunca liste issues ou PRs como se fossem o conteúdo.** Se quiser
+  manter rastreabilidade, ponha as chaves numa linha no fim do arquivo,
+  depois de um `---`, como referência — nunca no lugar da explicação.
+- **Seções por natureza da mudança** (`## Novidades`, `## Correções`,
+  `## Mudanças que exigem atenção`), não por componente — o arquivo já é
+  de um componente só.
+- **Sem jargão interno:** nada de nome de branch, nome de arquivo, nome
+  de classe, "refatorado o service", "ajustado o DTO". Se a mudança é
+  puramente interna e não muda nada para quem usa, ou ela fica de fora ou
+  vira uma frase sobre o efeito prático (ex.: "as telas de viagem
+  carregam mais rápido").
+- **Breaking change sempre aparece**, com o que a pessoa precisa fazer a
+  respeito.
+
+Se o `Resumo` de uma issue estiver vazio ou genérico demais para virar
+texto útil, **pergunte a Rafinha** o que aquela mudança significou na
+prática — não invente e não caia no título da issue como substituto.
+
+Atualize também, no mesmo commit:
+
+- `CHANGELOG.md` — mesma seção, no histórico do projeto;
+- a tabela de versões no `README.md`, se o projeto tiver uma.
+
+Commite tudo isso **antes** de disparar a Action, para que o arquivo
+esteja presente no código que ela vai buildar — é de lá que o
+`release.yml` lê as notas (`--notes-file`). Sem o arquivo, a Action cai
+no `--generate-notes` do GitHub e a Release sai com a lista crua de Pull
+Requests, que é exatamente o que não se quer.
+
+### 6. Disparar a Action de release
+
+Aqui termina a sua parte determinística. Dispare a Action do próprio
+repositório, passando uma versão por componente no escopo e deixando em
+branco os que ficam de fora:
+
+```bash
+gh workflow run release.yml --ref develop \
+  -f routecraft_version=1.1.1 \
+  -f api_version=0.2.0 \
+  -f publish=true
+```
+
+Acompanhe com `gh run watch <id> --exit-status`. A Action cria a release
+branch, faz o bump, builda, publica os artefatos e cria uma tag
+`<componente>/vX.Y.Z` + GitHub Release por componente.
+
+**Falha aqui é bloqueio de avanço** — mesmo princípio das demais camadas
+de validação. Corrija e repita até passar. Nunca contorne fazendo o passo
+na mão.
 
 ### 7. Release Candidate (quando aplicável)
 
@@ -144,37 +289,51 @@ isso pode ser dispensado — confirme com Rafinha se não estiver claro.
 
 ### 8. Aguardar validação funcional de Rafinha
 
-Antes de seguir para o merge final, Rafinha precisa validar
-funcionalmente o conjunto da release. Isso não é o mesmo que a `Análise
-final - Rafinha` de cada issue individual, já feita antes — aqui é a
-validação do conjunto como entrega. Não prossiga sem essa confirmação
-explícita.
+Antes de considerar a release entregue, Rafinha precisa validar
+funcionalmente o conjunto. Isso não é o mesmo que a `Análise final -
+Rafinha` de cada issue individual, já feita antes — aqui é a validação do
+conjunto como entrega. Não prossiga sem essa confirmação explícita.
 
-### 9. Merge para `main`, tag e GitHub Release
+### 9. Associar as Fix Versions no Jira
 
-Só depois do passo 8 confirmado:
-1. Merge da release branch para `main`.
-2. Criar a tag `vX.Y.Z` apontando para o commit correspondente.
-3. Criar a GitHub Release a partir da tag, com notas de release e
-   artefatos relevantes (quando o projeto gerar algum).
+Crie/atualize as versões no Jira com **nome namespaced**, igual à tag:
 
-### 10. Associar a versão no Jira
+```text
+routecraft_app 1.1.1
+compass-api 0.2.0
+```
 
-Crie ou atualize a versão (Fix Version) no Jira e associe todas as issues
-do escopo confirmado no passo 2 a ela.
+Nunca `1.1.1` solto — componentes diferentes podem estar na mesma versão,
+e sem prefixo eles colapsam numa Fix Version só.
 
-### 11. Registrar a documentação
+Associe cada issue à Fix Version **de cada componente que ela tocou**.
+Fix Version é multi-valorada: uma issue que mexeu na API e no app recebe
+as duas, à medida que cada componente for lançado.
 
-Registre a release: changelog atualizado (já feito no passo 5, confirme
-que está completo), notas de release publicadas (GitHub Release do passo
-9), e qualquer outro registro que o projeto exija.
+> ⚠️ Uma issue que tocou dois componentes e teve só um lançado **não está
+> inteiramente entregue**. Não a trate como concluída no sentido de
+> release — ela ainda espera o lançamento do outro componente.
+
+### 10. Atualizar a documentação de versionamento
+
+Atualize a página **"Versionamento"** do projeto no Confluence (ver seção
+10.10 de `workflow-development-flow`) com as versões novas, a data e o
+link das Releases. Se a página não existir ainda, crie-a seguindo a
+estrutura padrão.
+
+Confirme também que o `CHANGELOG.md` do passo 5 está completo e que as
+notas da GitHub Release saíram legíveis.
 
 ---
 
 ## O que NÃO fazer
 
 - ❌ Nunca decidir sozinha o incremento de versão (MAJOR/MINOR/PATCH) —
-  sempre sugerir com justificativa e aguardar a confirmação de Rafinha.
+  sempre sugerir com justificativa e aguardar a confirmação de Rafinha,
+  componente a componente.
+- ❌ Nunca criar branch de release, fazer bump, `git tag` ou
+  `gh release create` na mão — isso é trabalho da Action. Se a Action
+  falhar, conserte a Action.
 - ❌ Nunca gerar uma release automaticamente a partir de uma issue
   concluída — release é sempre um agrupamento confirmado por Rafinha,
   nunca 1:1 com issue.
@@ -182,14 +341,26 @@ que está completo), notas de release publicadas (GitHub Release do passo
   roda quando Rafinha inicia explicitamente.
 - ❌ Nunca criar ou sugerir uma coluna "Release" no Jira — isso misturaria
   os dois ciclos, o que é proibido pelo princípio central deste processo.
+- ❌ Nunca usar tag ou Fix Version sem o prefixo do componente em projeto
+  multi-componente.
+- ❌ Nunca inferir o componente de uma issue pelo título ou pela label de
+  plataforma — sempre pelos arquivos do PR, ou perguntando.
+- ❌ Nunca entregar uma Release cujas notas sejam uma lista de issues, de
+  Pull Requests ou de mensagens de commit. As notas são texto corrido,
+  legível por quem nunca viu o board — ver passo 5.
+- ❌ Nunca deixar de commitar o arquivo de notas antes do dispatch. Sem
+  ele a Action cai no `--generate-notes` e publica exatamente a lista
+  crua que se quer evitar.
+- ❌ Nunca preencher uma nota de release inventando o que a issue fez
+  porque o campo `Resumo` estava vazio — pergunte a Rafinha.
+- ❌ Nunca marcar como totalmente entregue uma issue cujos componentes não
+  foram todos lançados.
 - ❌ Nunca usar `git push --force` ou `--force-with-lease`.
 - ❌ Nunca descartar alterações não commitadas sem confirmação explícita
   de Rafinha.
-- ❌ Nunca avançar para o merge em `main` (passo 9) sem a validação
-  funcional de Rafinha (passo 8) e sem a Release CI verde (passo 6).
-- ❌ Nunca criar a pipeline `release.yml` do zero para um projeto que não
-  tenha — pare e avise Rafinha.
-- ❌ Nunca esquecer de associar as issues à versão no Jira (passo 10) — é
+- ❌ Nunca avançar para o registro final sem a validação funcional de
+  Rafinha (passo 8) e sem a Release CI verde (passo 6).
+- ❌ Nunca esquecer de associar as issues às versões no Jira (passo 9) — é
   isso que mantém a rastreabilidade issue ↔ release.
 
 ---
@@ -199,11 +370,22 @@ que está completo), notas de release publicadas (GitHub Release do passo
 Ao concluir, apresente um resumo, por exemplo:
 
 ```
-🚀 Release preparada: v0.5.0 (projeto: [nome])
-📋 Issues incluídas: GEO-101, GEO-102, GEO-105, GEO-108 (Fix Version associado)
-📈 Incremento sugerido: MINOR (funcionalidades novas compatíveis) — confirmado por Rafinha
-🌿 Release branch: release/0.5.0 → merge em main realizado
-🔖 Tag: v0.5.0 | GitHub Release: [link]
-✅ Release CI: passou | RC: não aplicável (projeto pequeno)
-📝 Changelog e documentação atualizados
+🚀 Release executada — projeto: Compass System
+
+📦 Componentes lançados
+   compass-api      0.1.0 → 0.2.0   MINOR   tag compass-api/v0.2.0
+   routecraft_app   1.1.0 → 1.1.1   PATCH   tag routecraft_app/v1.1.1
+   travel_matrix    sem mudanças — fora do escopo
+
+📋 Issues incluídas
+   compass-api      CPS-107, CPS-112
+   routecraft_app   CPS-107 (também na API), CPS-119, CPS-121
+
+⚙️  Action: release.yml run #14 — verde
+🔖 GitHub Releases: [links]  |  artefatos publicados
+🏷️  Fix Versions associadas: "compass-api 0.2.0", "routecraft_app 1.1.1"
+📝 CHANGELOG.md e página de Versionamento atualizados
+
+⚠️  CPS-107 tocou os dois componentes e só teve um lançado — segue
+   aguardando a próxima release de routecraft_app.
 ```
