@@ -19,7 +19,13 @@ flowchart LR
 
 `workflow-development-flow` é a skill mãe: não executa nada, apenas responde "em qual etapa uma issue está" ou "o que vem depois de X" para as demais. Release & Versionamento (SemVer, tags, GitHub Release) é um ciclo separado, acionado sob demanda — nunca uma coluna do board.
 
-**Release por componente.** A unidade versionada é o componente, não o repositório: um repo pode ter vários artefatos buildáveis independentes (o Compass System tem três), declarados em `.github/release-components.yml`, cada um com sua própria versão e tag `<componente>/vX.Y.Z`. Lançar um componente só é legítimo. A parte determinística — criar branch, bump, build, tag, GitHub Release — vive num `release.yml` autocontido em cada repositório, acionado por `workflow_dispatch`. **Rafinha consegue fechar uma versão sozinho pela aba Actions, sem o Claude**; a `jira-release-executor` dispara exatamente o mesmo botão, e o que ela acrescenta é o escopo vindo do Jira, os incrementos sugeridos e as notas de release escritas em texto corrido — não uma lista de Pull Requests.
+**Release é distribuição, não tag.** Uma release transforma um estado do software num pacote versionado que roda **fora do ambiente de desenvolvimento** — e não apenas numa tag com artefato anexado. Todo pedido tem dois eixos: **tipo** (`PRE_RELEASE` ou `FINAL`) e **escopo** (parcial ou completa).
+
+**Projeto ≠ repositório.** Um projeto pode ser monorepo ou multi-repo, e a topologia é declarada em `.release/project.yml`, nunca inferida. A unidade versionada é o **componente** (tag `<componente>/vX.Y.Z`); uma distribuição completa recebe também uma versão de **produto**. Dependências entre componentes são declaradas, nunca descobertas: elas expandem o escopo pedido no escopo efetivo, e um componente puxado que não mudou entra como `carried` — sem versão nova.
+
+**Três camadas, ninguém decidindo pelo vizinho.** A `release.yml` de cada repositório builda e publica seu componente. O **Release Orchestrator** local (PowerShell, um por projeto) dispara as Actions, coleta os artefatos, inclui o Runtime Package e gera o ZIP com o `release-manifest.yml` dentro. A `jira-release-executor` faz o que exige contexto: escopo vindo do Jira, incrementos sugeridos, notas em texto corrido, e o registro final. **Rafinha continua fechando um componente sozinho pela aba Actions**, sem skill e sem Orchestrator.
+
+GitHub Release só em versão **final** — nenhum RC polui a aba Releases, e nenhum repositório vira dono do produto. A distribuição vai para o Drive e é registrada no Confluence.
 
 **Validação Humana Agregada.** A unidade de implementação é a Issue, mas a unidade de aceitação humana pode agregar várias: antes da `Análise final - Rafinha`, a `jira-human-validation-executor` varre a coluna, agrupa as issues por comportamento funcional e cria *Validações Manuais* contendo só os cenários que ainda exigem julgamento humano — nada do que o QA já automatizou volta como passo. Não é uma coluna nova nem um status novo, e não substitui QA, code review ou auditoria.
 
@@ -39,7 +45,7 @@ flowchart LR
 | [`jira-doc-executor`](jira-doc-executor/SKILL.md) | Identifica qual documentação foi impactada e delega para a skill de escrita certa. |
 | [`jira-human-validation-executor`](jira-human-validation-executor/SKILL.md) | Agrupa as issues por comportamento e gera as Validações Manuais — só os cenários que exigem julgamento humano. Registra o veredito e roteia reprovações. |
 | [`jira-review-executor`](jira-review-executor/SKILL.md) | Auditoria final antes de "Concluído". |
-| [`jira-release-executor`](jira-release-executor/SKILL.md) | Prepara e publica releases por componente: levanta o escopo no Jira, mapeia issue → componente pelos arquivos do PR, sugere os incrementos, escreve as notas de release e dispara a Action do repositório. |
+| [`jira-release-executor`](jira-release-executor/SKILL.md) | Prepara e executa releases: resolve tipo e escopo, expande dependências declaradas, sugere os incrementos, escreve as notas e entrega a execução ao Release Orchestrator — até a distribuição validada fora da IDE. |
 
 ### Documentação (Confluence)
 

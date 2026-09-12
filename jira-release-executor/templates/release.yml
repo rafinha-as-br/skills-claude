@@ -1,57 +1,66 @@
 # TEMPLATE DE RELEASE - Workflow Rafinha-Claude
 #
-# Copie para .github/workflows/release.yml no repositorio do projeto e
-# adapte os pontos marcados com  [ADAPTAR].  O exemplo abaixo e' o do
-# Compass System: tres componentes (uma API Maven e dois apps Flutter).
+# Copie para .github/workflows/release.yml no repositorio do projeto e adapte
+# os pontos marcados com  [ADAPTAR].  O exemplo usa dois componentes (uma API
+# Maven e um app Flutter) so' para mostrar o formato com mais de um.
 #
-# Projeto de componente unico: apague os blocos dos componentes que nao
-# existem. A estrutura (dispatch -> branch -> bump -> build -> artefatos
-# -> tag/Release) vale igual, com um componente so'.
+# Projeto de componente unico: apague os blocos que sobram. A estrutura
+# (dispatch -> branch -> bump -> build -> artefato -> tag/Release) vale igual.
 #
-# O que NAO adaptar, porque e' convencao do workflow e nao detalhe do
-# projeto:
-#   - tag namespaced <componente>/vX.Y.Z
-#   - um campo de versao por componente, vazio = pula o componente
-#   - notas vindas de .github/release-notes/<comp>-<versao>.md, com
-#     fallback para --generate-notes
-#   - artefatos publicados ANTES de criar tags, para que uma falha na
-#     publicacao nao leve junto os arquivos ja' buildados
+# O QUE NAO ADAPTAR - e' contrato do workflow, nao detalhe do projeto:
+#   - os tres inputs: <componente>_version, release_type, publish
+#   - nome do artefato: <componente>-<versao>, determinístico
+#   - tag namespaced <componente>/vX.Y.Z[-rc.N]
+#   - GitHub Release SO' em release_type=final (ver abaixo)
+#   - notas de .github/release-notes/<comp>-<versao>.md, com fallback para a
+#     versao base e depois para --generate-notes
+#   - artefatos publicados ANTES de criar tags
+#
+# QUANDO SE CRIA GITHUB RELEASE
+#   pre_release  -> tag + artefato, SEM Release  (nenhum rc polui a aba Releases)
+#   final        -> tag + artefato + Release do componente (parcial ou completa)
+#   distribuicao do produto (ZIP) -> NUNCA vira GitHub Release; vai para o
+#                                    Drive e e' registrada no Confluence
+#
+# `publish` NAO e' um terceiro tipo de release. release_type responde "que tipo
+# de versao estou produzindo"; publish responde "esta execucao publica?".
+# publish=false builda e valida sem criar tag nem Release.
+#
+# ESTE WORKFLOW NAO MONTA A DISTRIBUICAO AGREGADA. Juntar artefatos de varios
+# componentes, incluir o Runtime Package e gerar o ZIP e' trabalho do Release
+# Orchestrator local (.release/scripts/), inclusive em monorepo.
 #
 # Depois de instalar:
-#   1. O arquivo precisa existir na BRANCH PADRAO do repositorio, senao o
-#      botao "Run workflow" nao aparece - restricao do GitHub. Num fluxo
-#      develop -> main, ele vai nas duas.
+#   1. O arquivo precisa existir na BRANCH PADRAO, senao o botao "Run workflow"
+#      nao aparece - restricao do GitHub. Num fluxo develop -> main, vai nas duas.
 #   2. Rodar uma vez com publish=false antes de considerar pronto.
-#   3. Criar .github/release-components.yml (ver release-components.yml
-#      nesta mesma pasta) e .github/release-notes/README.md.
+#   3. Criar .release/project.yml (ver project.yml nesta pasta) e
+#      .github/release-notes/README.md.
 #
-# Ver: workflow-development-flow secao 10, e a pagina "9. Configurar o
-# ciclo de Release" no Confluence.
+# Ver: workflow-development-flow/references/release-lifecycle.md secao 9.
 
 name: Release
 
-# Fechar uma versao: cria a release branch, faz o bump de cada componente que
-# recebeu versao, builda os tres, publica os artefatos e cria uma tag/Release
-# por componente. Deixe um campo de versao em branco para nao versionar
-# aquele componente nesta rodada.
 on:
   workflow_dispatch:
     inputs:
-      # [ADAPTAR] um input por componente do projeto.
-      routecraft_version:
-        description: 'Versao do routecraft_app (ex.: 1.1.0) - vazio = nao versiona'
-        required: false
-        default: ''
-      travel_matrix_version:
-        description: 'Versao do travel_matrix (ex.: 1.1.0) - vazio = nao versiona'
-        required: false
-        default: ''
+      # [ADAPTAR] um input por componente do repositorio. Vazio = fora da rodada.
       api_version:
-        description: 'Versao do compass-api (ex.: 0.1.0) - vazio = nao versiona'
+        description: 'Versao do geoprag_api (ex.: 2.1.0 ou 2.1.0-rc.1) - vazio = nao versiona'
         required: false
         default: ''
+      admin_version:
+        description: 'Versao do geoprag_admin (ex.: 1.2.0 ou 1.2.0-rc.1) - vazio = nao versiona'
+        required: false
+        default: ''
+
+      release_type:
+        description: 'Tipo da versao produzida'
+        type: choice
+        options: [pre_release, final]
+        default: pre_release
       publish:
-        description: 'Criar tags e GitHub Releases ao final'
+        description: 'Criar tags e (em final) GitHub Releases'
         type: boolean
         default: true
 
@@ -73,7 +82,7 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
-          cache-dependency-path: compass-api/pom.xml
+          cache-dependency-path: pom.xml
 
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
@@ -92,25 +101,18 @@ jobs:
           git checkout -b "$BRANCH"
           echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
 
-      # ------------------------------------------------------------- bump
-      # mvn versions:set em vez de sed: o pom.xml tem o <version> do
-      # spring-boot-starter-parent antes do <version> do projeto.
-      # [ADAPTAR] um bloco de bump por componente, no formato de versao
-      # que a stack dele usa.
+      # ------------------------------------------------------------------ bump
+      # [ADAPTAR] um bloco por componente, no formato de versao da stack dele.
+      # mvn versions:set em vez de sed: o pom.xml tem o <version> do parent
+      # antes do <version> do projeto.
       - name: Bump das versoes
         run: |
           set -e
           if [ -n "${{ inputs.api_version }}" ]; then
-            (cd compass-api && ./mvnw -B versions:set \
-              -DnewVersion='${{ inputs.api_version }}' -DgenerateBackupPoms=false)
+            ./mvnw -B versions:set -DnewVersion='${{ inputs.api_version }}' -DgenerateBackupPoms=false
           fi
-          if [ -n "${{ inputs.routecraft_version }}" ]; then
-            sed -i "s/^version: .*/version: ${{ inputs.routecraft_version }}+${{ github.run_number }}/" \
-              routecraft_app/pubspec.yaml
-          fi
-          if [ -n "${{ inputs.travel_matrix_version }}" ]; then
-            sed -i "s/^version: .*/version: ${{ inputs.travel_matrix_version }}+${{ github.run_number }}/" \
-              travel_matrix/pubspec.yaml
+          if [ -n "${{ inputs.admin_version }}" ]; then
+            sed -i "s/^version: .*/version: ${{ inputs.admin_version }}+${{ github.run_number }}/" pubspec.yaml
           fi
           git diff --stat
 
@@ -123,102 +125,77 @@ jobs:
           fi
           git push origin "${{ steps.branch.outputs.name }}"
 
-      # ------------------------------------------------------------- builds
-      # [ADAPTAR] um step de build por componente.
-      - name: Build compass-api (jar)
-        run: cd compass-api && ./mvnw -B package -DskipTests
+      # ---------------------------------------------------------------- builds
+      # [ADAPTAR] um step de build por componente. Rode so' o que tem versao.
+      - name: Build geoprag_api (jar)
+        if: inputs.api_version != ''
+        run: ./mvnw -B package -DskipTests
 
-      - name: Build routecraft_app (web + apk)
+      - name: Build geoprag_admin (web)
+        if: inputs.admin_version != ''
         run: |
-          cd routecraft_app
           flutter pub get
           flutter build web --release
-          flutter build apk --release
-          mv build/app/outputs/flutter-apk/app-release.apk              build/app/outputs/flutter-apk/routecraft_app.apk
+          (cd build/web && zip -qr "$GITHUB_WORKSPACE/geoprag_admin-${{ inputs.admin_version }}.zip" .)
 
-      - name: Build travel_matrix (web + apk)
-        run: |
-          cd travel_matrix
-          flutter pub get
-          flutter build web --release
-          flutter build apk --release
-          mv build/app/outputs/flutter-apk/app-release.apk              build/app/outputs/flutter-apk/travel_matrix.apk
-
-      # [ADAPTAR] pacote de demo: especifico do Compass System. Num projeto
-      # que nao precise de um bundle rodavel offline, apague este step e o
-      # artefato correspondente.
-      # -------------------------------------------------- pacote de demo
-      - name: Montar o pacote de demo (compass-demo.zip)
-        run: |
-          set -e
-          OUT=dist/compass-demo
-          mkdir -p "$OUT/web" "$OUT/seed"
-          cp -r routecraft_app/build/web "$OUT/web/routecraft"
-          cp -r travel_matrix/build/web  "$OUT/web/travel_matrix"
-          cp compass-api/scripts/seed_test_data.py "$OUT/seed/"
-
-          {
-            echo "Compass System - pacote de demonstracao"
-            echo "execucao ${{ github.run_number }}  |  commit $(git rev-parse --short HEAD)"
-            echo "gerado em $(date -u '+%Y-%m-%d %H:%M UTC')"
-            echo ""
-            echo "Versoes embarcadas neste pacote:"
-            echo "  routecraft_app  $(grep '^version:' routecraft_app/pubspec.yaml | cut -d' ' -f2)"
-            echo "  travel_matrix   $(grep '^version:' travel_matrix/pubspec.yaml | cut -d' ' -f2)"
-            echo "  compass-api     $(basename compass-api/target/*.jar .jar | sed 's/^compass-system-//')"
-            echo ""
-            echo "Um componente sem versao nova nesta rodada aparece com a versao"
-            echo "que ja' estava no repositorio."
-          } > "$OUT/VERSOES.txt"
-          cp deploy/demo/docker-compose.yml deploy/demo/nginx-spa.conf \
-             deploy/demo/*.bat deploy/demo/LEIA-ME.md "$OUT/"
-
-          docker build -t compass-demo/api:local compass-api
-          docker pull postgres:15
-          docker pull nginx:alpine
-          docker save -o "$OUT/images.tar" compass-demo/api:local postgres:15 nginx:alpine
-
-          (cd dist && zip -qr compass-demo.zip compass-demo)
-          ls -lh dist/compass-demo.zip
-
-      # ------------------------------------------------------------ artefatos
-      # Sobem antes das tags: se a publicacao falhar, os arquivos ja estao la.
-      - name: Publicar artefatos da rodada
+      # ------------------------------------------------------------- artefatos
+      # Nome determinístico <componente>-<versao>: e' assim que o Orchestrator
+      # acha o artefato sem adivinhar. Um upload por componente.
+      #
+      # Retencao: o artefato de uma PRE_RELEASE precisa sobreviver tempo
+      # suficiente para a distribuicao ser montada e validada - depois disso,
+      # quem guarda o rc e' o ZIP no Drive, nao o GitHub.
+      - name: Publicar artefato de geoprag_api
+        if: inputs.api_version != ''
         uses: actions/upload-artifact@v4
         with:
-          name: compass-demo
-          path: dist/compass-demo.zip
+          name: geoprag_api-${{ inputs.api_version }}
+          path: target/*.jar
           retention-days: 30
 
-      - name: Publicar artefatos por componente
+      - name: Publicar artefato de geoprag_admin
+        if: inputs.admin_version != ''
         uses: actions/upload-artifact@v4
         with:
-          name: componentes
-          path: |
-            compass-api/target/*.jar
-            routecraft_app/build/app/outputs/flutter-apk/routecraft_app.apk
-            travel_matrix/build/app/outputs/flutter-apk/travel_matrix.apk
+          name: geoprag_admin-${{ inputs.admin_version }}
+          path: geoprag_admin-${{ inputs.admin_version }}.zip
           retention-days: 30
 
-      # -------------------------------------------------- tags + releases
-      - name: Criar tags e GitHub Releases
+      # -------------------------------------------------- tags (+ Release em final)
+      - name: Criar tags e, em release final, as GitHub Releases
         if: inputs.publish
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TYPE: ${{ inputs.release_type }}
         run: |
           set -e
-          # As notas da Release saem de .github/release-notes/<comp>-<versao>.md,
-          # escrito pela jira-release-executor a partir do campo Resumo das
-          # issues - texto corrido que qualquer pessoa entende, nao uma lista
-          # de PRs. Sem o arquivo (dispatch manual, sem o Claude no circuito)
-          # cai no --generate-notes automatico do GitHub.
+          # A tag existe SEMPRE (inclusive em pre-release): e' ela que amarra
+          # artefato <-> commit no release-manifest.yml da distribuicao.
+          # A GitHub Release so' e' criada quando release_type=final.
+          #
+          # As notas saem de .github/release-notes/<comp>-<versao>.md, escrito
+          # pela jira-release-executor a partir do campo Resumo das issues.
+          # Fallback 1: <comp>-<versao-base>.md  (1.4.0 serve rc.1, rc.2 e final)
+          # Fallback 2: --generate-notes do GitHub (pior resultado, mas funciona
+          #             num dispatch manual sem o Claude no circuito)
           tag_and_release () {
             local comp="$1" version="$2"; shift 2
             [ -z "$version" ] && return 0
+
             local tag="$comp/v$version"
-            local notes=".github/release-notes/$comp-$version.md"
             git tag -a "$tag" -m "$comp v$version"
             git push origin "$tag"
+            echo "tag criada: $tag"
+
+            if [ "$RELEASE_TYPE" != "final" ]; then
+              echo "release_type=$RELEASE_TYPE - sem GitHub Release, so' tag + artefato"
+              return 0
+            fi
+
+            local base="${version%%-*}"
+            local notes=".github/release-notes/$comp-$version.md"
+            [ -f "$notes" ] || notes=".github/release-notes/$comp-$base.md"
+
             if [ -f "$notes" ]; then
               echo "Release notes: $notes"
               gh release create "$tag" "$@" \
@@ -226,7 +203,7 @@ jobs:
                 --target "${{ steps.branch.outputs.name }}" \
                 --notes-file "$notes"
             else
-              echo "Release notes: $notes nao existe, usando --generate-notes"
+              echo "Sem arquivo de notas, usando --generate-notes"
               gh release create "$tag" "$@" \
                 --title "$comp v$version" \
                 --target "${{ steps.branch.outputs.name }}" \
@@ -234,12 +211,9 @@ jobs:
             fi
           }
 
-          cd routecraft_app/build/web && zip -qr "$GITHUB_WORKSPACE/routecraft_app-web.zip" . && cd "$GITHUB_WORKSPACE"
-          cd travel_matrix/build/web  && zip -qr "$GITHUB_WORKSPACE/travel_matrix-web.zip" . && cd "$GITHUB_WORKSPACE"
-
-          tag_and_release compass-api "${{ inputs.api_version }}" compass-api/target/*.jar
-          tag_and_release routecraft_app "${{ inputs.routecraft_version }}" routecraft_app-web.zip routecraft_app/build/app/outputs/flutter-apk/routecraft_app.apk
-          tag_and_release travel_matrix "${{ inputs.travel_matrix_version }}" travel_matrix-web.zip travel_matrix/build/app/outputs/flutter-apk/travel_matrix.apk
+          # [ADAPTAR] uma chamada por componente, com os assets dele.
+          tag_and_release geoprag_api   "${{ inputs.api_version }}"   target/*.jar
+          tag_and_release geoprag_admin "${{ inputs.admin_version }}" "geoprag_admin-${{ inputs.admin_version }}.zip"
 
       - name: Resumo
         run: |
@@ -247,9 +221,19 @@ jobs:
             echo "### Release"
             echo ""
             echo "- Branch: \`${{ steps.branch.outputs.name }}\`"
-            echo "- routecraft_app: \`${{ inputs.routecraft_version || 'nao versionado' }}\`"
-            echo "- travel_matrix: \`${{ inputs.travel_matrix_version || 'nao versionado' }}\`"
-            echo "- compass-api: \`${{ inputs.api_version || 'nao versionado' }}\`"
+            echo "- Tipo: \`${{ inputs.release_type }}\`  |  publish: \`${{ inputs.publish }}\`"
             echo ""
-            echo "Baixe o pacote rodavel no artefato **compass-demo** desta execucao."
+            echo "| Componente | Versao |"
+            echo "| --- | --- |"
+            echo "| geoprag_api | \`${{ inputs.api_version || 'nao versionado' }}\` |"
+            echo "| geoprag_admin | \`${{ inputs.admin_version || 'nao versionado' }}\` |"
+            echo ""
+            if [ "${{ inputs.release_type }}" = "final" ]; then
+              echo "GitHub Releases criadas para os componentes versionados."
+            else
+              echo "Pre-release: tags e artefatos criados, sem GitHub Release."
+            fi
+            echo ""
+            echo "A distribuicao agregada (ZIP com runtime) e' montada pelo"
+            echo "Release Orchestrator local, nao por este workflow."
           } >> "$GITHUB_STEP_SUMMARY"

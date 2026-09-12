@@ -308,6 +308,26 @@ texto, alteração restrita a um caminho já coberto integralmente pelo QA.
 - Não transforme validação visual em auditoria pixel-perfect, salvo quando
   isso for requisito explícito da issue.
 
+**Cenário que só é validável na distribuição real.** Alguns cenários não
+se validam rodando o app pela IDE: comportamento de instalação, primeira
+execução numa máquina limpa, integração entre componentes empacotados,
+runtime subindo do zero, desempenho fora do modo debug. Quando um cenário
+for desses, marque-o assim na descrição:
+
+```text
+⚠️ Só validável na distribuição real — requer uma pre-release.
+```
+
+e, na apresentação da proposta (passo 8), **recomende** a Rafinha gerar
+uma pre-release para executá-lo.
+
+> ⚠️ Você **recomenda**; quem decide gerar é Rafinha. Você **nunca**
+> dispara release, **nunca** cria issue de release e **nunca** bloqueia a
+> Validação Manual esperando o pacote. O veredito de ter rodado a
+> distribuição é registrado na página **Validação da Release** do projeto,
+> não aqui — os dois ciclos continuam separados (ver
+> `workflow-development-flow` seção 10).
+
 ### 7. Montar a validação de lote, quando houver
 
 As issues classificadas como não observáveis no passo 3 entram numa única:
@@ -471,6 +491,9 @@ reprovação (ver `workflow-development-flow`, seção 1).
 - ❌ Nunca identificar, filtrar ou auditar uma Validação Manual pelo tipo
   de issue — sempre pela label `validacao-humana`.
 - ❌ Nunca agregar issues de projetos diferentes na mesma validação.
+- ❌ Nunca disparar uma release, nem criar issue de release, nem bloquear
+  uma Validação Manual esperando uma pre-release — sobre distribuição você
+  só **recomenda**, e quem decide gerar é Rafinha.
 - ❌ Nunca deixar uma issue sair de `Análise final - Rafinha` sem passar
   por uma validação, nem que seja a de lote "Sem observação necessária".
 - ❌ Nunca mover a Validação Manual para `Concluído` com cenário reprovado

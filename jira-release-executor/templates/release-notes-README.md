@@ -9,10 +9,31 @@ Um arquivo por componente e versão, no formato:
 Exemplo: `.github/release-notes/routecraft_app-1.1.0.md`
 
 O `release.yml` procura esse arquivo ao criar a GitHub Release e o usa
-como corpo (`gh release create --notes-file`). Se não encontrar, cai no
-`--generate-notes` automático do GitHub — que produz a lista de Pull
-Requests mergeados. Isso mantém o dispatch manual funcionando sem o
-Claude no circuito, mas com notas bem piores.
+como corpo (`gh release create --notes-file`).
+
+## Ordem de busca
+
+```text
+1. .github/release-notes/<componente>-<versao>.md
+2. .github/release-notes/<componente>-<versao-base>.md
+3. --generate-notes do GitHub
+```
+
+A **versão base** é a versão sem o identificador de pre-release:
+`1.4.0-rc.2` → `1.4.0`. Por causa disso, um único arquivo
+`routecraft_app-1.4.0.md` serve o `rc.1`, o `rc.2` e a versão final — que
+é o que se quer, já que as três descrevem a mesma entrega. Um arquivo
+específico de rc só precisa existir quando houver algo a dizer **só**
+daquele rc.
+
+O fallback 3 produz a lista crua de Pull Requests mergeados. Mantém o
+dispatch manual funcionando sem o Claude no circuito, mas com notas bem
+piores.
+
+> ⚠️ A GitHub Release só é criada em release **final** — uma pre-release
+> gera tag e artefato, sem Release. O arquivo de notas continua sendo
+> escrito no momento do rc, porque é ele que vai ser usado quando aquela
+> versão for promovida.
 
 O nome inclui a versão de propósito: sem isso, um arquivo esquecido de
 uma release anterior seria usado na seguinte.

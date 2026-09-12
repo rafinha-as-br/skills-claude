@@ -1,0 +1,90 @@
+# TEMPLATE - Manifesto central do projeto
+#
+# Copie para  .release/project.yml  na raiz do PROJETO.
+#
+# Onde fica, por topologia:
+#   monorepo    -> .release/project.yml dentro do repositorio (commitado)
+#   multi-repo  -> .release/project.yml na pasta mae (NAO versionado;
+#                  mantenha uma copia numa pasta do Drive)
+#
+# A pasta mae de um projeto multi-repo nao e' um repositorio Git, e nao deve
+# ser transformada em um. A limitacao disso - o manifesto nao tem historico
+# Git proprio - e' consciente, e e' compensada por tres registros que por isso
+# deixam de ser opcionais: o release-manifest.yml dentro de cada ZIP, o proprio
+# ZIP armazenado, e o registro no Confluence.
+#
+# Quem consome:
+#   jira-release-executor  -> escopo, mapeamento issue->componente, versoes
+#   Release Orchestrator   -> validacao, dependencias, montagem da distribuicao
+#
+# Ver: workflow-development-flow/references/release-lifecycle.md secao 7,
+# e a pagina "9. Configurar o ciclo de Release" no Confluence.
+
+project:
+  id: geoprag                     # [ADAPTAR] identificador curto (nomes de arquivo)
+  name: GeoPrag                   # [ADAPTAR] nome do produto
+  topology: multi_repo            # [ADAPTAR] monorepo | multi_repo
+  version: 1.0.0                  # SemVer do PRODUTO; atualizado a cada release completa
+
+# ---------------------------------------------------------------- repositorios
+# Monorepo declara UM repositorio com path "."
+repositories:
+  - id: geoprag-api               # [ADAPTAR]
+    remote: rafinha-as-br/geoprag-api
+    path: ./geoprag-api           # relativo a' pasta do projeto
+
+  - id: geoprag-admin
+    remote: rafinha-as-br/geoprag-admin
+    path: ./geoprag-admin
+
+# ------------------------------------------------------------------ componentes
+# A unidade versionada e' o COMPONENTE, nunca o repositorio.
+# Projeto de artefato unico declara UM componente - mesmo formato, sem caso
+# especial.
+components:
+  geoprag_api:                    # chave = nome; vira prefixo de tag e Fix Version
+    repository: geoprag-api       # precisa existir em `repositories`
+    path: .                       # prefixo que casa com os arquivos do PR
+    type: spring_boot             # livre; informativo
+    version: 2.1.0                # versao atual conhecida
+    version_file: pom.xml         # onde a versao vive no codigo
+    dispatch_input: api_version   # input do workflow_dispatch correspondente
+    artifacts: [jar]              # o que este componente produz
+    depends_on: []                # nomes de outros componentes
+
+  geoprag_admin:
+    repository: geoprag-admin
+    path: .
+    type: flutter_web
+    version: 1.2.0
+    version_file: pubspec.yaml
+    dispatch_input: admin_version
+    artifacts: [web_zip]
+    depends_on: [geoprag_api]     # declarada, NUNCA inferida por analise de codigo
+
+# --------------------------------------------------------------- release completa
+# "Release completa" = todos os componentes declarados, menos as exclusoes.
+#
+# `exclusions` e' para excecao ARQUITETURAL PERMANENTE (componente legado,
+# interno, nao distribuivel). Nao confundir com release parcial: parcial e'
+# escolha de UMA execucao e vive no Release Request, nao aqui.
+#
+# Excecao declarada aqui nao e' perguntada de novo a cada release. Excecao nao
+# declarada nunca e' inventada durante a execucao.
+full_release:
+  components: ALL
+  exclusions: []                  # ex.: [legacy_component]
+
+# ------------------------------------------------------------- runtime package
+# `required` e' OBRIGATORIO declarar. Ausencia silenciosa nao e' permitida.
+#
+#   true  -> release completa sem Runtime Package funcional e' BLOQUEIO
+#   false -> exige, no Confluence, a justificativa E como a versao distribuida
+#            e' executada sem ele
+#
+# O workflow nao impoe Docker, banco, Flutter nem qualquer stack. O entrypoint
+# pode ser qualquer coisa: docker compose up, servidor HTTP local, app desktop.
+runtime_package:
+  required: true
+  entrypoint: runtime/start       # [ADAPTAR] nome definido pelo projeto
+  source: .release/runtime

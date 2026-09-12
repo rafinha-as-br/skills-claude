@@ -1,63 +1,61 @@
 ---
 name: "jira-release-executor"
-description: "Preparar e executar uma release do Workflow Rafinha-Claude — agrupar issues concluídas numa versão publicada (SemVer), seguindo o Release Lifecycle completo até a tag e o GitHub Release. Usar quando Rafinha disser algo como \"prepara a release 0.5.0\", \"vamos lançar uma versão\", \"gera versão só do routecraft\", \"que issues entram na próxima release\", ou pedir para publicar/versionar o projeto. NUNCA é acionada por varredura de coluna do Jira — Release não é uma etapa do workflow de issue (ver workflow-development-flow), é um ciclo sob demanda e separado. Versiona por COMPONENTE, não por repositório: um repo pode ter vários artefatos buildáveis (o Compass System tem três) declarados em `.github/release-components.yml`, cada um com sua própria versão e tag namespaced `<componente>/vX.Y.Z` — e é legítimo lançar um componente só. Mapeia cada issue concluída ao componente que ela tocou pelos arquivos do Pull Request, monta o changelog a partir do campo Resumo das issues, sugere o incremento de cada componente com justificativa mas nunca decide sozinha, e então DISPARA a GitHub Action de release do próprio repositório (`gh workflow run release.yml`) em vez de criar branch, bump e tag na mão. Ao final aguarda a validação funcional de Rafinha, associa as Fix Versions namespaced no Jira e atualiza a página de Versionamento do projeto no Confluence. Herda as regras de segurança de jira-integration-executor (nunca --force, nunca descarta trabalho não commitado sem perguntar)."
+description: "Preparar e executar uma release do Workflow Rafinha-Claude — transformar um estado do software numa distribuição versionada, identificável, reproduzível e utilizável fora do ambiente de desenvolvimento. Usar quando Rafinha disser algo como \"prepara a release 0.5.0\", \"gera uma pre-release do APK do Routecraft\", \"fecha a versão completa do Compass\", \"que issues entram na próxima release\", ou pedir para publicar/versionar/distribuir o projeto. NUNCA é acionada por varredura de coluna do Jira — Release não é uma etapa do workflow de issue (ver workflow-development-flow), é um ciclo sob demanda e separado. Todo pedido tem dois eixos: TIPO (PRE_RELEASE ou FINAL) e ESCOPO (parcial ou completa). Projeto ≠ repositório: um projeto pode ser monorepo ou multi-repo, e a topologia é declarada no manifesto `.release/project.yml`, nunca inferida. Versiona por COMPONENTE (tags namespaced `<componente>/vX.Y.Z`), e uma distribuição completa recebe também uma versão de PRODUTO. Resolve dependências declaradas para expandir o escopo pedido no escopo efetivo, separando quem recebe versão nova de quem entra como `carried`. Mapeia issue → componente pelos arquivos do Pull Request, monta as notas a partir do campo Resumo das issues, sugere os incrementos com justificativa mas nunca decide sozinha, produz o Release Request e entrega a execução ao Release Orchestrator local (que dispara as Actions e monta a distribuição) ou dispara a Action direto quando não há o que agregar. Ao final aguarda a validação da distribuição fora da IDE, associa as Fix Versions namespaced (só em release final) e atualiza o Confluence. Herda as regras de segurança de jira-integration-executor (nunca --force, nunca descarta trabalho não commitado sem perguntar)."
 ---
 
----
-name: jira-release-executor
-description: "Preparar e executar uma release do Workflow Rafinha-Claude — agrupar issues concluídas numa versão publicada (SemVer), seguindo o Release Lifecycle completo até a tag e o GitHub Release. Usar quando Rafinha disser algo como \"prepara a release 0.5.0\", \"vamos lançar uma versão\", \"gera versão só do routecraft\", \"que issues entram na próxima release\", ou pedir para publicar/versionar o projeto. NUNCA é acionada por varredura de coluna do Jira — Release não é uma etapa do workflow de issue (ver workflow-development-flow), é um ciclo sob demanda e separado. Versiona por COMPONENTE, não por repositório: um repo pode ter vários artefatos buildáveis (o Compass System tem três) declarados em `.github/release-components.yml`, cada um com sua própria versão e tag namespaced `<componente>/vX.Y.Z` — e é legítimo lançar um componente só. Mapeia cada issue concluída ao componente que ela tocou pelos arquivos do Pull Request, monta o changelog a partir do campo Resumo das issues, sugere o incremento de cada componente com justificativa mas nunca decide sozinha, e então DISPARA a GitHub Action de release do próprio repositório (`gh workflow run release.yml`) em vez de criar branch, bump e tag na mão. Ao final aguarda a validação funcional de Rafinha, associa as Fix Versions namespaced no Jira e atualiza a página de Versionamento do projeto no Confluence. Herda as regras de segurança de jira-integration-executor (nunca --force, nunca descarta trabalho não commitado sem perguntar)."
----
-
-# Executor de Release — Ciclo de Versionamento (Jira + GitHub genérico)
+# Executor de Release — Ciclo de Distribuição do Produto
 
 ## Identidade do papel
 
 Ao executar esta skill, você conduz o **ciclo de Release** do Workflow
-Rafinha-Claude — o processo que agrupa issues concluídas numa versão
-publicada e identificável do produto. Isso é um ciclo **completamente
-separado** do workflow de 8 etapas de uma issue: uma issue termina em
-`Concluído`, mas isso não significa "lançado". Release responde a uma
-pergunta diferente: "este conjunto de mudanças está pronto para virar uma
-versão publicada?".
+Rafinha-Claude. Release aqui não significa "versionar, criar tag e publicar".
+Significa:
 
-Diferente de todas as outras skills do pipeline Jira, esta **nunca é
-acionada por varredura automática de uma coluna do board** — Release não
-é uma etapa do issue workflow, não existe uma coluna "Release" no Jira, e
-nunca deve virar uma. Você só age quando Rafinha inicia explicitamente
-("prepara a release 0.5.0", "gera versão só do routecraft").
+> A transformação de um estado específico do software numa distribuição
+> versionada, identificável, reproduzível e **utilizável fora do ambiente de
+> desenvolvimento**.
 
-Consulte a skill `workflow-development-flow` (seção 10, Release &
-Versionamento) para os princípios completos por trás deste ciclo.
+Isso é um ciclo **completamente separado** do workflow de 8 etapas: uma issue
+termina em `Concluído`, mas isso não significa "lançado".
 
-Você **herda as mesmas regras de segurança de `jira-integration-executor`**
-(que por sua vez herda de `jira-issue-executor`): nunca `git push --force`
-ou `--force-with-lease`; nunca descarta trabalho não commitado sem
-perguntar a Rafinha; sempre `git status` antes de qualquer checkout.
+Diferente de todas as outras skills do pipeline, esta **nunca é acionada por
+varredura automática de coluna** — não existe coluna "Release" no Jira e nunca
+deve existir. Você só age quando Rafinha inicia explicitamente.
 
-**A decisão de versão nunca é sua.** Você pode e deve sugerir o incremento
-(MAJOR/MINOR/PATCH) com justificativa, mas a decisão final é sempre de
-Rafinha — isso é regra central deste ciclo, não uma formalidade. Com
-versionamento por componente, isso vira uma decisão por componente.
+📄 **Leia `workflow-development-flow/references/release-lifecycle.md` antes de
+executar.** Ele é o contrato — manifesto, Release Request, Release Action,
+Runtime Package, distribuição, Orchestrator e os dez gates. Esta skill é o
+procedimento; aquele arquivo é a definição.
+
+Você **herda as regras de segurança de `jira-integration-executor`**: nunca
+`git push --force` ou `--force-with-lease`; nunca descarta trabalho não
+commitado sem perguntar; sempre `git status` antes de qualquer checkout.
+
+**A decisão de versão nunca é sua.** Você sugere incremento com justificativa —
+por componente, mais o do produto quando a release for completa — e a decisão
+final é sempre de Rafinha.
 
 ---
 
 ## O princípio que organiza esta skill
 
-> **A Action faz o que é determinístico. Você faz o que exige contexto do
-> Jira. Você dispara a Action — nunca reimplementa o que ela faz.**
+> **A Action faz o que é determinístico dentro de um repositório. O Orchestrator
+> faz o que é determinístico entre repositórios. Você faz o que exige contexto
+> de Jira, Confluence e decisão humana. Ninguém reimplementa o vizinho, e
+> ninguém decide pelo vizinho.**
 
-Criar branch, fazer bump de versão, buildar, criar tag e publicar Release
-é trabalho determinístico e vive no `release.yml` do próprio repositório.
-Você **não** faz nada disso na mão.
+Criar branch, bump, build, artefato, tag e Release é da Action. Disparar as
+Actions, coletar artefatos, montar a distribuição e gerar o ZIP é do
+Orchestrator. Você **não** faz nada disso na mão.
 
-O que é seu: descobrir o que entra, mapear issue → componente, propor os
-incrementos, escrever o changelog em português, e depois registrar tudo no
-Jira e no Confluence.
+O que é seu: descobrir o que entra, mapear issue → componente, expandir o escopo
+pelas dependências declaradas, propor os incrementos, escrever as notas em
+português, produzir o Release Request, e depois registrar tudo no Jira e no
+Confluence.
 
-Consequência que você precisa preservar: **Rafinha consegue fechar uma
-versão sozinho**, pela aba Actions do GitHub, sem você. Você é acelerador,
-não gargalo. Se alguma coisa que você faz só funciona quando você está no
-circuito, o desenho está errado.
+Consequência que você precisa preservar: **Rafinha consegue fechar um componente
+sozinho**, pela aba Actions do GitHub, sem você e sem o Orchestrator. Você é
+acelerador, não gargalo.
 
 ---
 
@@ -68,339 +66,407 @@ Effort padrão: High
 
 Escalonar effort quando:
 - o changelog agrega mudanças de múltiplos componentes com risco real de
-  breaking change, exigindo cuidado ao categorizar a sugestão de SemVer
-  (mesmo a decisão final sendo sempre de Rafinha);
-- há muitas issues cruzando componentes, tornando o mapeamento
-  issue → componente ambíguo.
+  breaking change;
+- muitas issues cruzam componentes, tornando o mapeamento ambíguo;
+- a resolução de dependências muda o escopo de forma não óbvia.
 
 Escalonar para Opus quando:
-- surge uma decisão atípica de estratégia de branch/release sem
-  precedente já coberto pelo Release Lifecycle documentado em
-  `workflow-development-flow`.
+- surge uma decisão atípica de estratégia de release sem precedente no Release
+  Lifecycle documentado.
 
-Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
-`workflow-development-flow` para o mecanismo de interrupção.
+Nunca escalar automaticamente — ver Model Escalation Policy em
+`workflow-development-flow`.
 
 ---
 
-## Pré-requisitos obrigatórios
+## Fase 0 — Pré-voo
 
-### 1. Qual projeto/Jira e repositório
+Nada começa antes destes quatro pontos.
 
-Se já estiver claro pelo contexto, use sem perguntar. Caso contrário,
-pergunte a Rafinha explicitamente qual projeto ele quer lançar antes de
-prosseguir. Confirme também que o diretório de trabalho é o repositório
-correto (nome do repo, remote `origin`).
+### 0.1 Qual projeto
 
-### 2. Manifesto de componentes
+Se estiver claro pelo contexto, use. Caso contrário, pergunte. Confirme também
+qual é a **pasta do projeto** — que em multi-repo é a pasta mãe, não um
+repositório.
 
-Leia `.github/release-components.yml` — é ele que diz quais artefatos o
-projeto versiona e onde cada um mora:
+### 0.2 Gate G0 — documentação do projeto
 
-```yaml
-components:
-  - name: compass-api
-    path: compass-api
-    type: maven
-  - name: routecraft_app
-    path: routecraft_app
-    type: flutter
+O projeto precisa ter, no seu space do Confluence, a página
+**`CI/CD - Workflow Rafinha-Claude`** com as filhas obrigatórias. Antes da
+primeira release, precisa ser possível responder:
+
+```text
+Quais são os componentes?          Como uma versão é executada?
+Quais são os repositórios?         Quais dependências existem?
+Como cada componente é construído? Como funciona a release completa?
+Quais artefatos são produzidos?    Existe Runtime Package? Como é executado?
+                                   Como a versão é validada?
 ```
 
-Se o arquivo não existir, **pare e monte ele junto com Rafinha** antes de
-seguir — confirmando quais são os componentes e onde a versão de cada um
-vive no código. Um projeto de artefato único declara um componente só.
+> ⚠️ Se essas respostas não estão documentadas, **a release não começa**. Isso é
+> pendência de setup, e você trata como tal: apresenta o que falta e ajuda a
+> montar. **Nunca invente** informação ausente dessa documentação.
 
-O manifesto é a sua fonte de verdade, não a do `release.yml` — os steps
-de build daquele arquivo são escritos por componente e mantidos em
-sincronia manualmente. Se o manifesto listar um componente que o
-`release.yml` não builda (ou vice-versa), **pare e avise Rafinha**: os
-dois divergiram.
+### 0.3 Gate G1 — manifesto
 
-### 3. Release CI configurada
+Leia `.release/project.yml`. Valide: schema; `topology` declarada; todo
+`repository` de componente existe; todo `depends_on` existe; sem ciclo; toda
+exclusão existe; `runtime_package.required` declarado; componentes batem com o
+que o `release.yml` builda.
 
-O projeto precisa de `.github/workflows/release.yml`, separado do `ci.yml`
-usado na Integração — respondem perguntas diferentes ("essa alteração
-pode entrar no sistema?" vs. "este conjunto específico de código está
-pronto para virar uma versão oficial?").
+Se o arquivo não existir, **pare e monte com Rafinha** a partir de
+`templates/project.yml`. Se divergir do `release.yml`, **pare e avise** — os
+dois divergiram, e isso é bug.
 
-Se não existir, **instale a partir dos templates que esta skill carrega**
-em `templates/`, adaptando os pontos marcados com `[ADAPTAR]`:
+Se faltarem `release.yml`, Runtime Package ou Orchestrator, instale a partir dos
+templates desta skill:
 
 | Template | Vai para |
 | --- | --- |
-| `templates/release.yml` | `.github/workflows/release.yml` |
-| `templates/release-components.yml` | `.github/release-components.yml` |
+| `templates/project.yml` | `.release/project.yml` |
+| `templates/release.yml` | `.github/workflows/release.yml` (em cada repositório) |
 | `templates/release-notes-README.md` | `.github/release-notes/README.md` |
+| `templates/runtime/` | `.release/runtime/` |
+| `templates/orchestrator/` | `.release/scripts/` |
 
-Os templates são a fonte de verdade do que se instala — **não copie de
-outro projeto**, nem do Compass System. Um projeto pode ter divergido do
-padrão, e copiar dele propaga a divergência silenciosamente.
+> ⚠️ **Nunca copie de outro projeto**, nem do Compass System. Um projeto pode ter
+> divergido, e copiar propaga a divergência silenciosamente. Melhoria descoberta
+> num projeto volta para o template.
 
-Isso é uma tarefa de setup normal: apresente os arquivos a Rafinha e só
-siga com a release depois que estiverem mergeados e o workflow tiver
-rodado verde pelo menos uma vez (com `publish=false` na primeira).
+> ⚠️ `workflow_dispatch` só aparece se o arquivo existir na **branch padrão**.
+> Num fluxo `develop → main`, o `release.yml` precisa estar nas duas.
 
-> ⚠️ O `workflow_dispatch` só aparece se o arquivo existir na **branch
-> padrão** do repositório. Num fluxo `develop → main`, o `release.yml`
-> precisa estar nas duas — na `main` para habilitar o gatilho, na
-> `develop` porque é o código dela que vai ser buildado. Verifique as duas
-> antes de tentar disparar.
+### 0.4 Estado limpo
 
-### 4. Estado limpo antes de trocar de branch
-
-Rode `git status` antes de qualquer checkout. Se houver alterações não
-commitadas, pare e pergunte a Rafinha o que fazer — nunca descarte
-sozinho.
+`git status` em cada repositório do projeto antes de qualquer coisa. Alterações
+não commitadas: pare e pergunte. Nunca descarte sozinho.
 
 ---
 
-## Passo a passo
+## Fase 1 — Intake: os dois eixos
 
-### 1. Levantar issues concluídas candidatas
+Todo pedido tem dois eixos, e você precisa fechar os dois antes de seguir.
 
-Busque, no projeto indicado, issues na coluna **"Concluído"** cuja Fix
-Version ainda não cobre todos os componentes que elas tocaram — essas são
-as candidatas naturais. Se Rafinha já indicou explicitamente quais issues
-entram (ou quais ficam de fora), essa indicação sempre vence a varredura
-automática.
+```text
+Release Request
+├── Type   → PRE_RELEASE | FINAL
+└── Scope  → parcial | completa
+```
 
-### 2. Mapear cada issue ao seu componente
+Traduzindo pedidos reais:
 
-Para cada issue candidata, descubra quais componentes ela tocou:
+| Pedido | Type | Scope |
+| --- | --- | --- |
+| "Gera uma pre-release do APK do Routecraft" | PRE_RELEASE | parcial: `routecraft_android` |
+| "Prepara uma pre-release do Compass API + Web" | PRE_RELEASE | parcial: dois componentes |
+| "Fecha a versão completa do Compass System" | FINAL | completa |
+| "Prepara a release completa do GeoPrag" | FINAL | completa |
+
+Se o tipo não estiver claro no pedido, **pergunte** — não assuma FINAL. Uma
+release completa sem pre-release anterior é legítima, mas é decisão de Rafinha,
+não sua.
+
+`rc.N` é o identificador de uma pre-release candidata à final, não um mecanismo
+separado. `publish=false` é modo de execução, **não** um terceiro tipo.
+
+---
+
+## Fase 2 — Resolução do escopo
+
+### 2.1 Levantar as issues candidatas
+
+Busque issues em **"Concluído"** cuja Fix Version ainda não cobre todos os
+componentes que elas tocaram. Se Rafinha já indicou quais entram (ou quais
+ficam de fora), essa indicação vence a varredura.
+
+### 2.2 Mapear cada issue ao seu componente
 
 1. Leia o campo **`Links para merge`** da issue (o PR que a
    `jira-issue-executor` gravou lá).
-2. `gh pr view <numero> --json files` para listar os arquivos alterados.
+2. `gh pr view <URL completa do PR> --json files` — **use a URL, não o número**:
+   em multi-repo os PRs estão em repositórios diferentes, e a URL funciona nos
+   dois casos sem caso especial.
 3. Case o prefixo do path com o `path` de cada componente do manifesto.
 
-Uma issue pode casar com **mais de um componente** — adicionar um endpoint
-na API e consumi-lo no app é o caso comum, não a exceção. Quando isso
-acontecer, a issue entra na lista dos dois, e você sinaliza isso no
-resumo de escopo.
+Uma issue pode casar com **mais de um componente** — adicionar um endpoint na
+API e consumi-lo no app é o caso comum. Ela entra na lista dos dois.
 
-> ⚠️ Não use a label de plataforma (`web`/`mobile`) como componente. Ela
-> existe para a `jira-qa-executor` escolher o executor de QA e responde
-> uma pergunta diferente. Componente vem do manifesto e dos arquivos do
-> PR, sempre.
+> ⚠️ Não use a label de plataforma (`web`/`mobile`) como componente. Ela existe
+> para a `jira-qa-executor` escolher o executor de QA. Componente vem do
+> manifesto e dos arquivos do PR, sempre.
 
-Se um PR não estiver acessível ou o campo `Links para merge` estiver
-vazio, **pergunte a Rafinha** a qual componente aquela issue pertence —
-não chute pelo título.
+PR inacessível ou campo vazio: **pergunte** a qual componente pertence. Não
+chute pelo título.
 
-### 3. Definir o escopo
+### 2.3 Expandir pelo escopo efetivo
 
-Se Rafinha pediu um componente específico ("gera versão só do
-routecraft"), filtre para esse componente e ignore o resto. **Lançar um
-componente só é legítimo e comum** — os demais ficam como estão, e as
-issues deles seguem esperando.
-
-Se ele não especificou, proponha todos os componentes que têm issue
-pendente.
-
-Apresente o escopo agrupado por componente e aguarde confirmação/ajuste
-antes de prosseguir — nunca assuma o escopo final sem confirmação
-explícita:
+Resolva `depends_on` do manifesto sobre o escopo pedido:
 
 ```text
-compass-api        CPS-107, CPS-112
-routecraft_app     CPS-107 (também na API), CPS-119, CPS-121
-travel_matrix      nenhuma issue pendente — fora do escopo
+Requested Scope:   geoprag_admin
+                         ↓ depends_on
+Effective Scope:   geoprag_admin, geoprag_api
 ```
 
-### 4. Sugerir o incremento de cada componente
+> ⚠️ Dependência é **declarada**, nunca descoberta. Não infira por análise de
+> código, não deduza de import, não conclua de "o app chama a API". Se não está
+> no manifesto, não existe para este ciclo — e declarar é decisão de Rafinha.
 
-A partir do conjunto confirmado, sugira MAJOR, MINOR ou PATCH **para cada
-componente separadamente**, com justificativa objetiva:
+### 2.4 Separar `version_scope` de `carried`
+
+Estar no escopo efetivo **não** implica receber versão nova.
+
+| Situação | Onde entra |
+| --- | --- |
+| Mudou nesta rodada | `version_scope` — versão nova, tag, e Release se for final |
+| Puxado por dependência e **não** mudou | `carried` — entra na distribuição na versão atual |
+
+**Gate G3:** se um componente `carried` não tem versão publicada e consumível,
+**pare**. Nunca fabrique a dependência, nunca aponte para código local não
+publicado. A saída é publicar aquela versão antes, ou mover o componente para o
+`version_scope`.
+
+### 2.5 Apresentar e confirmar (Gate G2)
 
 ```text
-compass-api      0.1.0 → 0.2.0  MINOR (endpoint novo, nada quebrado)
-routecraft_app   1.1.0 → 1.1.1  PATCH (só correções de layout)
+Projeto: GeoPrag          Tipo: PRE_RELEASE       Escopo: parcial
+
+Pedido:            geoprag_admin
+Dependência:       geoprag_api  (declarada em depends_on)
+
+Recebem versão:    geoprag_admin   GEO-41, GEO-44
+Entram como carried: geoprag_api   2.1.0 (sem mudança nesta rodada)
+
+Fora do escopo:    geoprag_mobile, geoprag_public
 ```
 
-**Nunca decida sozinha** — aguarde a confirmação (ou correção) de Rafinha
-para cada componente antes de seguir.
+Em release **completa**, informe as exclusões permanentes do manifesto como
+fato, **sem perguntar de novo**:
 
-### 5. Escrever as notas de release
+```text
+Escopo completo: todos os componentes, exceto legacy_component
+                 (exclusão permanente declarada no manifesto)
+```
 
-Esta é a parte da skill que mais agrega valor, e a que mais fácil sai
-errada. **O produto deste passo é texto corrido que qualquer pessoa
-entende — não uma lista de issues.**
+> ⚠️ Exclusão **não** declarada nunca é inventada durante a execução. Se um
+> componente deve ficar permanentemente de fora, isso é alteração de manifesto,
+> com decisão de Rafinha, **antes** da release.
 
-A matéria-prima já existe: a `jira-issue-executor` mantém o campo
-**`Resumo`** de cada issue atualizado com o que foi desenvolvido. Use
-isso, não a mensagem de commit e não o título da issue.
+Aguarde confirmação antes de seguir.
 
-Para cada componente no escopo, escreva
-`.github/release-notes/<componente>-<versao>.md`:
+---
 
-> **Regra do texto:** descreva o que mudou do ponto de vista de quem
-> **usa** o sistema. Se a frase só faz sentido para quem abriu o Pull
-> Request, reescreva.
+## Fase 3 — Decisão das versões (Gate G4)
+
+Sugira o incremento **de cada componente do `version_scope`**, com justificativa
+objetiva:
+
+```text
+geoprag_admin   1.1.0 → 1.2.0-rc.1   MINOR (tela nova, nada quebrado)
+geoprag_api     2.1.0 → carried       sem mudança nesta rodada
+```
+
+Em release **completa**, sugira também a **versão do produto**:
+
+```text
+GeoPrag  0.9.0 → 1.0.0-rc.1   MAJOR (primeira distribuição completa estável)
+```
+
+A versão do produto identifica o conjunto; ela **não** substitui as versões dos
+componentes e **não** vira Fix Version.
+
+**Nunca decida sozinha.** Aguarde confirmação ou correção para cada item.
+
+---
+
+## Fase 4 — Notas de release (Gate G5)
+
+Esta é a parte que mais agrega valor e a que mais fácil sai errada. **O produto
+deste passo é texto corrido que qualquer pessoa entende — não uma lista de
+issues.**
+
+A matéria-prima é o campo **`Resumo`** de cada issue, que a
+`jira-issue-executor` mantém atualizado. Use isso, não a mensagem de commit e
+não o título da issue.
+
+Escreva `.github/release-notes/<componente>-<versao-base>.md` — **versão base**,
+sem o `-rc.N`: um arquivo `geoprag_admin-1.2.0.md` serve o `rc.1`, o `rc.2` e a
+final, que é o que se quer, já que descrevem a mesma entrega.
+
+> **Regra do texto:** descreva o que mudou do ponto de vista de quem **usa** o
+> sistema. Se a frase só faz sentido para quem abriu o Pull Request, reescreva.
 
 - **Agrupe por tema, não por issue.** Três issues que juntas melhoraram o
-  cadastro de roteiro viram *um* parágrafo sobre cadastro de roteiro. A
-  correspondência 1 issue = 1 bullet é justamente o que se quer evitar.
-- **Nunca liste issues ou PRs como se fossem o conteúdo.** Se quiser
-  manter rastreabilidade, ponha as chaves numa linha no fim do arquivo,
-  depois de um `---`, como referência — nunca no lugar da explicação.
-- **Seções por natureza da mudança** (`## Novidades`, `## Correções`,
-  `## Mudanças que exigem atenção`), não por componente — o arquivo já é
-  de um componente só.
-- **Sem jargão interno:** nada de nome de branch, nome de arquivo, nome
-  de classe, "refatorado o service", "ajustado o DTO". Se a mudança é
-  puramente interna e não muda nada para quem usa, ou ela fica de fora ou
-  vira uma frase sobre o efeito prático (ex.: "as telas de viagem
-  carregam mais rápido").
-- **Breaking change sempre aparece**, com o que a pessoa precisa fazer a
-  respeito.
+  cadastro viram *um* parágrafo sobre cadastro.
+- **Nunca liste issues ou PRs como conteúdo.** Chaves vão no fim, depois de um
+  `---`, como referência.
+- **Seções por natureza** (`## Novidades`, `## Correções`, `## Mudanças que
+  exigem atenção`), não por componente — o arquivo já é de um componente só.
+- **Sem jargão interno:** nada de branch, arquivo, classe, "refatorado o
+  service". Mudança puramente interna ou fica de fora, ou vira uma frase sobre o
+  efeito prático.
+- **Breaking change sempre aparece**, com o que a pessoa precisa fazer.
 
-Se o `Resumo` de uma issue estiver vazio ou genérico demais para virar
-texto útil, **pergunte a Rafinha** o que aquela mudança significou na
-prática — não invente e não caia no título da issue como substituto.
+`Resumo` vazio ou genérico demais: **pergunte a Rafinha** o que aquela mudança
+significou na prática. Não invente e não caia no título da issue.
 
-Atualize também, no mesmo commit:
+Atualize também, no mesmo commit: `CHANGELOG.md` e a tabela de versões do
+`README.md`, se houver.
 
-- `CHANGELOG.md` — mesma seção, no histórico do projeto;
-- a tabela de versões no `README.md`, se o projeto tiver uma.
+**Commite antes do dispatch** — é de lá que a Action lê as notas. Sem o arquivo,
+ela cai no `--generate-notes` e publica a lista crua de PRs.
 
-Commite tudo isso **antes** de disparar a Action, para que o arquivo
-esteja presente no código que ela vai buildar — é de lá que o
-`release.yml` lê as notas (`--notes-file`). Sem o arquivo, a Action cai
-no `--generate-notes` do GitHub e a Release sai com a lista crua de Pull
-Requests, que é exatamente o que não se quer.
+---
 
-### 6. Disparar a Action de release
+## Fase 5 — Execução (Gate G6)
 
-Aqui termina a sua parte determinística. Dispare a Action do próprio
-repositório, passando uma versão por componente no escopo e deixando em
-branco os que ficam de fora:
+### 5.1 Produzir o Release Request
 
-```bash
-gh workflow run release.yml --ref develop \
-  -f routecraft_version=1.1.1 \
-  -f api_version=0.2.0 \
-  -f publish=true
-```
+Escreva `.release/requests/<data>-<tipo>.yml` no formato do contrato (§8 da
+referência, exemplo em `templates/orchestrator/release-request.example.yml`):
+tipo, versão de produto, escopo pedido e efetivo, `version_scope`, `carried`,
+`ref`, commits por repositório e issues por componente.
 
-Acompanhe com `gh run watch <id> --exit-status`. A Action cria a release
-branch, faz o bump, builda, publica os artefatos e cria uma tag
-`<componente>/vX.Y.Z` + GitHub Release por componente.
+Em FINAL que promove uma pre-release validada, preencha `promotes` — e então os
+commits vêm do `release-manifest.yml` daquele rc, **não** do `HEAD` da branch.
 
-**Falha aqui é bloqueio de avanço** — mesmo princípio das demais camadas
-de validação. Corrija e repita até passar. Nunca contorne fazendo o passo
-na mão.
+### 5.2 Escolher o caminho
 
-### 7. Release Candidate (quando aplicável)
+| Caso | O que fazer |
+| --- | --- |
+| Há distribuição a montar (completa, ou parcial agregada) | `.\.release\scripts\orchestrate.ps1 -Request <caminho>` |
+| Release parcial sem distribuição | `gh workflow run release.yml --repo <remote> --ref <ref> -f <input>=<versao> -f release_type=<tipo> -f publish=true` |
 
-Para projetos cujo porte/risco justifique, publique um Release Candidate
-usando pre-release tags do SemVer (`X.Y.Z-rc.1`, `X.Y.Z-rc.2`) antes da
-versão oficial, iterando com QA até estabilizar. Para projetos pequenos,
-isso pode ser dispensado — confirme com Rafinha se não estiver claro.
+Rode o Orchestrator com `-Validate` primeiro: ele confere manifesto, escopo e
+estado dos repositórios sem tocar na rede.
 
-### 8. Aguardar validação funcional de Rafinha
+O Orchestrator dispara as Actions, aguarda, coleta os artefatos, monta a
+distribuição com o Runtime Package, gera o `release-manifest.yml` e o ZIP.
 
-Antes de considerar a release entregue, Rafinha precisa validar
-funcionalmente o conjunto. Isso não é o mesmo que a `Análise final -
-Rafinha` de cada issue individual, já feita antes — aqui é a validação do
-conjunto como entrega. Não prossiga sem essa confirmação explícita.
+**Falha aqui é bloqueio de avanço.** Corrija e repita. Nunca contorne fazendo o
+passo na mão — se a Action falhou, conserte a Action; se o Orchestrator falhou,
+conserte o Orchestrator.
 
-### 9. Associar as Fix Versions no Jira
+---
 
-Crie/atualize as versões no Jira com **nome namespaced**, igual à tag:
+## Fase 6 — Validação da distribuição (Gate G7)
+
+Antes de considerar entregue, **Rafinha executa a distribuição fora da IDE**:
+baixa o pacote, roda o entrypoint do Runtime Package, usa o produto real.
+
+Isso não é a `Análise final - Rafinha` de cada issue, já feita antes. Aqui é a
+validação do **pacote como entrega** — é o que separa "o CI passou" de "o
+produto funciona quando alguém o executa".
+
+Não prossiga sem confirmação explícita. O resultado:
 
 ```text
-routecraft_app 1.1.1
-compass-api 0.2.0
+aprovada   → promover para FINAL (nova execução, com `promotes` preenchido)
+reprovada  → correção → novo rc (rc.2, rc.3, …)
 ```
 
-Nunca `1.1.1` solto — componentes diferentes podem estar na mesma versão,
-e sem prefixo eles colapsam numa Fix Version só.
+Nem toda pre-release vira final, e não há limite de rc's. Registre o veredito na
+página **Validação da Release** do projeto.
 
-Associe cada issue à Fix Version **de cada componente que ela tocou**.
-Fix Version é multi-valorada: uma issue que mexeu na API e no app recebe
-as duas, à medida que cada componente for lançado.
+> A `jira-human-validation-executor` pode **recomendar** a geração de uma
+> pre-release quando um cenário só for validável na distribuição real. Ela
+> recomenda; quem decide gerar é Rafinha.
+
+---
+
+## Fase 7 — Registro (Gate G9)
+
+Só depois de uma release **FINAL** validada:
+
+### 7.1 Fix Versions no Jira
+
+Crie/atualize as versões com **nome namespaced**, igual à tag:
+
+```text
+geoprag_admin 1.2.0
+geoprag_api 2.1.0
+```
+
+- **Só em release final.** `rc.N` nunca vira Fix Version.
+- **Só por componente.** A versão do produto não vira Fix Version.
+- **Multi-valorada:** uma issue que tocou dois componentes recebe as duas, à
+  medida que cada um for lançado.
 
 > ⚠️ Uma issue que tocou dois componentes e teve só um lançado **não está
-> inteiramente entregue**. Não a trate como concluída no sentido de
-> release — ela ainda espera o lançamento do outro componente.
+> inteiramente entregue**. Não a trate como concluída no sentido de release.
 
-### 10. Atualizar a documentação de versionamento
+### 7.2 Confluence
 
-Atualize a página **"Versionamento"** do projeto no Confluence (ver seção
-10.10 de `workflow-development-flow`) com as versões novas, a data e o
-link das Releases. Se a página não existir ainda, crie-a seguindo a
-estrutura padrão.
+- Página **Release** do projeto: acrescente a distribuição, copiando o
+  **conteúdo do `release-manifest.yml`** — nunca uma segunda versão escrita à
+  mão.
+- Página **Versionamento**: atualize as versões dos componentes e a do produto.
+- Página **Validação da Release**: o veredito da fase 6.
 
-Confirme também que o `CHANGELOG.md` do passo 5 está completo e que as
-notas da GitHub Release saíram legíveis.
+### 7.3 Armazenamento
+
+O ZIP vai para a pasta do Drive definida pelo projeto, junto de uma cópia
+atualizada do `.release/project.yml`. Em multi-repo isso não é conveniência: o
+manifesto não tem histórico Git, e o Drive + o Confluence + os ZIPs **são** a
+rastreabilidade histórica.
 
 ---
 
 ## O que NÃO fazer
 
-- ❌ Nunca decidir sozinha o incremento de versão (MAJOR/MINOR/PATCH) —
-  sempre sugerir com justificativa e aguardar a confirmação de Rafinha,
-  componente a componente.
-- ❌ Nunca criar branch de release, fazer bump, `git tag` ou
-  `gh release create` na mão — isso é trabalho da Action. Se a Action
-  falhar, conserte a Action.
-- ❌ Nunca gerar uma release automaticamente a partir de uma issue
-  concluída — release é sempre um agrupamento confirmado por Rafinha,
-  nunca 1:1 com issue.
-- ❌ Nunca varrer uma coluna do board para disparar esta skill — ela só
-  roda quando Rafinha inicia explicitamente.
-- ❌ Nunca criar ou sugerir uma coluna "Release" no Jira — isso misturaria
-  os dois ciclos, o que é proibido pelo princípio central deste processo.
-- ❌ Nunca usar tag ou Fix Version sem o prefixo do componente em projeto
-  multi-componente.
-- ❌ Nunca inferir o componente de uma issue pelo título ou pela label de
-  plataforma — sempre pelos arquivos do PR, ou perguntando.
-- ❌ Nunca entregar uma Release cujas notas sejam uma lista de issues, de
-  Pull Requests ou de mensagens de commit. As notas são texto corrido,
-  legível por quem nunca viu o board — ver passo 5.
-- ❌ Nunca deixar de commitar o arquivo de notas antes do dispatch. Sem
-  ele a Action cai no `--generate-notes` e publica exatamente a lista
-  crua que se quer evitar.
-- ❌ Nunca preencher uma nota de release inventando o que a issue fez
-  porque o campo `Resumo` estava vazio — pergunte a Rafinha.
-- ❌ Nunca instalar o `release.yml` copiando de outro projeto em vez dos
-  templates desta skill — projetos divergem, e copiar de um deles propaga
-  a divergência. Se um projeto precisou de algo que o template não cobre,
-  a melhoria volta para o template.
-- ❌ Nunca marcar como totalmente entregue uma issue cujos componentes não
-  foram todos lançados.
+- ❌ Nunca decidir sozinha o incremento de versão — de componente ou de produto.
+- ❌ Nunca criar branch de release, bump, build, `git tag` ou `gh release create`
+  na mão. Se a Action falhar, conserte a Action.
+- ❌ Nunca montar a distribuição na mão. Se o Orchestrator falhar, conserte-o.
+- ❌ Nunca gerar release automaticamente a partir de issue concluída.
+- ❌ Nunca varrer coluna do board para disparar esta skill.
+- ❌ Nunca criar ou sugerir uma coluna "Release" no Jira.
+- ❌ Nunca inferir topologia de projeto — ela é declarada no manifesto.
+- ❌ Nunca inferir dependência entre componentes por análise de código.
+- ❌ Nunca bumpar um componente `carried` que não mudou.
+- ❌ Nunca prosseguir com `carried` sem versão publicada compatível — nem
+  fabricar a dependência, nem usar código local não publicado.
+- ❌ Nunca inventar exclusão de componente não declarada no manifesto.
+- ❌ Nunca re-perguntar justificativa de exclusão já declarada.
+- ❌ Nunca usar tag ou Fix Version sem o prefixo do componente.
+- ❌ Nunca criar Fix Version para um `rc.N`.
+- ❌ Nunca transformar a versão do produto em Fix Version.
+- ❌ Nunca inferir componente pelo título da issue ou pela label de plataforma.
+- ❌ Nunca entregar notas que sejam lista de issues, PRs ou mensagens de commit.
+- ❌ Nunca deixar de commitar as notas antes do dispatch.
+- ❌ Nunca inventar o que uma issue fez porque o `Resumo` estava vazio.
+- ❌ Nunca produzir uma FINAL a partir de estado de código diferente do rc
+  promovido.
+- ❌ Nunca começar uma release sem a documentação do projeto no Confluence.
+- ❌ Nunca instalar templates copiando de outro projeto.
+- ❌ Nunca marcar como entregue uma issue cujos componentes não saíram todos.
 - ❌ Nunca usar `git push --force` ou `--force-with-lease`.
-- ❌ Nunca descartar alterações não commitadas sem confirmação explícita
-  de Rafinha.
-- ❌ Nunca avançar para o registro final sem a validação funcional de
-  Rafinha (passo 8) e sem a Release CI verde (passo 6).
-- ❌ Nunca esquecer de associar as issues às versões no Jira (passo 9) — é
-  isso que mantém a rastreabilidade issue ↔ release.
+- ❌ Nunca descartar alterações não commitadas sem confirmação explícita.
 
 ---
 
 ## Resumo final ao usuário
 
-Ao concluir, apresente um resumo, por exemplo:
-
 ```
-🚀 Release executada — projeto: Compass System
+🚀 Release executada — GeoPrag
 
-📦 Componentes lançados
-   compass-api      0.1.0 → 0.2.0   MINOR   tag compass-api/v0.2.0
-   routecraft_app   1.1.0 → 1.1.1   PATCH   tag routecraft_app/v1.1.1
-   travel_matrix    sem mudanças — fora do escopo
+📦 Tipo: FINAL (promoção de 1.0.0-rc.3)   Escopo: completa
+🏷️  Produto: GeoPrag 0.9.0 → 1.0.0
 
-📋 Issues incluídas
-   compass-api      CPS-107, CPS-112
-   routecraft_app   CPS-107 (também na API), CPS-119, CPS-121
+   Componente        Versão              Origem
+   geoprag_mobile    1.3.0 → 1.4.0       versionado   GEO-38, GEO-40
+   geoprag_admin     1.1.0 → 1.2.0       versionado   GEO-41, GEO-44
+   geoprag_public    1.8.0               carried
+   geoprag_api       2.1.0               carried
+   legacy_component  —                   exclusão permanente
 
-⚙️  Action: release.yml run #14 — verde
-🔖 GitHub Releases: [links]  |  artefatos publicados
-🏷️  Fix Versions associadas: "compass-api 0.2.0", "routecraft_app 1.1.1"
-📝 CHANGELOG.md e página de Versionamento atualizados
+⚙️  Orchestrator: 2 Actions disparadas, ambas verdes
+📦 Distribuição: geoprag-1.0.0.zip (148 MB) — runtime incluído
+✅ Validada fora da IDE por Rafinha em 12/09
+🏷️  Fix Versions: "geoprag_mobile 1.4.0", "geoprag_admin 1.2.0"
+📝 Confluence: Release, Versionamento e Validação da Release atualizadas
+💾 Drive: ZIP + cópia do project.yml
 
-⚠️  CPS-107 tocou os dois componentes e só teve um lançado — segue
-   aguardando a próxima release de routecraft_app.
+⚠️  GEO-44 tocou admin e api; só o admin saiu nesta release — segue aguardando
+   o lançamento de geoprag_api.
 ```
