@@ -1,6 +1,6 @@
 ---
 name: jira-issue-executor
-description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar (não é restrita ao Geoprag). Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Interpreta a hierarquia Épico/Issue/Subtask do item recebido (consultando workflow-development-flow em caso de dúvida) e lê o campo tipo (código/documentação) já definido por jira-issue-creator — só pergunta como fallback se o campo não existir ou estiver ambíguo. Issues de código são implementadas de verdade (branch + commit + code review automatizado via `/code-review` e `/ponytail:ponytail-review` + testes obrigatórios e proporcionais ao risco + push + abertura automática de Pull Request referenciando a Issue do Jira e, quando houver GitHub Issue de origem vinculada no campo Link para GitHub Issue, fechando-a via Closes #N). Mantém um Execution State (`.claude/execution-state/<CHAVE>.md`, ver workflow-development-flow seção 13) durante a implementação de issues de código, permitindo retomar de onde parou numa sessão nova sem depender do transcript da anterior. Grava o link do PR no campo Links para merge, mantém o campo Resumo da issue atualizado com uma versão breve do que foi desenvolvido, aplica a label de revisão e, para issues de código, também a label de plataforma (web/mobile, conforme o código tocado) que a jira-qa-executor usa depois para escolher o executor de QA certo, além de publicar tudo no comentário \"Implementação Claude\". Issues de documentação são delegadas à business-rule-writer (RN), module-doc-writer (módulo) ou screen-doc-writer (tela/UI). Roda via Claude Code no repositório real dele. Abre o Pull Request automaticamente após o push; mergear continua fora do escopo desta skill."
+description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar. Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Lê o TIPO NATIVO DO TICKET (Implementação, Correção, Bug, Refatoração Técnica, Documentação) como natureza da issue — o campo customizado `Tipo` saiu do contrato e nunca deve ser lido. Aplica o GATE DE DESIGN antes de qualquer linha de código: se a issue tem `requires-design` e não existe `.claude/design-packages/<ISSUE-KEY>/` na máquina, bloqueia e reporta, sem nunca implementar no escuro nem concluir que o design não foi feito. Respeita as labels de risco e controle (do-not-expand-scope, needs-manual-decision, needs-evidence, high-risk, breaking-change, legacy, needs-human-review) e só usa labels da matriz oficial do Confluence — nunca inventa label, nunca aplica `requires-design`, e não aplica mais a label genérica de revisão, que saiu do contrato. Issues de código são implementadas de verdade: branch com prefixo derivado do tipo do ticket (feat/, fix/, refactor/), commit, code review automatizado via `/code-review` e `/ponytail:ponytail-review`, testes obrigatórios e proporcionais ao risco, push e abertura automática de Pull Request referenciando a Issue do Jira e fechando a GitHub Issue de origem via Closes #N quando houver. Reaproveita componentes reutilizáveis por ID canônico e reporta divergência em vez de recriar componente existente. Confirma ou corrige a label de plataforma (web/mobile) conforme os arquivos realmente alterados — a jira-qa-executor depende dela e não tem mais fallback. Registra no comentário \"Implementação Claude\" o uso do Design Package e os IDs canônicos aplicados. Mantém um Execution State (`.claude/execution-state/<CHAVE>.md`, ver workflow-development-flow seção 13). Issues do tipo Documentação são delegadas por label de trilha: rn-doc para business-rule-writer, module-doc para module-doc-writer, screen-doc para screen-doc-writer — sem label de trilha, pergunta antes de prosseguir. Roda via Claude Code no repositório real dele. Mergear continua fora do escopo desta skill."
 ---
 
 # Executor de Issues — Coluna "Fazer - Claude" (Jira genérico)
@@ -155,16 +155,16 @@ Para cada issue, leia todos os comentários antes de decidir o que fazer:
   funcional/visual reprova a issue já integrada em `develop` — ou
   "validação humana reprovada" — essa vem da
   `jira-human-validation-executor`, quando Rafinha reprova um cenário de
-  uma Validação Manual que agrega esta issue) → trate como correção (vá
+  uma Validação Humana que agrega esta issue) → trate como correção (vá
   para o passo 4b).
 
-  **No caso da validação humana**, o comentário aponta a Validação Manual
+  **No caso da validação humana**, o comentário aponta a Validação Humana
   de origem, o cenário reprovado e o feedback de Rafinha. Leia a
   validação vinculada antes de corrigir: o problema foi classificado como
   pertencente ao escopo **desta** issue, então a correção é aqui — não
   crie issue nova nem subtask para ela. Depois de corrigida, a issue
-  segue o fluxo normal e a **mesma** Validação Manual ganha uma nova
-  tentativa quando ela voltar a `Análise final - Rafinha`.
+  segue o fluxo normal e a **mesma** Validação Humana ganha uma nova
+  tentativa quando ela voltar a `Análise Final - Rafinha`.
 - Se **há** um comentário de Rafinha pedindo explicitamente para **segurar**
   a implementação (ex.: "não implementa ainda", "segura essa issue",
   "aguardar resolução de dependência") → **não implemente nada**. Deixe a
@@ -192,21 +192,133 @@ das quatro trilhas:
   componentes, interações, estados ou regras de exibição de uma tela. Vai
   para a skill `screen-doc-writer`.
 
-**A classificação código/documentação é lida do campo `tipo`, já definido
-por `jira-issue-creator` na criação da issue — não pergunte por rotina.**
-Pergunte a Rafinha apenas como fallback, se o campo não existir na issue ou
-estiver realmente ambíguo. A subdivisão dentro de "documentação" (RN,
-módulo ou tela) normalmente não vem nesse campo — infira pelo conteúdo da
-issue e só pergunte se ficar genuinamente ambíguo entre duas trilhas. Se
-estiver processando várias issues na mesma execução e restar mais de uma
+**A natureza da issue é o tipo nativo do ticket no Jira**, definido por
+`jira-issue-creator` na criação:
+
+| Tipo do ticket | Tratamento |
+|---|---|
+| **Implementação**, **Correção**, **Bug**, **Refatoração Técnica** | Código — seção 5 |
+| **Documentação** | Documentação — seção 6 |
+| **Epic** | Não executável. Consulte as issues filhas |
+| **Validação Humana** | Não é desta skill |
+
+> ⚠️ **O campo customizado `Tipo` saiu do contrato.** Não o leia. Se ele
+> existir na issue, ignore — o tipo do ticket é a única fonte.
+
+**Gate de tipo.** Se o tipo do ticket não for um dos 7 oficiais, ou for
+incompatível com o que a descrição pede, **pare e pergunte a Rafinha**. Não
+infira a natureza pelo conteúdo quando o tipo diz outra coisa.
+
+**Trilha documental.** Numa issue do tipo **Documentação**, o writer é
+escolhido pela **label de trilha**, não pelo conteúdo:
+
+| Label | Writer |
+|---|---|
+| `rn-doc` | `business-rule-writer` |
+| `module-doc` | `module-doc-writer` |
+| `screen-doc` | `screen-doc-writer` |
+
+Se a issue do tipo Documentação **não tiver** label de trilha, **pergunte a
+Rafinha antes de prosseguir** — não infira pelo conteúdo. A label
+`confluence` é destino/meio e não satisfaz esse gate sozinha.
+
+Se estiver processando várias issues na mesma execução e restar mais de uma
 dúvida real, pode perguntar todas de uma vez, no início, para não
 interromper o fluxo issue a issue.
 
-Depois de classificada:
-- Código → siga para o passo 4a/4b normalmente, e a implementação real
-  acontece na seção 5.
-- RN, Documentação de módulo, ou Tela → siga para o passo 4a/4b
-  normalmente, e a implementação real acontece na seção 6.
+### 3.1 Gate de Design — antes de qualquer implementação
+
+Este gate roda **antes** dos passos 4a/4b e antes de qualquer linha de
+código. Ele vale para issues de código; issues do tipo Documentação não
+passam por ele.
+
+```text
+A issue tem a label requires-design?
+        ↓                        ↓
+       NÃO                      SIM
+        ↓                        ↓
+  segue normal        Existe .claude/design-packages/<CHAVE>/ ?
+                              ↓                    ↓
+                             SIM                  NÃO
+                              ↓                    ↓
+                        segue, usando        BLOQUEIA e reporta
+                        o pacote             (não implementa)
+```
+
+**Quando o pacote não está lá, pare imediatamente** e reporte:
+
+```text
+BLOQUEIO — Design Package não encontrado
+
+Issue: <CHAVE>  (label requires-design)
+Procurado em: .claude/design-packages/<CHAVE>/
+Repositório: <caminho do repo nesta máquina>
+
+O pacote não está disponível NESTA máquina.
+Isso não significa que o design não foi feito.
+
+Ação necessária: exportar o Design Package no Claude Design,
+extrair o ZIP e salvar o conteúdo na pasta acima.
+```
+
+Você **não deve**, em hipótese alguma:
+- implementar no escuro;
+- improvisar UI sem referência visual;
+- criar design por conta própria durante a implementação;
+- seguir em frente "só a parte que não é visual".
+
+Você **nunca conclui que o design não foi feito** — conclui apenas que o
+artefato não está nesta máquina. O Design Package é local, efêmero e não
+versionado; a ausência aqui não diz nada sobre o estado do design.
+
+**Sem Execution State para este bloqueio.** Ele ocorre antes de a
+implementação começar, e o Jira já representa o estado operacional da issue.
+
+**`ui` e `correcao-ui` não disparam este gate.** O gatilho é exclusivamente
+`requires-design`.
+
+**Nunca aplique `requires-design` você mesmo.** Ela é confirmada manualmente
+por Rafinha. Se achar que uma issue deveria ter a label e não tem,
+**comente a observação** e siga — não aplique.
+
+#### Como usar o pacote
+
+Quando o pacote existe, a implementação consome o **conteúdo extraído** —
+nunca o ZIP compactado.
+
+Ao implementar, consulte em conjunto: a descrição da issue, o Design Package
+local, o código real e a página de componentes reutilizáveis do produto no
+Confluence.
+
+**Componentes reutilizáveis.** Se o design referencia um componente por ID
+canônico (`<sigla>.<tipo>.<subtipo>`):
+- reaproveite o componente Flutter existente que corresponde ao ID;
+- **nunca recrie** um componente que já existe;
+- se o ID **não existir** no código nem na documentação, **reporte a
+  divergência** em vez de criar o componente silenciosamente;
+- ID no padrão `<sigla>.candidate.<nome>` é **componente candidato** — não é
+  oficial, e tratá-lo como oficial é erro.
+
+**Divergência entre issue e design.** Se o design indicar comportamento que a
+issue não previu, **pare e pergunte**. Você não escolhe sozinho entre a
+descrição da issue e o design.
+
+### 3.2 Labels de risco e controle
+
+Antes de implementar, verifique as labels de controle da issue e respeite-as:
+
+| Label | O que ela obriga |
+|---|---|
+| `do-not-expand-scope` | Não faça nada além do escopo literal da issue. Nem melhoria óbvia |
+| `needs-manual-decision` | Há decisão pendente de Rafinha. Pergunte antes de implementar |
+| `needs-evidence` | Evidência é obrigatória no comentário de execução |
+| `high-risk` | Reforce testes e registre explicitamente o risco tratado |
+| `breaking-change` | Registre o que quebra e o impacto no comentário |
+| `legacy` | Código legado — minimize o raio de alteração |
+| `needs-human-review` | Sinalize no comentário que a revisão humana precisa ser reforçada |
+
+Essas labels são contrato, não sugestão. A `jira-review-executor` audita se
+foram respeitadas.
 
 ### 4a. Issue nova (sem review anterior)
 
@@ -266,13 +378,19 @@ foi:
   causa dessa dependência, siga a regra do passo 2 (não implemente).
 
 **5.2 Resolver a branch.** A convenção de nome é
-`{tipo}/{CHAVE-DA-ISSUE}-claude`, onde `{tipo}` é:
-- `fix` se o tipo da issue no Jira for **Bug**;
-- `feat` para os demais tipos (Tarefa, História, Função, Epic tratado como
-  subtarefas, etc.), a menos que o resumo da issue indique claramente outra
-  natureza (ex.: "atualizar README" → `docs`).
+`{tipo}/{CHAVE-DA-ISSUE}-claude`, e o prefixo vem do **tipo do ticket**:
 
-Exemplo: issue `EP-4` do tipo Tarefa → branch `feat/EP-4-claude`.
+| Tipo do ticket | Prefixo |
+|---|---|
+| Implementação | `feat/` |
+| Correção | `fix/` |
+| Bug | `fix/` |
+| Refatoração Técnica | `refactor/` |
+| Documentação | sem branch por padrão; `docs/` só quando a documentação for versionada em Git (README, ADR, `docs/`, `.md`) |
+
+Exemplo: issue `EP-4` do tipo Implementação → branch `feat/EP-4-claude`.
+
+Não infira o prefixo pelo resumo da issue — ele é determinado pelo tipo.
 
 Verifique nesta ordem:
 1. A branch já existe **localmente**? → dê checkout nela e continue o
@@ -454,6 +572,20 @@ O comentário deve:
   — achados do `/code-review` e do `/ponytail:ponytail-review` corrigidos no
   código, achados deixados como nota para Rafinha, ou confirmação de que não
   houve achados em nenhum dos dois.
+- **Para issues com `requires-design`: registro obrigatório do uso do Design
+  Package.** Declare que encontrou e usou o pacote local, e liste os **IDs
+  canônicos** de componentes reutilizáveis considerados ou aplicados. Se o
+  design referenciou um ID que não existe no código, registre a divergência
+  aqui também.
+
+  > **Por que esse registro é obrigatório.** A `jira-review-executor` audita
+  > o **registro**, não a pasta — o Design Package é local, efêmero e não
+  > versionado, e pode não existir mais quando a auditoria rodar. Sem
+  > registro, o review aponta inconsistência.
+
+- **Quando a issue tiver labels de risco e controle** (`needs-evidence`,
+  `high-risk`, `breaking-change`, `do-not-expand-scope`, …): registre
+  explicitamente como cada uma foi respeitada. É isso que o review audita.
 - Para issues de documentação: link da página do Confluence criada/atualizada,
   qual skill foi usada (`business-rule-writer` ou `module-doc-writer`), e um
   resumo de quantos pontos foram deixados como pendência (via
@@ -466,17 +598,35 @@ em código ou documentação nesta issue. Se a issue já tinha um `Resumo` de
 uma execução anterior (ex.: retomada após review reprovado), substitua pelo
 estado atual em vez de concatenar texto antigo com novo.
 
-### 8. Labels obrigatórias
+### 8. Labels
 
-**Label de revisão.** Adicione à issue a label/categoria de revisão, para
-sinalizar a Rafinha que aquela issue foi trabalhada por você e precisa de
-revisão dele.
+**Toda label aplicada precisa estar na matriz oficial** (página *Vocabulário
+operacional de labels*, espaço CS1). **Nunca invente label.** Se precisar de
+uma que não está na matriz, pergunte a Rafinha — não improvise.
 
-**Label de plataforma — apenas issues de código.** Aplique também o label
-nativo do Jira `web` e/ou `mobile`, indicando em qual(is) plataforma(s) a
-mudança é observável. É o que a `jira-qa-executor` usa depois, na coluna
-"QA - Claude", para escolher o executor de QA certo (Claude in Chrome vs.
-Maestro) sem precisar adivinhar. Regra:
+Uma label documentada na matriz **pode ser criada no Jira sob demanda**,
+mesmo que ainda não exista naquele projeto. O que não pode é inventar.
+
+> ⚠️ **A label genérica de revisão saiu do contrato.** Não aplique `revisao`,
+> `revisão`, `pronto-para-revisao`, `review-claude`, `claude-review` nem
+> qualquer variante. A passagem por revisão já é representada pela coluna do
+> workflow — a label era redundância, e na prática gerou sete grafias
+> diferentes da mesma ideia.
+
+> ⚠️ **Nunca aplique `requires-design`.** Ela é confirmada manualmente por
+> Rafinha (seção 3.1). Se achar que a issue deveria tê-la, comente a
+> observação e siga.
+
+**Label de plataforma — apenas issues de código.** Aplique o label nativo do
+Jira `web` e/ou `mobile`, indicando em qual(is) plataforma(s) a mudança é
+observável. **Você é quem confirma ou corrige** essa label: a
+`jira-issue-creator` pode ter proposto uma intenção inicial, mas quem decide
+é o que os arquivos realmente alterados dizem.
+
+É o que a `jira-qa-executor` usa depois, na coluna "QA - Claude", para
+escolher o executor de QA certo (Claude in Chrome vs. Maestro). **Ela não tem
+mais fallback** — se a label faltar, o QA bloqueia. Aplicar corretamente aqui
+é o que impede esse bloqueio. Regra:
 
 - Mudança em código específico de uma plataforma (ex.: arquivo sob
   `lib/**/web/`, uso de `kIsWeb`, `Platform.isAndroid`/`Platform.isIOS`,
@@ -528,9 +678,28 @@ Maestro) sem precisar adivinhar. Regra:
   outro caminho.
 - ❌ Nunca pular a pergunta sobre qual projeto/Jira processar, nem sobre o
   repositório de código quando não estiver claro.
-- ❌ Nunca prosseguir com uma issue cujo campo `tipo` esteja ausente ou
-  ambíguo sem antes perguntar a Rafinha (passo 3) — a classificação só é
-  lida automaticamente quando já veio definida por `jira-issue-creator`.
+- ❌ Nunca ler o campo customizado `Tipo`. Ele saiu do contrato — a natureza
+  da issue é o tipo nativo do ticket (passo 3).
+- ❌ Nunca prosseguir com uma issue cujo tipo não seja um dos 7 oficiais, ou
+  seja incompatível com o que a descrição pede, sem antes perguntar a
+  Rafinha (passo 3).
+- ❌ Nunca implementar uma issue com `requires-design` sem o Design Package
+  local (passo 3.1). Sem o pacote, o trabalho **para** — não existe "fazer
+  só a parte que não é visual".
+- ❌ Nunca concluir que "o design não foi feito" quando o pacote não está na
+  máquina. A conclusão correta é que **o artefato não está aqui**.
+- ❌ Nunca aplicar `requires-design`. Ela é confirmada manualmente por
+  Rafinha.
+- ❌ Nunca aplicar a label genérica de revisão, em nenhuma grafia. Ela saiu
+  do contrato.
+- ❌ Nunca inventar label fora da matriz oficial do Confluence.
+- ❌ Nunca recriar um componente reutilizável que já existe com ID canônico.
+  Se o ID citado no design não existe no código, **reporte a divergência**.
+- ❌ Nunca escolher sozinho entre a descrição da issue e o design quando os
+  dois divergirem — pare e pergunte.
+- ❌ Nunca ignorar `do-not-expand-scope`, `needs-manual-decision`,
+  `needs-evidence`, `high-risk`, `breaking-change`, `legacy` ou
+  `needs-human-review` (passo 3.2).
 - ❌ Nunca tratar a aplicação da skill `flutter-development-standards` como
   opcional ou como menção passiva — para issues de código Flutter/Dart, a
   autorevisão do passo 5.3b é obrigatória e deve gerar correções reais no

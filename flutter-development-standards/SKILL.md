@@ -1,18 +1,6 @@
 ---
 name: flutter-development-standards
-description: >
-  Padrões de arquitetura e boas práticas de Flutter/Dart de Rafinha,
-  consolidados a partir da análise real de uma feature em produção
-  (travel_matrix, do Compass System) combinada com boas práticas gerais.
-  Usar sempre que Rafinha estiver escrevendo, revisando ou planejando código
-  Flutter/Dart em qualquer um dos seus projetos (Compass System, F1 App
-  Design Patterns, InfraCheck, Cluster Playground, Encryption Playground, ou
-  qualquer novo projeto Flutter), incluindo pedidos como "revisa esse
-  código", "isso está de acordo com nossos padrões?", "cria um
-  Controller/Widget/Repository para X", ou qualquer implementação nova de
-  camada, widget, estado ou modelo em Flutter. Esta skill é um checklist de
-  qualidade, não um gerador de boilerplate — aplique as regras ao avaliar ou
-  escrever código, não apenas cite-as.
+description: "Padrões de arquitetura e boas práticas de Flutter/Dart de Rafinha, consolidados a partir da análise real de uma feature em produção (travel_matrix, do Compass System) combinada com boas práticas gerais. Usar sempre que Rafinha estiver escrevendo, revisando ou planejando código Flutter/Dart em qualquer um dos seus projetos (Compass System, F1 App Design Patterns, InfraCheck, Cluster Playground, Encryption Playground, ou qualquer novo projeto Flutter), incluindo pedidos como \"revisa esse código\", \"isso está de acordo com nossos padrões?\", \"cria um Controller/Widget/Repository para X\", ou qualquer implementação nova de camada, widget, estado ou modelo em Flutter. Inclui a seção 14, sobre componentes reutilizáveis e IDs canônicos do Design System (`<sigla>.<tipo>.<subtipo>`): reutilizar componente existente antes de criar, nunca recriar o que já existe, reportar divergência quando o design cita um ID que não está no código, tratar `candidate` como componente não-oficial, e documentar componente novo com o mesmo ID usado no Claude Design e no Confluence. Esta skill é um checklist de qualidade, não um gerador de boilerplate — aplique as regras ao avaliar ou escrever código, não apenas cite-as."
 ---
 
 # Padrões de Desenvolvimento Flutter — Rafinha
@@ -229,6 +217,79 @@ código Flutter/Dart neste contexto:
 
 ---
 
+## 14. Componentes reutilizáveis & IDs canônicos do Design System
+
+O Claude Design e o Claude Code **não têm integração automática**. A ponte
+entre os dois é um contrato textual: o **ID canônico**.
+
+```text
+<sigla>.<tipo-do-componente>.<subtipo-do-componente>
+```
+
+A **sigla** vem da página de *Controle de workflow por produto* no Confluence
+(espaço CS1). Ela é definida **manualmente** — nunca infira uma sigla a
+partir do nome do produto, do repositório ou da chave do Jira.
+
+### Reutilizar antes de criar
+
+Antes de escrever um widget novo que pareça genérico (botão, input, card,
+dialog, chip, badge, empty state…), verifique se já existe um componente
+reutilizável para aquilo:
+
+1. procure no catálogo de componentes reutilizáveis do produto, no Confluence;
+2. procure no próprio código, na pasta de widgets compartilhados;
+3. se o design referencia um ID canônico, **use o componente daquele ID**.
+
+**Criar um componente que já existe é violação desta seção**, mesmo que o
+novo esteja bem escrito. Duplicata de componente é dívida visual: as duas
+versões divergem com o tempo e a tela fica inconsistente sem ninguém notar.
+
+### Quando o ID não existe no código
+
+Se o design referencia `<sigla>.<tipo>.<subtipo>` e esse componente **não
+existe** no código nem no catálogo:
+
+> **Reporte a divergência. Não crie o componente silenciosamente.**
+
+Criar por conta própria produz um componente que ninguém documentou, com nome
+que ninguém acordou, e que o próximo design não vai encontrar.
+
+### Componentes candidatos
+
+ID no padrão `<sigla>.candidate.<nome>` marca um componente **ainda não
+oficial**. Ele:
+
+- **não** é componente reutilizável oficial;
+- **não** deve ser tratado como parte estável do Design System;
+- só vira oficial depois de aprovação, implementação e entrada no catálogo.
+
+### Documentar o componente novo
+
+Quando um componente reutilizável **novo** for de fato criado, ele precisa
+nascer documentado com o **mesmo ID canônico** usado no Claude Design e no
+Confluence:
+
+```dart
+/// Design System ID: gp.button.primary
+///
+/// Ação principal de uma tela ou formulário.
+/// Quando não usar: ação secundária ou destrutiva; item de lista.
+class AppPrimaryButton extends StatelessWidget {
+```
+
+O mesmo ID precisa valer nos três lugares — Claude Design, Confluence e
+código. Divergência entre eles é defeito de documentação, não detalhe.
+
+### Checklist desta seção
+
+- [ ] Procurei componente existente antes de criar um novo?
+- [ ] Se o design cita um ID canônico, usei o componente correspondente?
+- [ ] Se o ID não existe, reportei em vez de criar?
+- [ ] Tratei `candidate` como não-oficial?
+- [ ] Componente novo nasceu com o ID canônico no docstring?
+
+---
+
 ## Ao revisar código (formato de saída)
 
 Ao aplicar esta skill como revisão, estruture o retorno por seção violada,
@@ -245,4 +306,4 @@ não por arquivo, por exemplo:
 ```
 
 Só cite seções realmente relevantes ao código em questão — não force
-menção às 13 seções se boa parte não se aplica ao trecho revisado.
+menção às 14 seções se boa parte não se aplica ao trecho revisado.

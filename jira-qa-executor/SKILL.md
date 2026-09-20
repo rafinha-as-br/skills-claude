@@ -1,23 +1,6 @@
 ---
 name: jira-qa-executor
-description: >
-  Executar QA funcional/visual, uma issue de cada vez, das issues que estão
-  na coluna "QA - Claude" da sprint atual de qualquer projeto Jira que
-  Rafinha indicar. Usar quando ele disser "roda a coluna QA - Claude do
-  projeto X", "testa as issues do jira X", "faz o QA do projeto Y", ou
-  mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto
-  informado, pergunte antes de prosseguir. A skill suporta múltiplos
-  executores de QA conforme a plataforma da issue (lida via label do Jira):
-  Flutter Web usa Claude in Chrome (Chrome real, não o navegador embutido do
-  Claude Code); Flutter Android usa Maestro (MCP preferencial, fallback
-  CLI) contra um Android Emulator, subido sob demanda pela própria skill
-  quando necessário. Os dois executores estão ativos em produção (Android
-  validado em 2026-08-22 no projeto Encryption Playground). Gera/seleciona
-  casos de teste, executa os fluxos de verdade, coleta evidências, registra
-  resultados no AIO Tests e move a issue conforme o resultado. Esta skill
-  NUNCA corrige código, nunca implementa funcionalidades, e só tem
-  permissão de commit/push para arquivos de teste Maestro (`.maestro/**`)
-  — nunca para código do projeto.
+description: "Executar QA funcional/visual, uma issue de cada vez, das issues que estão na coluna \"QA - Claude\" da sprint atual de qualquer projeto Jira que Rafinha indicar. Usar quando ele disser \"roda a coluna QA - Claude do projeto X\", \"testa as issues do jira X\", \"faz o QA do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. A PLATAFORMA ESCOLHE O EXECUTOR e o PROTOCOLO ESCOLHE A ESTRATÉGIA: Flutter Web usa Claude in Chrome (Chrome real, não o navegador embutido do Claude Code); Flutter Android usa Maestro (MCP preferencial, fallback CLI) contra um Android Emulator, subido sob demanda pela própria skill; e as labels de protocolo (functional-qa, visual-qa, regression-qa, e2e-qa, smoke-qa, manual-qa, maestro) definem a estratégia dentro do executor. Sem label de plataforma na issue, a skill BLOQUEIA e pergunta — o antigo fallback silencioso para Web foi removido do contrato. Não julga se o design está certo ou errado como decisão de produto: isso é manual de Rafinha, e issue reprovada volta para \"Fazer - Claude\", nunca para \"Design de produto - Rafinha\". Defeito real fora do escopo da issue é DELEGADO para jira-issue-creator, nunca criado como Bug por esta skill — e ajuste visual de algo já entregue vira Correção com correcao-ui, não Bug. Considera as labels de contexto intermittent, reproducible, regression, needs-evidence, high-risk e do-not-expand-scope. Gera/seleciona casos de teste, executa os fluxos de verdade, coleta evidências, registra resultados no AIO Tests e move a issue aprovada para \"Análise Final - Rafinha\". Esta skill NUNCA corrige código, nunca implementa funcionalidades, e só tem permissão de commit/push para arquivos de teste Maestro (`.maestro/**`) — nunca para código do projeto."
 ---
 
 # Executor de QA — Coluna "QA - Claude" (Jira genérico)
@@ -58,6 +41,25 @@ permanentes") — nunca para código de produção. Se encontrar uma falha:
 * marque o teste como reprovado;
 * mova a issue para "Fazer - Claude";
 * deixe a correção para `jira-issue-executor`.
+
+### Defeito fora do escopo da issue: delegue, não crie
+
+Quando o QA encontra um **defeito real que não pertence ao escopo da issue
+em teste**, você **não cria o Bug por conta própria**.
+
+**Delegue para a `jira-issue-creator`**, passando o comportamento observado,
+o esperado, os passos de reprodução, o ambiente e as evidências. Ela monta o
+rascunho, Rafinha aprova, e só então a issue nasce.
+
+> **Por quê.** Criar issue é um ato com rascunho e aprovação de Rafinha. Se
+> o QA criasse Bug direto, o board ganharia tickets sem passar pelo controle
+> que a `jira-issue-creator` existe para garantir — tipo oficial, labels da
+> matriz, destino correto.
+
+**Correção ≠ Bug.** Se o que você encontrou é ajuste visual de algo já
+entregue — espaçamento, copy, estado visual — a issue a ser criada é do tipo
+**Correção** com `correcao-ui`, não Bug. Informe isso na delegação. **Bug**
+fica reservado a defeito real do produto.
 
 **Contexto de uso do Jira.** Este Jira é usado exclusivamente por Rafinha,
 para a própria organização — não há outras pessoas lendo essas issues por
@@ -127,17 +129,77 @@ registrado.
 ### Como a skill descobre a plataforma da issue
 
 A plataforma é lida do **label nativo do Jira** (`mobile` ou `web`),
-aplicado pela `jira-issue-executor` ao final da implementação. Esta skill
-**nunca infere plataforma sozinha** por conta própria (não adivinhe pelo
-título, pelo componente tocado, etc.).
+confirmado pela `jira-issue-executor` ao final da implementação conforme os
+arquivos realmente alterados. Esta skill **nunca infere plataforma sozinha**
+(não adivinhe pelo título, pelo componente tocado, etc.).
 
-* Sem nenhum label de plataforma na issue → trate como **Web** (é o
-  comportamento histórico desta skill, válido até a `jira-issue-executor`
-  passar a aplicar o label em todo issue nova).
 * Label `mobile` → executor Android.
 * Label `web` → executor Web.
 * Ambos os labels → execute os dois executores para essa issue, quando a
   superfície de risco justificar (ver "Regressão").
+* **Sem nenhum label de plataforma → BLOQUEIE e pergunte a Rafinha.**
+
+> ⚠️ **O fallback para Web foi removido.** Esta skill assumia `web` quando
+> faltava a label, com a justificativa de ser o caso mais comum. Isso
+> transformava uma lacuna de informação numa decisão silenciosa — e um QA
+> rodando no executor errado produz um verde que não significa nada.
+>
+> Mensagem de bloqueio:
+>
+> ```text
+> BLOQUEIO — plataforma indeterminada
+>
+> Issue: <CHAVE>
+> Labels de plataforma encontradas: nenhuma
+>
+> Não é possível escolher o executor de QA (Chrome/Web vs. Maestro/Android)
+> sem a label. Não vou assumir.
+>
+> Ação necessária: aplicar `web` e/ou `mobile` na issue.
+> ```
+
+### Protocolo de QA — a estratégia dentro do executor
+
+Enquanto a plataforma escolhe o **executor**, as labels de protocolo escolhem
+a **estratégia**:
+
+| Label | Estratégia |
+|---|---|
+| `functional-qa` | Validação funcional dos fluxos alterados |
+| `visual-qa` | Validação visual / de aparência |
+| `regression-qa` | Regressão dos fluxos relacionados |
+| `e2e-qa` | Fluxo ponta a ponta |
+| `smoke-qa` | Verificação mínima de não-quebra |
+| `manual-qa` | Exige execução manual |
+| `maestro` | Executado via Maestro |
+
+Exemplo: `mobile` + `maestro` + `regression-qa` = executor Android via
+Maestro, com estratégia de regressão.
+
+Sem label de protocolo, use o escopo padrão da etapa (regressão dos fluxos
+relacionados + fluxos diretamente alterados). Protocolo ausente **não**
+bloqueia — só plataforma bloqueia.
+
+### Labels de contexto que esta skill considera
+
+| Label | O que muda no QA |
+|---|---|
+| `intermittent` | Comportamento intermitente — repita o cenário antes de concluir |
+| `reproducible` | Reprodução já confirmada — use os passos registrados |
+| `regression` | É regressão — priorize o cenário que regrediu |
+| `needs-evidence` | Evidência é obrigatória no registro do resultado |
+| `high-risk` | Amplie a superfície de regressão |
+| `do-not-expand-scope` | Não teste além do escopo da issue |
+
+### O que esta skill NÃO julga
+
+**Design não é objeto de QA.** Você pode validar sintomas visuais dentro do
+que o ambiente permite — elemento que não renderiza, sobreposição, texto
+cortado. Mas **não decide se o design está certo ou errado como decisão de
+produto**. Esse julgamento é manual de Rafinha, na `Análise Final - Rafinha`.
+
+Consequência: issue reprovada aqui volta para **`Fazer - Claude`** — **nunca**
+para `Design de produto - Rafinha`.
 
 ---
 
@@ -609,10 +671,10 @@ não executada — issue exclusiva de Web").
 
 ## Movimentação da issue
 
-* **Aprovada** → "Documentar".
+* **Aprovada** → "Análise Final - Rafinha".
 * **Reprovada** → "Fazer - Claude".
 * **Inconclusiva por infraestrutura** → **não move**. Informe Rafinha e
-  aguarde decisão — nunca mova para "Documentar" nem para "Fazer - Claude"
+  aguarde decisão — nunca mova para "Análise Final - Rafinha" nem para "Fazer - Claude"
   quando não houver condições de um QA confiável.
 
 Sempre que a issue for movida (aprovada ou reprovada), apague
@@ -660,7 +722,7 @@ Sempre que a issue for movida (aprovada ou reprovada), apague
 * ❌ Nunca testar só os casos da própria issue quando existir fluxo
   relacionado plausível de regressão.
 * ❌ Nunca mover a issue sem o comentário com a frase fixa correspondente,
-  nem mover uma issue inconclusiva para "Documentar" ou "Fazer - Claude".
+  nem mover uma issue inconclusiva para "Análise Final - Rafinha" ou "Fazer - Claude".
 * ❌ Nunca descartar alterações não commitadas no repositório sem
   confirmação explícita de Rafinha, nem usar um APK antigo sem confirmar
   sua origem.
@@ -686,13 +748,13 @@ resumo consolidado, por exemplo:
 ✅ Projeto testado: [nome/chave do projeto]
 📋 Issues processadas: [quantidade]
   - [ISSUE-1] (Web): 4 casos da issue + 2 de regressão (login, navegação
-    autenticada) no AIO Tests, todos aprovados → movida para "Documentar"
+    autenticada) no AIO Tests, todos aprovados → movida para "Análise Final - Rafinha"
     (Cycle: [link])
   - [ISSUE-2] (Web): 3 casos de teste, 1 reprovado (campo "status" não
     atualiza após salvar) → movida para "Fazer - Claude" (Run: [link])
   - [ISSUE-3] (mobile): 1 caso novo (flow Maestro criado em
     .maestro/<area>/<cenario>.yaml, commitado e enviado direto para
-    develop), aprovado → movida para "Documentar" (Cycle: [link])
+    develop), aprovado → movida para "Análise Final - Rafinha" (Cycle: [link])
 ⚠️ Issues puladas por ambiguidade (sem critério de aceite claro, plataforma
   sem executor ativo, etc.): [lista ou "nenhuma"]
 ```
