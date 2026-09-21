@@ -36,9 +36,9 @@ QA - Claude                                Versões decididas por Rafinha
       ↓                                           ↓
 Documentar                                 Release Request
       ↓                                           ↓
-Análise final - Rafinha                    Actions → artefatos
+Análise Final - Rafinha                    Actions → artefatos
       ↓                                           ↓
-Análise final - Claude                     Distribuição + Runtime
+Análise Final - Claude                     Distribuição + Runtime
       ↓                                           ↓
 Concluído                                  Validação → versão oficial
 ```

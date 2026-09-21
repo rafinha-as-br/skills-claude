@@ -1,6 +1,6 @@
 ---
 name: jira-issue-creator
-description: "Criar uma issue (ou subtask) no Jira a partir de uma necessidade mencionada por Rafinha — seja no meio de uma mensagem sobre outro assunto, seja em um pedido dedicado, seja a partir de uma GitHub Issue apontada por ele (link ou número) como origem do trabalho. Usar sempre que Rafinha disser algo como \"cria uma issue para isso\", \"vira uma issue no Jira\", \"registra isso como issue/ticket\", apontar uma GitHub Issue para virar issue do Jira, ou mencionar explicitamente que algo deve virar uma issue/ticket em qualquer ponto da conversa, mesmo que o resto da mensagem seja sobre outro tópico. A skill decide a hierarquia (Issue vs. Subtask, consultando workflow-development-flow em caso de dúvida) e a classificação código/documentação antes de criar. Esta skill APENAS cria a issue — nunca implementa código, documentação ou qualquer outra coisa relacionada ao conteúdo da issue."
+description: "Criar uma issue (ou subtask) no Jira a partir de uma necessidade mencionada por Rafinha — seja no meio de uma mensagem sobre outro assunto, seja em um pedido dedicado, seja a partir de uma GitHub Issue apontada por ele (link ou número) como origem do trabalho. Usar sempre que Rafinha disser algo como \"cria uma issue para isso\", \"vira uma issue no Jira\", \"registra isso como issue/ticket\", apontar uma GitHub Issue para virar issue do Jira, ou mencionar explicitamente que algo deve virar uma issue/ticket em qualquer ponto da conversa, mesmo que o resto da mensagem seja sobre outro tópico. Decide a hierarquia (Issue vs. Subtask, consultando workflow-development-flow em caso de dúvida) e o tipo oficial do ticket — Implementação, Correção, Bug, Refatoração Técnica, Documentação ou Epic — que substituiu o campo customizado `Tipo`, agora fora do contrato. Propõe apenas labels da matriz oficial mantida no Confluence, nunca inventa label, e exige label de trilha documental (rn-doc, module-doc, screen-doc, component-doc, …) em issue do tipo Documentação. Pode SUGERIR `requires-design` no rascunho, marcada como sugestão, mas nunca aplica essa label sozinha — ela é confirmada manualmente por Rafinha. Propõe a intenção de plataforma (web/mobile), que a jira-issue-executor confirma depois. Cria a issue em `A fazer`, a coluna de entrada do board, ou no backlog — nunca direto em `Fazer - Claude` ou `Design de produto - Rafinha`. Esta skill APENAS cria a issue — nunca implementa código, documentação ou qualquer outra coisa relacionada ao conteúdo da issue."
 ---
 
 # Criador de Issues — Jira genérico
@@ -9,8 +9,8 @@ description: "Criar uma issue (ou subtask) no Jira a partir de uma necessidade m
 
 Ao executar esta skill, seu único trabalho é transformar uma necessidade
 relatada por Rafinha em uma **issue criada no Jira**, com contexto e
-objetivo bem descritos, labels e tipo corretos, no destino certo (backlog ou
-sprint atual). Você nunca vai além disso.
+objetivo bem descritos, **tipo oficial** e labels corretos, no destino certo
+(`A fazer` ou backlog). Você nunca vai além disso.
 
 **Regra crítica, sem exceção**: independente do que Rafinha disser em
 seguida ou do quanto a necessidade pareça simples, você não implementa
@@ -28,12 +28,21 @@ informação depois, quando não estiver mais fresca na memória. Mas não
 acrescente explicações de conceitos técnicos óbvios ou justificativas do que
 ele mesmo pediu — vá direto ao ponto.
 
-**Hierarquia e classificação.** Para dúvidas sobre em qual nível da
-hierarquia (Épico, Issue ou Subtask) uma necessidade se encaixa, consulte a
-skill `workflow-development-flow` — ela define o critério oficial. Esta é a
-única skill que decide essa hierarquia e a classificação código/documentação
-no momento da criação; as demais skills do pipeline já recebem a issue com
-esses campos definidos.
+**Hierarquia e tipo.** Para dúvidas sobre em qual nível da hierarquia
+(Épico, Issue ou Subtask) uma necessidade se encaixa, consulte a skill
+`workflow-development-flow` — ela define o critério oficial. Esta é a única
+skill que decide essa hierarquia e o **tipo oficial do ticket** no momento da
+criação; as demais skills do pipeline já recebem a issue com esses campos
+definidos.
+
+**O contrato mudou.** O campo customizado `Tipo` (código/documentação) saiu
+do contrato operacional — **não o use**. A natureza da issue é o tipo nativo
+do ticket. A trilha documental, quando o tipo é Documentação, é declarada por
+label. Ver `workflow-development-flow`, seções 3 e 15.
+
+**Labels vêm da matriz oficial.** A fonte de verdade é a página *Vocabulário
+operacional de labels* no Confluence (espaço CS1). Você propõe labels dela;
+**nunca inventa**.
 
 ---
 
@@ -78,14 +87,14 @@ rascunho do passo 5 e é gravado, **sem exceção**, no campo `Link para
 GitHub Issue` ao criar a issue (passo 7). As perguntas abaixo continuam se
 aplicando normalmente; só a origem do "do que se trata" muda.
 
-**Gatilho de origem — Validação Manual.** Se a necessidade nasceu de um
-problema encontrado por Rafinha durante uma `Validação Manual` e
+**Gatilho de origem — Validação Humana.** Se a necessidade nasceu de um
+problema encontrado por Rafinha durante uma `Validação Humana` e
 classificado como **fora do escopo** das issues agregadas (requisito novo,
 comportamento não previsto, melhoria, ou defeito sem origem atribuível),
 use o cenário reprovado e o feedback dele como base do rascunho. Guarde a
-chave da Validação Manual — ao criar a issue (passo 7), grave um link
+chave da Validação Humana — ao criar a issue (passo 7), grave um link
 `Relates` para ela, **sem exceção**. É esse link que permite auditar
-depois, na `Análise final - Claude`, se todos os problemas levantados por
+depois, na `Análise Final - Claude`, se todos os problemas levantados por
 aquela validação foram tratados.
 
 Nunca crie issue nova para um problema classificado como **pertencente ao
@@ -99,7 +108,7 @@ da GitHub Issue, quando for o caso):
 - **Do que se trata a issue** (a necessidade em si).
 - **O contexto/motivo** (por que ele precisa disso).
 - **Projeto/Jira de destino**.
-- **Destino: backlog ou sprint atual** (se ele não informar, decida sozinho
+- **Destino: `A fazer` ou backlog** (se ele não informar, decida sozinho
   no passo 6 — mas se ele informar, essa escolha manual **sempre** vence a
   decisão automática).
 
@@ -134,23 +143,66 @@ Subtask, pergunte a Rafinha em vez de decidir sozinho.
 
 ### 3. Inferir o tipo do item no Jira
 
-Infira o tipo (Task, Bug, Story, Subtask, etc.) a partir do contexto da
-necessidade relatada — este é o **tipo do item no Jira**, diferente da
-classificação código/documentação (passo 4) e diferente do nível
-hierárquico (passo 2). Só pergunte a Rafinha explicitamente se ficar em
-dúvida real entre dois tipos plausíveis — não pergunte por rotina.
+O **tipo nativo do ticket é a natureza da issue**. Escolha entre os 7 tipos
+oficiais — nenhum outro é válido:
 
-### 4. Classificar código ou documentação
+| Tipo | Quando usar |
+|---|---|
+| **Epic** | Frente maior de trabalho. Nunca executável diretamente |
+| **Implementação** | Altera código de produto |
+| **Correção** | Ajusta ou refina algo já entregue |
+| **Bug** | Defeito real do produto |
+| **Refatoração Técnica** | Melhoria estrutural sem mudança funcional planejada |
+| **Documentação** | Cria/atualiza documentação |
+| **Validação Humana** | Aceite manual de Rafinha (criada pela `jira-human-validation-executor`, não aqui) |
 
-Defina o campo `tipo` (`código` ou `documentação`) já na criação da issue —
-essa classificação deixou de ser perguntada em tempo de execução por outras
-skills; a partir de agora ela é decidida aqui.
+**Correção ≠ Bug.** Correção ajusta algo já entregue sem que isso seja
+necessariamente defeito: ajuste visual de UI já implementada, copy,
+espaçamento, refinamento. Bug fica reservado a defeito real — erro ao salvar,
+tela quebrando, validação incorreta, regressão.
 
-- Se ficar claro pelo contexto da necessidade (ex.: "documenta essa regra" →
-  documentação; "corrige esse bug" → código), infira sem perguntar.
-- Se houver ambiguidade real, pergunte explicitamente a Rafinha — junto com
-  as demais perguntas pendentes do passo 1, para não interromper o fluxo
-  várias vezes.
+Só pergunte a Rafinha se ficar em dúvida real entre dois tipos plausíveis —
+não pergunte por rotina.
+
+> ⚠️ **O campo customizado `Tipo` saiu do contrato.** Não o preencha, não o
+> leia, não o mencione no rascunho.
+
+### 4. Propor as labels
+
+Toda label proposta precisa estar na **matriz oficial** (página *Vocabulário
+operacional de labels*, espaço CS1). **Nunca invente label.** Se nenhuma
+label oficial se encaixar e isso bloquear a classificação, registre a dúvida
+e peça decisão a Rafinha.
+
+**Trilha documental — obrigatória no tipo Documentação.** Uma issue do tipo
+Documentação precisa de uma label de trilha: `rn-doc`, `module-doc`,
+`screen-doc`, `component-doc`, `api-doc`, `architecture-doc`, `user-doc`,
+`workflow-doc`, `skill-doc`, `release-doc`, `readme` ou `adr`. Se não estiver
+claro qual, **pergunte** — não infira pelo conteúdo. A label `confluence` é
+destino/meio e não satisfaz esse requisito sozinha.
+
+**Plataforma — você propõe, não decide.** Pode sugerir `web`/`mobile`/… como
+intenção inicial. Quem confirma ou corrige é a `jira-issue-executor`,
+conforme os arquivos realmente alterados.
+
+**Labels de produto/módulo/feature.** Só podem ser usadas se estiverem
+declaradas na página de *Controle de workflow por produto* daquele produto.
+Se a label que você quer não estiver lá, pergunte.
+
+**`requires-design` — você só sugere.** Ver passo 4.1.
+
+#### 4.1 `requires-design` é confirmada manualmente por Rafinha
+
+Esta é a única label com regra de aplicação diferenciada.
+
+- Você **pode sugerir** `requires-design` no rascunho, sempre marcada
+  explicitamente como **sugestão**.
+- Você **nunca** a aplica por conta própria, e nunca a inclui na criação sem
+  Rafinha ter confirmado no rascunho.
+- `ui` e `correcao-ui` **não** implicam `requires-design`.
+
+Sugira quando a issue cria ou redesenha interface cujo resultado visual ainda
+não está definido. Não sugira para ajuste pontual de algo já desenhado.
 
 ### 5. Montar o rascunho da issue
 
@@ -158,19 +210,24 @@ Monte um rascunho completo, sem ainda criar nada no Jira:
 
 ```
 📝 Rascunho da issue — [projeto]
-Tipo (Jira): [Task/Bug/Story/Subtask/...]
+Tipo: [Implementação | Correção | Bug | Refatoração Técnica | Documentação | Epic]
 Hierarquia: [Issue | Subtask] — [Issue pai / Épico pai, se aplicável]
-Classificação: [código | documentação]
 Título: [título objetivo]
 
 Descrição:
   Contexto: [o motivo/necessidade que originou a issue]
   Objetivo: [o que precisa ser alcançado/entregue]
 
-Labels: [labels propostas]
-Destino: [Backlog | Sprint atual] — [se foi Rafinha quem definiu ou se foi decidido automaticamente, e por quê]
-Origem: [GitHub Issue #N (link) | Validação Manual CHAVE (cenário reprovado) | Chat]
+Labels: [labels propostas, todas da matriz oficial]
+Trilha documental: [só para tipo Documentação — rn-doc | module-doc | ...]
+Plataforma (intenção): [web | mobile | ... — a confirmar na implementação]
+requires-design: [SUGESTÃO — precisa da sua confirmação | não se aplica]
+Destino: [Backlog | A fazer] — [quem definiu e por quê]
+Origem: [GitHub Issue #N (link) | Validação Humana CHAVE (cenário reprovado) | Chat]
 ```
+
+> **`requires-design` aparece sempre como SUGESTÃO**, nunca como decisão
+> tomada. Se Rafinha não confirmar explicitamente, a label **não** é aplicada.
 
 Apresente esse rascunho a Rafinha e **aguarde a aprovação dele antes de
 criar a issue de fato** — esta confirmação é sempre obrigatória, mesmo que o
@@ -181,8 +238,20 @@ pedido pareça simples ou óbvio.
 Se Rafinha não especificou o destino, verifique se a necessidade se encaixa
 no escopo/objetivo da sprint atual do projeto:
 
-- Se encaixa → proponha criar dentro da sprint atual.
-- Se não encaixa (ou não há sprint ativa) → proponha manter no backlog.
+- Se encaixa → proponha criar em **`A fazer`**, a coluna de entrada do board.
+- Se não encaixa (ou não há sprint ativa) → proponha manter no **backlog**.
+
+**`A fazer` é a entrada do board quando a issue sai do backlog.** O backlog
+continua existindo como etapa pré-sprint — os dois coexistem.
+
+A issue **nunca** é criada direto em `Fazer - Claude`, nem em
+`Design de produto - Rafinha`. A passagem de `A fazer` para a coluna seguinte
+é de Rafinha:
+
+```text
+A fazer → Design de produto - Rafinha   (quando tem requires-design)
+A fazer → Fazer - Claude                (quando não tem)
+```
 
 Deixe essa decisão e o motivo dela visíveis no rascunho do passo 5, para que
 Rafinha possa corrigir antes de aprovar.
@@ -192,12 +261,14 @@ Rafinha possa corrigir antes de aprovar.
 Somente após a aprovação do rascunho, crie a issue no Jira (via Atlassian
 Rovo) com:
 - Título e descrição (Contexto e Objetivo) conforme aprovado.
-- Labels aplicadas.
-- Tipo (Jira) correto.
+- **Tipo oficial** correto (um dos 7 — passo 3).
+- Labels aprovadas, **todas da matriz oficial**.
+- `requires-design` **somente se Rafinha confirmou explicitamente** no
+  rascunho. Na dúvida, não aplique.
+- Label de trilha documental, quando o tipo for Documentação.
 - Hierarquia correta — se Subtask, vinculada à Issue pai; se Issue, vinculada
   ao Épico pai quando houver.
-- Campo `tipo` (código/documentação) preenchido.
-- No destino aprovado (backlog ou sprint atual).
+- No destino aprovado (`A fazer` ou backlog).
 - Se a origem foi uma GitHub Issue (passo 1): grava, **sem exceção**, o
   campo `Link para GitHub Issue` com a referência (link + número) — é isso
   que permite que `jira-issue-executor` referencie e feche a GitHub Issue
@@ -223,16 +294,26 @@ breve do que foi registrado.
   resolver a dúvida — consulte `workflow-development-flow` e, se ainda
   ambíguo, pergunte a Rafinha.
 - ❌ Nunca criar uma Subtask sem uma Issue pai definida.
-- ❌ Nunca inferir a classificação código/documentação quando não estiver
-  clara pelo contexto — pergunte antes de criar a issue.
+- ❌ Nunca inferir o tipo do ticket quando não estiver claro pelo contexto —
+  pergunte antes de criar a issue.
+- ❌ Nunca ler nem preencher o campo customizado `Tipo`. Ele saiu do contrato.
+- ❌ Nunca aplicar `requires-design` sem confirmação explícita de Rafinha no
+  rascunho — sugerir é permitido, aplicar não.
+- ❌ Nunca inventar label fora da matriz oficial do Confluence. Se nada se
+  encaixar, registre a dúvida e peça decisão.
+- ❌ Nunca usar label de produto/módulo/feature que não esteja declarada na
+  página de Controle de workflow daquele produto.
+- ❌ Nunca criar issue do tipo Documentação sem label de trilha documental.
+- ❌ Nunca criar a issue direto em `Fazer - Claude` ou em
+  `Design de produto - Rafinha` — o destino é `A fazer` ou backlog.
 - ❌ Nunca deixar de gravar o campo `Link para GitHub Issue` quando a issue
   teve origem numa GitHub Issue (passo 1) — sem ele, `jira-issue-executor`
   não consegue referenciá-la no PR nem fechá-la automaticamente.
-- ❌ Nunca deixar de criar o link `Relates` para a Validação Manual quando
+- ❌ Nunca deixar de criar o link `Relates` para a Validação Humana quando
   a issue nasceu de um problema fora do escopo encontrado nela (passo 1) —
   sem ele, a `jira-review-executor` não consegue auditar se a validação foi
   inteiramente tratada.
-- ❌ Nunca criar issue nova para um problema de Validação Manual que
+- ❌ Nunca criar issue nova para um problema de Validação Humana que
   pertence ao escopo original de uma issue existente — a issue original é
   reaberta, não substituída.
 - ❌ Nunca, sob nenhuma circunstância, implementar código, escrever

@@ -8,16 +8,55 @@ Cada coluna do Jira tem uma skill dona. Issues de código são implementadas de 
 
 ```mermaid
 flowchart LR
-    A["Fazer - Claude"] --> B["Análise - Rafinha"]
+    Z["A fazer"] --> Y["Design de produto - Rafinha"]
+    Z --> A["Fazer - Claude"]
+    Y --> A
+    A --> B["Análise - Rafinha"]
     B --> C["Integração"]
     C --> D["QA - Claude"]
-    D --> E["Documentar"]
-    E --> F["Análise final - Rafinha"]
-    F --> G["Análise final - Claude"]
+    D --> F["Análise Final - Rafinha"]
+    F --> E["Documentar"]
+    E --> G["Análise Final - Claude"]
     G --> H["Concluído"]
 ```
 
-`workflow-development-flow` é a skill mãe: não executa nada, apenas responde "em qual etapa uma issue está" ou "o que vem depois de X" para as demais. Release & Versionamento (SemVer, tags, GitHub Release) é um ciclo separado, acionado sob demanda — nunca uma coluna do board.
+> **Estado do contrato: `preparado`.** Esta branch descreve o contrato de
+> destino do Pacote 1 (Design, labels e gates). O Jira ainda não foi
+> configurado — a configuração é manual e feita por Rafinha, em sessão
+> separada. **O merge desta branch em `master` é o corte de vigência.** Até
+> lá, o pipeline opera com o contrato anterior, a partir de `master`.
+
+**Design de Produto entra como coluna.** `Design de produto - Rafinha` é
+etapa **manual** — nenhuma skill a varre. A issue só passa por ela quando tem
+a label `requires-design`, que é **confirmada manualmente por Rafinha**: a
+skill pode sugerir, nunca aplicar. Se a issue tem a label e o Design Package
+não está em `.claude/design-packages/<ISSUE-KEY>/`, a implementação **para
+antes de escrever código** — nunca implementa no escuro, e nunca conclui que
+o design não foi feito, apenas que o artefato não está naquela máquina.
+
+**O tipo do ticket substituiu o campo `Tipo`.** A natureza da issue passa a
+ser o tipo nativo do Jira — Implementação, Correção, Bug, Refatoração
+Técnica, Documentação, Validação Humana, Epic. O campo customizado saiu do
+contrato e nenhuma skill deve lê-lo. Correção e Bug são coisas diferentes:
+ajuste visual de algo já entregue é **Correção** com `correcao-ui`.
+
+**Labels têm matriz oficial.** O vocabulário vive no Confluence, em 10
+categorias. Nenhuma skill pode inventar label fora dela; uma label
+documentada pode ser criada no Jira sob demanda. A décima categoria —
+produto/módulo/feature — é declarada **por produto**, na página de controle
+daquele produto. A label genérica de revisão saiu do contrato: a revisão já
+é representada por coluna.
+
+**Gates não têm fallback silencioso.** Quando o contrato esperado não é
+encontrado, a skill **para e reporta**. O caso que motivou a regra: o QA
+assumia `web` quando faltava a label de plataforma — um QA no executor errado
+produz um verde que não significa nada.
+
+**`Documentar` fica depois da aceitação.** Rafinha valida primeiro se o
+produto resolve o problema; só então a documentação registra o estado
+**aceito**, e a auditoria final vê as duas coisas prontas.
+
+`workflow-development-flow` é a skill mãe: não executa nada, apenas responde "em qual etapa uma issue está", "o que vem depois de X", "qual gate se aplica" ou "essa label é oficial" para as demais. Release & Versionamento (SemVer, tags, GitHub Release) é um ciclo separado, acionado sob demanda — nunca uma coluna do board.
 
 **Release é distribuição, não tag.** Uma release transforma um estado do software num pacote versionado que roda **fora do ambiente de desenvolvimento** — e não apenas numa tag com artefato anexado. Todo pedido tem dois eixos: **tipo** (`PRE_RELEASE` ou `FINAL`) e **escopo** (parcial ou completa).
 
@@ -27,7 +66,7 @@ flowchart LR
 
 GitHub Release só em versão **final** — nenhum RC polui a aba Releases, e nenhum repositório vira dono do produto. A distribuição vai para o Drive e é registrada no Confluence.
 
-**Validação Humana Agregada.** A unidade de implementação é a Issue, mas a unidade de aceitação humana pode agregar várias: antes da `Análise final - Rafinha`, a `jira-human-validation-executor` varre a coluna, agrupa as issues por comportamento funcional e cria *Validações Manuais* contendo só os cenários que ainda exigem julgamento humano — nada do que o QA já automatizou volta como passo. Não é uma coluna nova nem um status novo, e não substitui QA, code review ou auditoria.
+**Validação Humana Agregada.** A unidade de implementação é a Issue, mas a unidade de aceitação humana pode agregar várias: antes da `Análise Final - Rafinha`, a `jira-human-validation-executor` varre a coluna, agrupa as issues por comportamento funcional e cria *Validações Humanas* contendo só os cenários que ainda exigem julgamento humano — nada do que o QA já automatizou volta como passo. Não é uma coluna nova nem um status novo, e não substitui QA, code review ou auditoria.
 
 **Execution State.** O chat não é fonte de verdade: uma issue em execução pode ser retomada por uma sessão nova do Claude Code — troca de conta, esgotamento de quota, encerramento inesperado — sem depender do transcript anterior. `jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`, `jira-doc-executor` e `jira-review-executor` mantêm um arquivo `.claude/execution-state/<CHAVE>.md` com o ponto de retomada, reconciliado com Jira/Git/GitHub antes de qualquer ação — nunca uma instrução cega. Não é uma etapa nem uma coluna nova.
 
@@ -37,14 +76,14 @@ GitHub Release só em versão **final** — nenhum RC polui a aba Releases, e ne
 
 | Skill | O que faz |
 |---|---|
-| [`workflow-development-flow`](workflow-development-flow/SKILL.md) | Referência do fluxo: hierarquia Épico/Issue/Subtask, as 8 etapas, gates de passagem, ciclo de release, Execution State (continuidade de uma issue entre sessões diferentes do Claude Code). |
-| [`jira-issue-creator`](jira-issue-creator/SKILL.md) | Cria issues/subtasks no Jira a partir de um pedido ou de uma GitHub Issue apontada. |
-| [`jira-issue-executor`](jira-issue-executor/SKILL.md) | Implementa as issues de "Fazer - Claude": código + testes + review automatizado + PR. |
+| [`workflow-development-flow`](workflow-development-flow/SKILL.md) | Referência do fluxo: lista canônica de 10 colunas, hierarquia Épico/Issue/Subtask, os 7 tipos oficiais de ticket, os 8 gates operacionais, a camada de Design de Produto, o vocabulário de labels, ciclo de release e Execution State. |
+| [`jira-issue-creator`](jira-issue-creator/SKILL.md) | Cria issues/subtasks no Jira com tipo oficial e labels da matriz — sugere `requires-design`, nunca aplica. Destino: `A fazer` ou backlog. |
+| [`jira-issue-executor`](jira-issue-executor/SKILL.md) | Implementa as issues de "Fazer - Claude": gate de Design, código + testes + review automatizado + PR. |
 | [`jira-integration-executor`](jira-integration-executor/SKILL.md) | Faz o merge real para `develop`, validando GitHub Actions e conflitos antes. |
-| [`jira-qa-executor`](jira-qa-executor/SKILL.md) | QA funcional/visual — Chrome real para Web, Maestro para Android — com evidências no AIO Tests. |
-| [`jira-doc-executor`](jira-doc-executor/SKILL.md) | Identifica qual documentação foi impactada e delega para a skill de escrita certa. |
-| [`jira-human-validation-executor`](jira-human-validation-executor/SKILL.md) | Agrupa as issues por comportamento e gera as Validações Manuais — só os cenários que exigem julgamento humano. Registra o veredito e roteia reprovações. |
-| [`jira-review-executor`](jira-review-executor/SKILL.md) | Auditoria final antes de "Concluído". |
+| [`jira-qa-executor`](jira-qa-executor/SKILL.md) | QA funcional/visual — plataforma escolhe o executor, protocolo escolhe a estratégia. Sem label de plataforma, bloqueia. |
+| [`jira-doc-executor`](jira-doc-executor/SKILL.md) | Roda depois da aceitação. Identifica a documentação impactada e delega para o writer certo; ignora `validacao-humana`. |
+| [`jira-human-validation-executor`](jira-human-validation-executor/SKILL.md) | Agrupa as issues por comportamento e gera as Validações Humanas — só os cenários que exigem julgamento humano. Registra o veredito e roteia reprovações. |
+| [`jira-review-executor`](jira-review-executor/SKILL.md) | Auditoria final antes de "Concluído" — inclui o contrato de labels, tipos e gates. |
 | [`jira-release-executor`](jira-release-executor/SKILL.md) | Prepara e executa releases: resolve tipo e escopo, expande dependências declaradas, sugere os incrementos, escreve as notas e entrega a execução ao Release Orchestrator — até a distribuição validada fora da IDE. |
 
 ### Documentação (Confluence)
@@ -60,7 +99,7 @@ GitHub Release só em versão **final** — nenhum RC polui a aba Releases, e ne
 
 | Skill | O que faz |
 |---|---|
-| [`flutter-development-standards`](flutter-development-standards/SKILL.md) | Checklist de arquitetura/boas práticas Flutter, aplicado ao revisar ou escrever código. |
+| [`flutter-development-standards`](flutter-development-standards/SKILL.md) | Checklist de arquitetura/boas práticas Flutter, incluindo componentes reutilizáveis e IDs canônicos do Design System. |
 | [`weekly-organizer`](weekly-organizer/SKILL.md) | Organiza a semana e o inbox do Todoist. |
 | [`task-creator-trabalho`](task-creator-trabalho/SKILL.md) | Registra tarefas e contexto de trabalhos acadêmicos. |
 

@@ -354,7 +354,7 @@ conserte o Orchestrator.
 Antes de considerar entregue, **Rafinha executa a distribuição fora da IDE**:
 baixa o pacote, roda o entrypoint do Runtime Package, usa o produto real.
 
-Isso não é a `Análise final - Rafinha` de cada issue, já feita antes. Aqui é a
+Isso não é a `Análise Final - Rafinha` de cada issue, já feita antes. Aqui é a
 validação do **pacote como entrega** — é o que separa "o CI passou" de "o
 produto funciona quando alguém o executa".
 

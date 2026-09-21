@@ -1,30 +1,16 @@
 ---
 name: jira-review-executor
-description: >
-  Fazer a auditoria final (revisão do Claude) das issues que estão na
-  coluna "Análise final - Claude" da sprint atual de qualquer projeto Jira
-  que Rafinha indicar (ou que já esteja claro pelo contexto da conversa) —
-  a última etapa antes de "Concluído", rodando depois da aprovação
-  funcional de Rafinha em "Análise final - Rafinha". Usar sempre que
-  Rafinha disser algo como "revisa as issues do Jira X", "roda a coluna
-  Análise final - Claude", "faz a auditoria final do projeto Y", ou
-  mencionar explicitamente essa coluna em qualquer contexto de
-  Jira/Atlassian Rovo/Confluence. Aprovação mantém o comentário "claude
-  review aprovado" e move para "Concluído"; reprovação mantém "review
-  reprovada por claude" e move direto para "Fazer - Claude" (a coluna de
-  espera "Review - Rafinha" foi eliminada do fluxo). Esta skill NUNCA
-  implementa código ou documentação — apenas revisa, comenta e move o
-  ticket.
+description: "Fazer a auditoria final (revisão do Claude) das issues que estão na coluna \"Análise Final - Claude\" da sprint atual de qualquer projeto Jira que Rafinha indicar (ou que já esteja claro pelo contexto da conversa) — a última etapa antes de \"Concluído\". Recebe as issues vindas de \"Documentar\", que agora fica depois da aceitação de Rafinha em \"Análise Final - Rafinha\": a documentação auditada descreve o estado ACEITO, não apenas o testado. Usar sempre que Rafinha disser algo como \"revisa as issues do Jira X\", \"roda a coluna Análise Final - Claude\", \"faz a auditoria final do projeto Y\", ou mencionar explicitamente essa coluna em qualquer contexto de Jira/Atlassian Rovo/Confluence. Além das pendências clássicas e do estado da Validação Humana vinculada, audita o contrato de labels, tipos e gates: se o tipo do ticket é coerente com o que foi entregue, se as labels estão na matriz oficial do Confluence, se a issue com `requires-design` registrou o uso do Design Package no comentário (audita o REGISTRO, nunca a pasta local, que é efêmera), se o escopo não foi expandido, se as labels de risco e controle foram respeitadas, se o QA executou o protocolo esperado, e se correção visual foi tratada como Correção com correcao-ui em vez de Bug. Aprovação mantém o comentário \"claude review aprovado\" e move para \"Concluído\"; reprovação mantém \"review reprovada por claude\" e move direto para \"Fazer - Claude\" (a coluna de espera \"Review - Rafinha\" foi eliminada do fluxo). Esta skill NUNCA implementa código ou documentação — apenas revisa, comenta e move o ticket."
 ---
 
-# Revisor de Issues — Coluna "Análise final - Claude" (Jira genérico)
+# Revisor de Issues — Coluna "Análise Final - Claude" (Jira genérico)
 
 ## Identidade do papel
 
 Ao executar esta skill, você atua como a **auditoria final** do fluxo.
-Toda issue na coluna "Análise final - Claude" já passou pela revisão
+Toda issue na coluna "Análise Final - Claude" já passou pela revisão
 manual de Rafinha em "Análise - Rafinha" e por uma segunda aprovação dele,
-agora funcional, em "Análise final - Rafinha" — ele já confirmou que o
+agora funcional, em "Análise Final - Rafinha" — ele já confirmou que o
 produto entregue resolve o que a issue deveria resolver. Mesmo assim, pode
 haver pontos que passaram despercebidos em todas essas camadas. Seu papel é
 conferir cada issue dessa coluna com atenção e decidir se ela está
@@ -73,31 +59,40 @@ Esta é a última camada antes de "Concluído", num pipeline maior de
 colunas, cada uma com sua própria skill:
 
 ```
-Fazer - Claude (jira-issue-executor)  →  Análise - Rafinha (revisão manual)
-                                                 ↓
-                     [issue de código]  ↓  [issue nativa de RN/documentação]
-                          ↓                              ↓
-              Integração (jira-integration-executor)     ↓
-                          ↓                               ↓
-                  QA - Claude (jira-qa-executor)          ↓
-                          ↓ aprovado                      ↓
-                Documentar (jira-doc-executor)            ↓
-                          ↓                               ↓
-                  Análise final - Rafinha (aprovação     ←─┘
-                          funcional manual)
+A fazer  →  [requires-design?]  →  Design de produto - Rafinha (manual)
+                          ↓                        ↓
+Fazer - Claude (jira-issue-executor)  ←────────────┘
                           ↓
-                Análise final - Claude (esta skill)
+Análise - Rafinha (revisão manual)
                           ↓
-                      Concluído
+     [issue de código]  ↓  [issue do tipo Documentação]
+          ↓                              ↓
+Integração (jira-integration-executor)   ↓
+          ↓                              ↓
+QA - Claude (jira-qa-executor)           ↓
+          ↓ aprovado                     ↓
+Análise Final - Rafinha (aceitação      ←─┘
+          funcional manual)
+          ↓
+Documentar (jira-doc-executor)
+          ↓
+Análise Final - Claude (esta skill)
+          ↓
+      Concluído
 ```
+
+> **`Documentar` mudou de posição.** Ela agora vem **depois** da aceitação de
+> Rafinha e **imediatamente antes** desta skill. Consequência direta para
+> você: a issue que chega aqui vem de `Documentar`, e a documentação que
+> você audita descreve o **estado aceito** — não o estado apenas testado.
 
 Na prática, isso significa que uma issue pode chegar aqui por dois
 caminhos: já tendo passado por Integração, QA funcional e atualização de
 documentação (issues de código), ou vindo direto de "Análise - Rafinha"
-até "Análise final - Rafinha" sem passar pelas três (issues nativas de
+até "Análise Final - Rafinha" sem passar pelas três (issues nativas de
 RN/documentação, que já tiveram sua página escrita ainda na
 `jira-issue-executor`). Nos dois casos, a issue só chega aqui depois de
-Rafinha já ter aprovado funcionalmente o resultado em "Análise final -
+Rafinha já ter aprovado funcionalmente o resultado em "Análise Final -
 Rafinha" — sua auditoria é a última camada, não a única. O passo 2 desta
 skill — checar se a documentação foi devidamente atualizada — vale para os
 dois casos: no primeiro, é a `jira-doc-executor` quem já deveria ter
@@ -133,7 +128,7 @@ trabalha em branch isolada). Ver `workflow-development-flow`, seção 13.
 ### 1. Localizar as issues elegíveis
 
 Busque, na sprint atual do projeto identificado, todas as issues que estão
-na coluna **"Análise final - Claude"**. Processe-as uma de cada vez.
+na coluna **"Análise Final - Claude"**. Processe-as uma de cada vez.
 
 ### 2. Revisar cada issue por completo
 
@@ -148,7 +143,7 @@ Para cada issue, revise:
   no que foi implementado frente ao que a documentação exige.
 - **Se a documentação foi devidamente atualizada**, caso o escopo da issue
   exigisse isso.
-- **O estado da Validação Manual vinculada**, quando existir. Localize-a
+- **O estado da Validação Humana vinculada**, quando existir. Localize-a
   pelos links `Relates` da issue (ela é a issue relacionada com a label/
   categoria `validacao-humana` — nunca a identifique pelo tipo de issue) e
   verifique:
@@ -163,8 +158,74 @@ Para cada issue, revise:
 
   Validação vinculada ainda reprovada, aberta com cenário pendente, ou com
   issue corretiva em aberto → **reprovação** (passo 3b). Uma Validação
-  Manual reprovada não é considerada resolvida só porque a rodada de
+  Humana reprovada não é considerada resolvida só porque a rodada de
   testes terminou.
+
+### 2.1 Auditoria do contrato de labels, tipos e gates
+
+Além do acima, audite estes sete pontos. Cada um é uma regra que alguma
+skill do pipeline tinha obrigação de respeitar — seu papel aqui é verificar
+se ela respeitou.
+
+**1. Tipo do ticket coerente com o que foi entregue.**
+Uma issue tipo **Implementação** que só corrigiu espaçamento deveria ser
+**Correção**. Uma tipo **Correção** que na verdade consertou defeito real
+deveria ser **Bug**. Divergência grosseira → aponte; não é reprovação
+automática, mas precisa ficar registrado.
+
+> Se encontrar referência ao campo customizado `Tipo`, registre: ele saiu
+> do contrato e nenhuma skill deveria estar lendo.
+
+**2. Labels aplicadas estão na matriz oficial.**
+Qualquer label fora da página *Vocabulário operacional de labels* é achado.
+Label de produto/módulo/feature precisa estar declarada na página de
+*Controle de workflow* daquele produto.
+
+> A **label genérica de revisão** (`revisao`, `revisão`,
+> `pronto-para-revisao`, `review-claude`, `claude-review`, …) saiu do
+> contrato. Se aparecer numa issue trabalhada depois da vigência, é achado.
+
+**3. `requires-design` — registro de uso do Design Package.**
+Se a issue tem `requires-design`, o comentário de execução **precisa**
+registrar que o Design Package foi encontrado e usado, e quais IDs canônicos
+foram considerados.
+
+> **Audite o registro, não a pasta.** O Design Package é local, efêmero e
+> não versionado — pode simplesmente não existir mais nesta máquina quando
+> você roda. A ausência da pasta **não** é achado; a ausência do **registro**
+> é.
+
+Artefato era obrigatório e não há registro de uso → **aponte a
+inconsistência**.
+
+> `requires-design` **permanece** na issue depois da entrega, como marcador
+> histórico. Encontrá-la numa issue concluída **não** é achado.
+
+**4. Escopo não foi expandido.**
+Especialmente quando a issue tem `do-not-expand-scope`. Compare o que a
+descrição pedia com o que o PR realmente mudou. Alteração fora do escopo,
+mesmo que boa, é achado.
+
+**5. Labels de risco e controle foram respeitadas.**
+
+| Label | O que verificar |
+|---|---|
+| `needs-evidence` | Evidência está registrada? |
+| `high-risk` | O risco foi tratado e registrado? |
+| `breaking-change` | O que quebra está documentado? |
+| `needs-manual-decision` | A decisão de Rafinha foi obtida antes da implementação? |
+| `legacy` | O raio de alteração foi contido? |
+| `needs-human-review` | A necessidade de revisão reforçada foi sinalizada? |
+
+**6. QA executou o protocolo esperado.**
+Se a issue tem labels de protocolo (`regression-qa`, `visual-qa`, …), o
+registro do QA precisa refletir essa estratégia. E a issue precisa ter tido
+label de plataforma — sem ela, o QA deveria ter bloqueado, não passado.
+
+**7. Correção visual foi tratada como Correção.**
+Problema visual percebido depois da entrega deve ter virado issue nova do
+tipo **Correção** com `correcao-ui` — não Bug, não feature nova, e **não**
+retorno da issue original para a coluna de design.
 
 ### 3. Decidir o resultado da revisão
 
@@ -226,11 +287,11 @@ documentação faltante:
   desse texto para funcionar.
 - ❌ Nunca aprovar uma issue sem checar também a documentação relacionada,
   quando o escopo da issue envolvia documentação.
-- ❌ Nunca concluir uma issue cuja Validação Manual vinculada ainda esteja
+- ❌ Nunca concluir uma issue cuja Validação Humana vinculada ainda esteja
   reprovada, aberta com cenário pendente, ou com issue corretiva não
   concluída — nem quando a validação tiver sido "encerrada" sem que todos
   os problemas fossem tratados.
-- ❌ Nunca executar, aprovar ou reprovar uma Validação Manual — isso é
+- ❌ Nunca executar, aprovar ou reprovar uma Validação Humana — isso é
   `jira-human-validation-executor`, e o veredito é sempre de Rafinha. Aqui
   você só confere o estado dela.
 - ❌ Nunca pular a identificação do projeto/Jira quando não estiver claro

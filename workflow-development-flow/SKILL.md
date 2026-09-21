@@ -1,11 +1,6 @@
 ---
-name: "workflow-development-flow"
-description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo de Release & Versionamento (projeto ≠ repositório, monorepo e multi-repo, SemVer por componente mais versão de produto, tags namespaced `<componente>/vX.Y.Z`, os eixos PRE_RELEASE/FINAL e escopo parcial/completo, Fix Version multi-valorada só em release final, Release Lifecycle dividido entre skill, Release Orchestrator local e GitHub Action; contratos completos em `references/release-lifecycle.md`) — um ciclo separado do workflow de issue, nunca uma coluna do Jira —, a camada de Validação Humana Agregada (a unidade de aceitação humana pode agregar várias Issues; seção 12) e o Execution State (continuidade/recuperação de uma issue em execução entre sessões diferentes do Claude Code, sem depender do transcript da sessão anterior; seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
----
-
----
 name: workflow-development-flow
-description: "Skill mãe do novo fluxo de desenvolvimento Rafinha-Claude — referência consultável sobre hierarquia (Épico → Issue → Subtask), princípios do fluxo, classificação de issues (código/documentação), as 8 etapas do pipeline (Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Documentar, Análise final - Rafinha, Análise final - Claude, Concluído) e seus gates de passagem, as camadas de validação (local, GitHub Actions, QA, Análise final), a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo de Release & Versionamento (projeto ≠ repositório, monorepo e multi-repo, SemVer por componente mais versão de produto, tags namespaced `<componente>/vX.Y.Z`, os eixos PRE_RELEASE/FINAL e escopo parcial/completo, Fix Version multi-valorada só em release final, Release Lifecycle dividido entre skill, Release Orchestrator local e GitHub Action; contratos completos em `references/release-lifecycle.md`) — um ciclo separado do workflow de issue, nunca uma coluna do Jira —, a camada de Validação Humana Agregada (a unidade de aceitação humana pode agregar várias Issues; seção 12) e o Execution State (continuidade/recuperação de uma issue em execução entre sessões diferentes do Claude Code, sem depender do transcript da sessão anterior; seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'explica o fluxo novo', 'como funciona o ciclo de release', ou qualquer dúvida sobre como o workflow Rafinha-Claude funciona."
+description: "Skill mãe do Workflow Rafinha-Claude — referência consultável sobre a lista canônica de 10 colunas (A fazer, Design de produto - Rafinha, Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Análise Final - Rafinha, Documentar, Análise Final - Claude, Concluído), a camada de Design de Produto e o gate `requires-design` com Design Package em `.claude/design-packages/<ISSUE-KEY>/`, os 7 tipos oficiais de ticket (Epic, Implementação, Correção, Bug, Refatoração Técnica, Documentação, Validação Humana) que substituíram o campo customizado `Tipo`, a matriz oficial de labels mantida no Confluence, os 8 gates operacionais e a proibição de fallback silencioso, a hierarquia Épico → Issue → Subtask, as camadas de validação, a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo separado de Release & Versionamento (contratos completos em `references/release-lifecycle.md`), a Validação Humana Agregada (seção 12) e o Execution State (seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, qual gate se aplica, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'como funciona o gate de design', 'quais labels são oficiais', 'como funciona o ciclo de release', ou qualquer dúvida sobre o workflow."
 ---
 
 # Fluxo de Desenvolvimento — Skill Mãe (Rafinha + Claude)
@@ -20,10 +15,17 @@ processo que todas as demais skills do pipeline (`jira-issue-creator`,
 `jira-review-executor`, `business-rule-writer`, `module-doc-writer`,
 `screen-doc-writer`, `jira-release-executor`)
 referenciam quando precisam entender em qual etapa uma issue está, o que
-vem antes ou depois, o que uma etapa deve produzir, ou o que fazer diante
-de incerteza sobre o fluxo — incluindo o ciclo separado de Release &
-Versionamento (seção 10), a camada de Validação Humana Agregada
-(seção 12) e o Execution State (seção 13).
+vem antes ou depois, o que uma etapa deve produzir, qual gate se aplica, ou
+o que fazer diante de incerteza sobre o fluxo — incluindo o ciclo separado
+de Release & Versionamento (seção 10), a camada de Validação Humana
+Agregada (seção 12), o Execution State (seção 13), a camada de Design de
+Produto (seção 14) e o vocabulário de labels (seção 15).
+
+> **Estado do contrato: `preparado`.** Este documento descreve o contrato de
+> destino. O Jira ainda não foi configurado — a configuração é manual, feita
+> por Rafinha, em sessão separada. Enquanto o estado for `preparado`, estas
+> skills vivem na branch `feat/pacote-1-design-labels-gates` e não operam a
+> partir de `master`. O merge para `master` é o corte de vigência.
 
 **Esta skill nunca executa ação nenhuma sozinha** — não cria, não move, não
 comenta e não transiciona issues no Jira; não escreve página no Confluence;
@@ -39,7 +41,7 @@ dúvida sobre o fluxo.
 ## 1. Hierarquia de trabalho no Jira
 
 Esta hierarquia é uma **camada anterior ao workflow**. Antes de executar
-qualquer uma das 8 etapas (seção 5), é preciso entender sobre qual nível do
+qualquer uma das etapas do fluxo (seção 5), é preciso entender sobre qual nível do
 Jira se está atuando.
 
 ```text
@@ -60,7 +62,7 @@ dependências, issues relacionadas.
 
 ### Issue
 Representa uma unidade de entrega concreta — é a unidade principal que
-percorre as 8 etapas do fluxo (seção 5). Contém: problema, objetivo,
+percorre as etapas do fluxo (seção 5). Contém: problema, objetivo,
 requisitos, regras de negócio, critérios de aceitação, testes esperados,
 documentação necessária.
 
@@ -137,43 +139,74 @@ avanço, nunca só informação de diagnóstico.
 
 ---
 
-## 3. Classificação das issues
+## 3. Tipos oficiais de ticket
 
-Toda issue possui um atributo que identifica seu tipo. **A classificação é
-definida na criação da issue** (campo formal, preenchido por
-`jira-issue-creator`) — não é mais perguntada em tempo de execução. Se o
-campo não existir ou estiver ambíguo numa issue já criada, isso é tratado
-como exceção pela skill que a recebe (fallback, não regra geral).
+A natureza de uma issue é o **tipo nativo do ticket no Jira**.
 
-### 3.1 Issue de código
-Altera código, comportamento executável, arquitetura, testes ou
-configuração técnica. Exemplos: nova funcionalidade, correção de bug,
-alteração de regra implementada em código, refatoração, alteração de
-gerenciamento de estado, alteração de API/client, alteração de
-persistência, criação ou alteração de testes.
+> ⚠️ **O campo customizado `Tipo` saiu do contrato operacional.** Nenhuma skill
+> deve lê-lo. Se uma skill encontrar o campo, ela o ignora — o tipo do ticket é
+> a única fonte.
 
-`tipo: código` — percorre o fluxo técnico completo (implementação, testes,
-integração).
+### 3.1 Os 7 tipos
 
-### 3.2 Issue de documentação
-Não altera o comportamento executável do sistema. Exemplos: documentação
-de regra de negócio, documentação de módulo, documentação de tela,
-documentação arquitetural, atualização de Confluence, correção de
-documentação.
+| Tipo | Natureza | Prefixo de branch |
+|---|---|---|
+| **Epic** | Frente maior de trabalho. Nunca executado diretamente | — |
+| **Implementação** | Altera código de produto | `feat/` |
+| **Correção** | Ajusta ou refina algo já entregue | `fix/` |
+| **Bug** | Defeito real do produto | `fix/` |
+| **Refatoração Técnica** | Melhoria estrutural sem mudança funcional planejada | `refactor/` |
+| **Documentação** | Cria/atualiza documentação | sem branch por padrão; `docs/` só se versionada em Git |
+| **Validação Humana** | Aceite manual de Rafinha | não gera branch de código |
 
-`tipo: documentação` — não executa etapas de implementação ou testes de
-código que não sejam necessários para a própria documentação.
+O tipo **QA/Teste não existe**. QA é etapa do workflow, não tipo de ticket.
 
-### 3.3 Ambiguidade
-Quando houver ambiguidade real entre código e documentação na criação da
-issue, a IA deve solicitar decisão de Rafinha em vez de inferir
-silenciosamente.
+### 3.2 Correção não é Bug
+
+**Correção** ajusta algo já entregue sem que isso seja necessariamente defeito
+do produto: correção visual de UI já implementada (`correcao-ui`), ajuste de
+copy, espaçamento, estado visual, refinamento de implementação anterior.
+
+**Bug** fica reservado a defeito real — erro ao salvar, tela quebrando,
+validação incorreta, regressão depois de merge.
+
+Problema visual percebido **depois** da entrega vira **Correção** com
+`correcao-ui`, nunca Bug e nunca retorno para a coluna de design.
+
+### 3.3 Documentação declara a trilha por label
+
+Issue do tipo **Documentação** precisa de uma label de trilha documental
+(`rn-doc`, `module-doc`, `screen-doc`, `component-doc`, `api-doc`,
+`architecture-doc`, `user-doc`, `workflow-doc`, `skill-doc`, `release-doc`,
+`readme`, `adr`).
+
+Se nenhuma estiver presente, a skill **pergunta a Rafinha** — não infere a
+trilha pelo conteúdo quando isso define qual writer será usado. A label
+`confluence` é destino/meio e não satisfaz o gate sozinha.
+
+### 3.4 Subtask
+
+Subtask continua sendo **nível hierárquico, não natureza de trabalho** (seção
+1). Não tem ciclo de vida independente. Quando precisar de classificação
+operacional, herda o contexto do **tipo do ticket pai**.
+
+### 3.5 Ambiguidade
+
+Quando houver ambiguidade real sobre o tipo na criação da issue, a skill
+**pergunta a Rafinha** em vez de inferir silenciosamente.
+
+> 📄 Contrato completo, com campos importantes e Definition of Done de cada
+> tipo: página **Tipos oficiais de ticket** no Confluence (espaço CS1).
 
 ---
 
-## 4. Fluxo geral — as 8 etapas
+## 4. Fluxo geral — a lista canônica de colunas
 
 ```text
+A fazer
+        ↓
+Design de produto - Rafinha      (só quando requires-design)
+        ↓
 Fazer - Claude
         ↓
 Análise - Rafinha
@@ -182,55 +215,124 @@ Integração
         ↓
 QA - Claude
         ↓
+Análise Final - Rafinha
+        ↓
 Documentar
         ↓
-Análise final - Rafinha
-        ↓
-Análise final - Claude
+Análise Final - Claude
         ↓
 Concluído
 ```
 
-Para issues de documentação, as etapas técnicas que não forem aplicáveis
-são ignoradas de acordo com a classificação da issue (seção 3).
+> ⚠️ **Grafia.** As skills comparam o nome da coluna como **texto literal**.
+> É `Análise **F**inal`, com F maiúsculo — essa é a grafia real dos status no
+> Jira, e o contrato segue o Jira. É `QA - Claude`, com espaços ao redor do
+> hífen.
+
+**Duas mudanças em relação ao fluxo anterior:**
+
+1. Entram `A fazer` (entrada do board quando a issue sai do backlog) e
+   `Design de produto - Rafinha` (etapa manual, seção 5.2).
+2. `Documentar` passou para **depois** de `Análise Final - Rafinha`. A
+   documentação descreve o estado **aceito**, não apenas o testado.
+
+**Backlog** continua existindo como etapa pré-sprint, sem mudança. Issue sem
+`requires-design` vai de `A fazer` direto para `Fazer - Claude`.
+
+Para issues do tipo Documentação, as etapas técnicas não aplicáveis são
+ignoradas conforme o tipo do ticket (seção 3).
+
+**Exceção — Validação Humana.** A issue do tipo `Validação Humana` nasce em
+`Análise Final - Rafinha` e vai **direto para `Concluído`**: não passa por
+`Documentar` nem por `Análise Final - Claude` (seção 12).
 
 ---
 
 ## 5. As etapas em detalhe
 
-### 5.1 Fazer - Claude
+### 5.1 A fazer
 
-> **Objetivo:** implementar a issue conforme requisitos, regras de negócio
-> e arquitetura estabelecidos, produzindo os testes necessários para
-> comprovar o comportamento alterado.
+Entrada visual do board quando a issue sai do backlog. Não é etapa de
+trabalho — nenhuma skill executa nada aqui.
+
+Da `A fazer` a issue segue para:
+- `Design de produto - Rafinha`, quando tem a label `requires-design`;
+- `Fazer - Claude`, quando não tem.
+
+### 5.2 Design de produto - Rafinha (manual)
+
+> **Objetivo:** produzir o Design Package que a implementação vai consumir.
+
+**Etapa manual de Rafinha com o Claude Design. Nenhuma skill varre esta
+coluna.**
+
+Fluxo: Rafinha constrói o design junto ao Claude Design → ajusta até
+considerar adequado → exporta o Design Package → extrai o ZIP → salva o
+conteúdo em `.claude/design-packages/<ISSUE-KEY>/` → a issue fica apta a
+seguir.
+
+A única atuação esperada de skill em relação a esta coluna:
+- **sugerir** que uma issue talvez precise de design;
+- **bloquear** a implementação quando `requires-design` existir sem pacote;
+- **mover ou apontar** uma issue para design quando Rafinha pedir
+  explicitamente.
+
+**Não existe reprovação formal de design.** O design só sai da coluna quando
+já está aprovado — por construção, não por veredito.
+
+**Design não cria requisito sozinho.** Comportamento novo que surgir durante
+o design precisa virar decisão explícita de Rafinha e ser refletido na issue
+antes da implementação.
+
+**Resultado esperado:** `Pronto para Fazer - Claude`
+
+### 5.3 Fazer - Claude
+
+> **Objetivo:** implementar a issue conforme requisitos, regras de negócio e
+> arquitetura estabelecidos, produzindo os testes necessários para comprovar
+> o comportamento alterado.
+
+**Gate de Design — antes de qualquer linha de código.** Se a issue tem
+`requires-design`, a skill procura `.claude/design-packages/<ISSUE-KEY>/`. Se
+não encontrar, **para imediatamente** e reporta que o pacote não está
+disponível **naquela máquina** — nunca conclui que o design não foi feito, e
+nunca implementa no escuro.
 
 Responsabilidades:
 - Implementação da issue, respeitando a arquitetura já estabelecida.
 - Aplicação dos padrões técnicos do projeto.
 - Criação ou atualização de testes automatizados — tipo e quantidade
-  proporcionais ao comportamento e risco introduzidos (unitários, widget,
-  integração, conforme aplicável). Testes deixaram de ser "se fizer
-  sentido": são obrigatórios e proporcionais ao risco.
+  proporcionais ao comportamento e risco introduzidos. Testes são
+  obrigatórios e proporcionais ao risco.
 - Análise estática.
 - Verificação de compilação/build quando aplicável.
-- Documentação de implementação (não genérica — deve explicar o impacto
-  real da alteração: componentes criados/alterados, camadas afetadas,
-  testes adicionados, decisões técnicas relevantes).
-- Commit + push.
-- **Abrir Pull Request**, referenciando a Issue do Jira (a chave já está no
-  nome da branch, mas deve constar também no título/descrição do PR) e, se
-  houver GitHub Issue de origem vinculada, referenciá-la também
-  (`Closes #N`).
+- Documentação de implementação (não genérica — deve explicar o impacto real
+  da alteração).
+- Commit + push, em branch cujo prefixo vem do **tipo do ticket** (seção 3.1).
+- **Abrir Pull Request**, referenciando a Issue do Jira e, se houver GitHub
+  Issue de origem vinculada, referenciá-la também (`Closes #N`).
+- **Confirmar ou corrigir a label de plataforma** (`web`/`mobile`/…) conforme
+  os arquivos realmente alterados — é o que a `jira-qa-executor` usa depois.
+- Quando a issue tem `requires-design`, **registrar no comentário de
+  execução** que encontrou e usou o Design Package, e quais IDs canônicos
+  foram considerados ou aplicados.
 
-Falha de análise estática, build ou teste é bloqueio de avanço — não avança
-até ser corrigida ou explicitamente tratada por Rafinha.
+**Labels de risco e controle que esta etapa respeita:**
+`do-not-expand-scope`, `needs-manual-decision`, `needs-evidence`,
+`high-risk`, `breaking-change`, `legacy`, `needs-human-review`.
+
+**Design System.** Se o design referencia um ID canônico
+(`<sigla>.<tipo>.<subtipo>`) que não existe no código nem na documentação de
+componentes, a skill **reporta a divergência** — não recria o componente.
+
+Falha de análise estática, build ou teste é bloqueio de avanço.
 
 **Resultado esperado:** `Pronto para Análise - Rafinha`
 
-### 5.2 Análise - Rafinha (manual)
+### 5.4 Análise - Rafinha (manual)
 
-> **Objetivo:** verificar se a implementação atende aos requisitos, às
-> regras de negócio, à arquitetura estabelecida e possui testes adequados.
+> **Objetivo:** verificar se a implementação atende aos requisitos, às regras
+> de negócio, à arquitetura estabelecida e possui testes adequados.
 
 Responsabilidades: code review, verificação de regras de negócio, de
 arquitetura, de qualidade da implementação, de testes, avaliação de efeitos
@@ -240,130 +342,141 @@ colaterais, decisão de aprovação ou reprovação.
 - **Reprovação** → volta direto para `Fazer - Claude`, com problema
   encontrado, comportamento esperado e correção necessária registrados.
 
-Uma implementação tecnicamente elegante não deve ser aprovada se não
-atende ao requisito, viola regra de negócio, tem arquitetura inadequada,
-testes insuficientes para o risco, ou comportamento incorreto.
+Uma implementação tecnicamente elegante não deve ser aprovada se não atende
+ao requisito, viola regra de negócio, tem arquitetura inadequada, testes
+insuficientes para o risco, ou comportamento incorreto.
 
 **Resultado esperado:** `Pronto para Integração`
 
-### 5.3 Integração
+### 5.5 Integração
 
 > **Objetivo:** integrar a alteração à `develop`, verificando que ela passa
 > pelos gates técnicos num ambiente independente (GitHub Actions) e que
-> consegue coexistir com o restante do sistema sem conflitos ou quebra dos
-> testes automatizados.
+> consegue coexistir com o restante do sistema.
 
-Responsabilidades, nesta ordem (pipeline antes de conflito, conflito antes
-do merge):
-1. Confirmar que o Pull Request já existe (aberto na `Fazer - Claude`).
-2. Verificar o GitHub Actions do PR — ainda rodando: aguardar; passou:
-   segue; falhou: corrigir e repetir até passar (bloqueio de avanço, nunca
-   só diagnóstico).
-3. Verificar se a branch mergeia limpo com a `develop` — sem conflito:
-   segue; conflito mecânico: resolve e registra; conflito semântico real:
-   para e pergunta a Rafinha. Depois de qualquer resolução de conflito,
-   volta ao passo 2 (pipeline precisa passar de novo). Se o conflito foi
+Responsabilidades, nesta ordem (pipeline antes de conflito, conflito antes do
+merge):
+1. Confirmar que o Pull Request já existe.
+2. Verificar o GitHub Actions do PR — ainda rodando: aguardar; passou: segue;
+   falhou: corrigir e repetir até passar (bloqueio de avanço).
+3. Verificar se a branch mergeia limpo com a `develop` — conflito mecânico:
+   resolve e registra; conflito semântico real: para e pergunta a Rafinha.
+   Depois de qualquer resolução, volta ao passo 2. Se o conflito foi
    semântico, a issue também volta para `Análise - Rafinha` antes do merge.
 4. Merge para `develop`.
 5. Registrar o resultado (PR, resultado da pipeline, merge realizado).
 
-A integração não declara que o aplicativo inteiro está livre de problemas
-— isso é o QA. O objetivo aqui é só verificar se a alteração se integra de
-forma tecnicamente consistente.
+A integração não declara que o aplicativo inteiro está livre de problemas —
+isso é o QA.
 
 **Resultado esperado:** `Pronto para QA - Claude`
 
-### 5.4 QA - Claude
+### 5.6 QA - Claude
 
-> **Objetivo:** verificar se o sistema **já integrado na `develop`**
-> continua funcionando corretamente e se a alteração não introduziu
-> regressões nos fluxos existentes.
+> **Objetivo:** verificar se o sistema **já integrado na `develop`** continua
+> funcionando e se a alteração não introduziu regressões.
 
-Roda **depois** da etapa Integração (pós-merge), não mais logo após
-`Análise - Rafinha` aprovada — o ambiente de teste é a `develop`
-atualizada, não a branch isolada da issue.
+**Gate de plataforma.** A plataforma é lida da label da issue. Se ela for
+necessária para escolher o executor e estiver ausente ou ambígua, a skill
+**bloqueia e pergunta**. Não existe mais fallback para Web.
+
+**Regra de composição:** plataforma escolhe o **executor**; protocolo de QA
+(`functional-qa`, `visual-qa`, `regression-qa`, `e2e-qa`, `smoke-qa`,
+`manual-qa`, `maestro`) escolhe a **estratégia** dentro do executor.
 
 Responsabilidades: testes de regressão dos fluxos relacionados, testes dos
 fluxos diretamente alterados, testes de integração quando a alteração
-atravessa várias camadas, validação dos comportamentos impactados,
-identificação de efeitos colaterais, registro dos resultados (fluxo
-testado, resultado, falhas, evidências, ambiente, necessidade de
-intervenção de Rafinha).
+atravessa várias camadas, identificação de efeitos colaterais, registro dos
+resultados e evidências.
 
-- **Aprovado** → segue para `Documentar`.
-- **Reprovado** → volta para `Fazer - Claude`.
+**Gate de Bug.** Defeito real encontrado aqui **não vira Bug criado por esta
+skill** — é delegado à `jira-issue-creator`, preservando rascunho, aprovação
+e criação controlada por Rafinha.
 
-**Resultado esperado:** `Pronto para Documentação`
+**QA não julga design.** A skill pode validar sintomas visuais dentro do que
+o ambiente permite, mas não decide se o design está certo ou errado como
+decisão de produto.
 
-### 5.5 Documentar
-
-> **Objetivo:** registrar o estado final e validado do sistema após
-> integração e QA, mantendo sincronizadas a documentação do código e a do
-> Confluence.
-
-Descreve o **estado real e validado**, não apenas o que foi implementado
-originalmente. Responsabilidades: atualização da documentação de módulos
-no código (pasta `docs/` — `overview.md`, `architecture.md`,
-`state-management.md`, `api.md`, `maintenance.md`, `changelog.md`, só os
-que fizerem sentido), atualização do Confluence (regra de negócio, módulo,
-tela), sem burocracia — nada é criado só por criar.
-
-A documentação do estado final só é consolidada depois do QA; antes disso
-existe apenas documentação de implementação (produzida na `Fazer -
-Claude`).
+- **Aprovado** → segue para `Análise Final - Rafinha`.
+- **Reprovado** → volta para `Fazer - Claude`. **Nunca** para a coluna de
+  design.
 
 **Resultado esperado:** `Pronto para Análise Final - Rafinha`
 
-### 5.6 Análise final - Rafinha (manual)
+### 5.7 Análise Final - Rafinha (manual)
 
-> **Objetivo:** analisar se o produto realmente entrega o que era
-> proposto.
+> **Objetivo:** analisar se o produto realmente entrega o que era proposto.
 
 Não repete o code review já feito na `Análise - Rafinha`. O foco é:
 
-> **"O produto entregue resolve corretamente o problema que a issue deveria
-> resolver?"**
+> **O produto entregue resolve corretamente o problema que a issue deveria
+> resolver?**
 
 Responsabilidades: validação funcional, uso das funcionalidades entregues,
 confirmação de comportamento e regra de negócio, aceitação ou rejeição.
 
-- **Aprovação** → segue para `Análise final - Claude`.
+- **Aprovação** → segue para `Documentar`.
 - **Reprovação** → volta direto para `Fazer - Claude`, com o problema
-  encontrado registrado.
+  registrado.
 
 **Preparação por Validação Humana Agregada (seção 12).** Quando existir uma
-`Validação Manual` cobrindo a issue, Rafinha executa esta etapa **a partir
+`Validação Humana` cobrindo a issue, Rafinha executa esta etapa **a partir
 dela**, e não issue por issue: os cenários, as pré-condições e os pontos de
-observação já vêm prontos, e a aprovação/reprovação vale para todas as
-issues agregadas de uma vez. A pergunta central da etapa não muda; o que
-muda é que ele não precisa reconstituir o contexto de cada issue para
-responder a ela.
+observação já vêm prontos, e a aprovação vale para todas as issues agregadas
+de uma vez.
+
+**Resultado esperado:** `Pronto para Documentar`
+
+### 5.8 Documentar
+
+> **Objetivo:** registrar o estado final e **aceito** do sistema, mantendo
+> sincronizadas a documentação do código e a do Confluence.
+
+Roda **depois** da aceitação de Rafinha. Descreve o estado que foi aceito,
+não apenas o que foi testado.
+
+Responsabilidades: atualização da documentação de módulos no código (pasta
+`docs/`, só o que fizer sentido), atualização do Confluence (regra de
+negócio, módulo, tela), sem burocracia — nada é criado só por criar.
+
+**Exclusão obrigatória.** A varredura desta coluna **ignora issues com a
+label `validacao-humana`** — a issue de Validação Humana não passa por aqui
+(seção 12).
 
 **Resultado esperado:** `Pronto para Análise Final - Claude`
 
-### 5.7 Análise final - Claude
+### 5.9 Análise Final - Claude
 
 > **Objetivo:** auditoria final da issue para identificar pendências,
 > inconsistências ou itens não contemplados nas etapas anteriores.
 
-Verifica: testes faltantes, documentação inconsistente, requisitos não
-atendidos, pendências não resolvidas, detalhes esquecidos, divergência
-entre implementação e documentação, divergência entre documentação do
-código e Confluence, evidências ausentes das etapas anteriores, **e o
-estado da Validação Manual vinculada** (seção 12) — se existe, se foi
-aprovada, se há cenário reprovado em aberto, se há issue corretiva
-pendente. Uma Validação Manual reprovada não é considerada resolvida só
-porque a rodada de testes terminou. Não
-implementa correções automaticamente — pendência que exija decisão de
+Recebe de `Documentar`. Verifica: testes faltantes, documentação
+inconsistente, requisitos não atendidos, pendências não resolvidas,
+divergência entre implementação e documentação, divergência entre
+documentação do código e Confluence, evidências ausentes, **e o estado da
+Validação Humana vinculada** (seção 12).
+
+Auditoria acrescentada pelo contrato de labels e gates:
+- as labels aplicadas foram respeitadas;
+- a implementação **não expandiu escopo**;
+- labels de risco e controle foram respeitadas pelas skills consumidoras;
+- issue com `requires-design` tem **registro** de uso do Design Package — a
+  auditoria olha o registro no comentário, **não a pasta local**, que é
+  efêmera e pode não existir mais na máquina;
+- o QA executou o protocolo esperado;
+- evidências foram registradas quando as labels exigiram;
+- correção visual foi tratada como **Correção** com `correcao-ui`, e não como
+  Bug ou feature nova.
+
+Não implementa correções automaticamente — pendência que exija decisão de
 Rafinha interrompe a conclusão e solicita a decisão.
 
 - **Nenhuma pendência** → aprova e conclui.
-- **Pendências** → registra e encaminha a issue para a etapa adequada —
-  o destino de reprovação é `Fazer - Claude`.
+- **Pendências** → registra e devolve para `Fazer - Claude`.
 
 **Resultado esperado:** `Concluído`
 
-### 5.8 Concluído
+### 5.10 Concluído
 
 Estado terminal da issue. Nenhuma ação adicional é esperada nesta coluna.
 
@@ -379,7 +492,7 @@ nenhuma substitui a outra:
 | Validação local (`Fazer - Claude`) | "O código que acabei de implementar funciona?" |
 | GitHub Actions (`Integração`) | "O código enviado ao repositório passa pelos gates técnicos num ambiente independente?" |
 | `QA - Claude` | "O sistema integrado continua funcionando e não foram introduzidas regressões?" |
-| `Análise final - Rafinha` | "O produto realmente entrega o comportamento esperado?" |
+| `Análise Final - Rafinha` | "O produto realmente entrega o comportamento esperado?" |
 
 **Princípio, válido em qualquer camada:** falha em validação local ou na
 pipeline é **bloqueio de avanço**, nunca só informação de diagnóstico — a
@@ -407,7 +520,7 @@ jira-issue-creator    (novo trigger: GH Issue como origem)
     ↓
 Jira Issue            (guarda referência de volta pra GH Issue)
     ↓
-Workflow normal do Jira (as 8 etapas, sem mudança)
+Workflow normal do Jira (as etapas da seção 5, sem mudança)
 ```
 
 Responsabilidade de cada sistema:
@@ -432,9 +545,21 @@ verdade, o controle passa a ser 100% do Jira.
 
 ---
 
-## 8. Gates de passagem
+## 8. Gates
+
+Existem dois tipos de gate, e eles respondem perguntas diferentes.
+
+### 8.1 Gates de passagem — "posso avançar?"
 
 ```text
+A fazer
+    ↓
+(requires-design? → Design de produto - Rafinha; senão → Fazer - Claude)
+    ↓
+Design de produto - Rafinha
+    ↓
+Design Package exportado e salvo em .claude/design-packages/<ISSUE-KEY>/
+    ↓
 Fazer - Claude
     ↓
 Implementação + testes + análise estática + build + documentação + PR aberto
@@ -449,26 +574,59 @@ GitHub Actions aprovado + conflitos resolvidos + merge
     ↓
 QA - Claude
     ↓
-Regressão + fluxos afetados + integração (sobre a develop já integrada)
+Regressão + fluxos afetados (sobre a develop já integrada)
     ↓
-Documentar
-    ↓
-Estado final sincronizado (código + Confluence)
-    ↓
-Análise final - Rafinha
+Análise Final - Rafinha
     ↓
 Aceitação funcional
     ↓
-Análise final - Claude
+Documentar
+    ↓
+Estado aceito sincronizado (código + Confluence)
+    ↓
+Análise Final - Claude
     ↓
 Auditoria final sem pendências
     ↓
 Concluído
 ```
 
-Uma etapa não é considerada concluída apenas porque uma ação foi
-executada — só quando **sua saída esperada está comprovadamente
-atendida**.
+Uma etapa não é considerada concluída apenas porque uma ação foi executada —
+só quando **sua saída esperada está comprovadamente atendida**.
+
+### 8.2 Gates operacionais — "tenho contexto para executar?"
+
+Um gate operacional interrompe a execução **antes** do trabalho, quando falta
+informação obrigatória. Não é uma camada de validação — é a condição de
+entrada delas.
+
+| # | Gate | Condição de bloqueio | Skill responsável |
+|---|---|---|---|
+| 1 | Design | `requires-design` presente e Design Package ausente na máquina | `jira-issue-executor` |
+| 2 | Tipo de ticket | Tipo ausente ou incompatível com a natureza do trabalho | `jira-issue-creator`, `jira-issue-executor` |
+| 3 | Documental | Tipo Documentação sem label de trilha | `jira-doc-executor`, `jira-issue-executor` |
+| 4 | Plataforma | Label de plataforma ausente/ambígua quando necessária | `jira-qa-executor` |
+| 5 | Bug em QA | Defeito real encontrado durante QA | `jira-qa-executor` |
+| 6 | Labels | Label necessária fora da matriz oficial | todas |
+| 7 | Design System | ID canônico no design sem componente correspondente | `jira-issue-executor` |
+| 8 | Avanço entre colunas | Saída esperada da etapa não comprovadamente atendida | skill dona da etapa |
+
+### 8.3 Proibido fallback silencioso
+
+> **Quando o contrato esperado não é encontrado, a skill para e reporta.**
+> Ela nunca adivinha, nunca assume o valor mais comum e nunca volta a ler o
+> contrato antigo.
+
+Um gate que "deixa passar com um aviso" não é gate. Se a execução continua, a
+informação não era obrigatória — e então não deveria ser gate.
+
+O caso concreto que motivou a regra: a `jira-qa-executor` assumia `web` quando
+não havia label de plataforma. Isso transformava uma lacuna de informação numa
+decisão silenciosa — e um QA rodando no executor errado produz um verde que
+não significa nada.
+
+> 📄 Contrato completo de cada gate, com mensagens de bloqueio: página
+> **Gates operacionais** no Confluence (espaço CS1).
 
 ---
 
@@ -476,20 +634,22 @@ atendida**.
 
 | Etapa | Pergunta principal |
 |---|---|
+| A fazer | "Esta issue está pronta para entrar no fluxo?" |
+| Design de produto - Rafinha | "O design está adequado para ser implementado?" |
 | Fazer - Claude | "Consigo implementar a issue e produzir evidências de que a mudança funciona?" |
 | Análise - Rafinha | "A implementação está tecnicamente e funcionalmente correta?" |
 | Integração | "Essa mudança consegue conviver com o restante do sistema, validada por um ambiente independente?" |
 | QA - Claude | "O sistema integrado continua funcionando e não sofreu regressões?" |
-| Documentar | "O estado final e validado do sistema está registrado?" |
-| Análise final - Rafinha | "O produto realmente entrega o que foi proposto?" |
-| Análise final - Claude | "Existe algo que esquecemos ou deixamos inconsistente?" |
+| Análise Final - Rafinha | "O produto realmente entrega o que foi proposto?" |
+| Documentar | "O estado aceito do sistema está registrado?" |
+| Análise Final - Claude | "Existe algo que esquecemos ou deixamos inconsistente?" |
 
 ---
 
 ## 10. Release & Versionamento
 
 Camada dedicada à entrega do produto em versões, mantida **completamente
-separada** do workflow de 8 etapas.
+separada** do workflow de issue (seções 4–5).
 
 > 📄 **Referência completa:** `references/release-lifecycle.md` — contratos do
 > manifesto, do Release Request, da Release Action, do Runtime Package, da
@@ -756,7 +916,7 @@ declarar seção própria; herdam o modelo/effort de quem as invoca.
 
 ## 12. Validação Humana Agregada
 
-Camada que prepara a etapa `Análise final - Rafinha` (seção 5.6). Não é
+Camada que prepara a etapa `Análise Final - Rafinha` (seção 5.7). Não é
 uma etapa nova, não é uma coluna nova, e não altera a hierarquia
 Épico → Issue → Subtask (seção 1).
 
@@ -772,14 +932,14 @@ comportamento do ponto de vista de quem usa o produto. Nesse caso, aceitar
 esse comportamento uma vez é mais fiel — e mais barato — do que aceitar
 cada Issue isoladamente.
 
-### 12.2 O que a Validação Manual é e o que não é
+### 12.2 O que a Validação Humana é e o que não é
 
-A `Validação Manual` é uma **unidade de aceitação humana**: o conjunto
+A `Validação Humana` é uma **unidade de aceitação humana**: o conjunto
 mínimo de cenários que ainda exigem julgamento e observação de Rafinha,
 depois de tudo o que as camadas automatizadas já cobriram.
 
 Ela **não** substitui `Análise - Rafinha` (code review), `Integração`,
-`QA - Claude`, nem `Análise final - Claude`. Ela também **não** é uma
+`QA - Claude`, nem `Análise Final - Claude`. Ela também **não** é uma
 funcionalidade, uma Story, uma etapa de implementação, nem um novo QA.
 
 ```text
@@ -790,7 +950,7 @@ Validação Humana         "esse comportamento está aceitável como produto?"
 Nenhum dos dois substitui o outro. O que a Validação Humana elimina é a
 **repetição** do que já foi testado — não o julgamento humano.
 
-> **Regra explícita:** a existência de uma Validação Manual não significa
+> **Regra explícita:** a existência de uma Validação Humana não significa
 > que Rafinha precise reexecutar os testes que o Claude já executou. O
 > objetivo é cobertura automatizada **mais** julgamento humano dirigido,
 > nunca QA automatizado **mais** repetição manual completa.
@@ -803,7 +963,7 @@ seção 2).
 
 ### 12.3 Identidade própria
 
-Uma Validação Manual **não é Subtask** de nenhuma Issue. Ela precisa de
+Uma Validação Humana **não é Subtask** de nenhuma Issue. Ela precisa de
 ciclo de vida próprio porque agrega várias Issues, sobrevive a múltiplas
 tentativas de validação, registra o feedback humano e pode originar Issues
 corretivas.
@@ -812,21 +972,21 @@ Onde ela vive:
 
 | Aspecto | Convenção |
 |---|---|
-| Tipo (Jira) | `Validação Manual` onde o tipo existir; senão, `Tarefa` |
+| Tipo (Jira) | `Validação Humana` onde o tipo existir; senão, `Tarefa` |
 | Identificação por máquina | label (categoria) `validacao-humana` — **nunca** o tipo |
-| Título | `Validação Manual — <fluxo funcional>` |
+| Título | `Validação Humana — <fluxo funcional>` |
 | Chave | a do próprio projeto (`CPS-121`); não existe projeto `VAL` |
-| Coluna | nasce em `Análise final - Rafinha`, termina em `Concluído` |
+| Coluna | nasce em `Análise Final - Rafinha`, termina em `Concluído` |
 | Rastreabilidade | link `Relates` para cada Issue agregada |
 
 Os cinco estados possíveis mapeiam sem criar status novo: *pendente* e *em
-validação* = aberta em `Análise final - Rafinha`; *aprovada* = movida para
+validação* = aberta em `Análise Final - Rafinha`; *aprovada* = movida para
 `Concluído`; *reprovada* = continua aberta, com a label
 `validacao-reprovada`; *bloqueada* = label `validacao-bloqueada`.
 
 ### 12.4 Quando é gerada
 
-Por **varredura em lote** da coluna `Análise final - Rafinha`, sob demanda,
+Por **varredura em lote** da coluna `Análise Final - Rafinha`, sob demanda,
 executada pela `jira-human-validation-executor`. Nunca por issue
 individual ao fim da etapa `Documentar` — agregação exige lote, e disparar
 por issue produziria uma validação para cada uma, que é exatamente o que
@@ -835,7 +995,7 @@ esta camada existe para evitar.
 ### 12.5 Reprovação
 
 ```text
-Validação Manual reprovada
+Validação Humana reprovada
         ↓
 classificar o problema (Claude propõe, Rafinha decide)
         ↓
@@ -850,18 +1010,18 @@ classificar o problema (Claude propõe, Rafinha decide)
         ↓
 workflow normal
         ↓
-nova tentativa da MESMA Validação Manual
+nova tentativa da MESMA Validação Humana
 ```
 
 Regras que não podem ser violadas:
 
-- A Validação Manual **nunca vira Issue de implementação**.
+- A Validação Humana **nunca vira Issue de implementação**.
 - Problema que já era escopo de uma Issue existente **não gera Issue
   nova** — a Issue original continua sendo a unidade correta de
   implementação, e reabri-la preserva a rastreabilidade.
 - Reprovação **não gera Subtask**. Subtask continua sendo apenas
   decomposição interna de uma Issue (seção 1).
-- A mesma Validação Manual registra **todas** as tentativas. Ela é o
+- A mesma Validação Humana registra **todas** as tentativas. Ela é o
   registro persistente da aceitação humana daquele comportamento, não um
   ticket descartável.
 
@@ -869,11 +1029,49 @@ Regras que não podem ser violadas:
 
 | Etapa | O que muda |
 |---|---|
-| `Documentar` | Nada. Continua movendo a issue para `Análise final - Rafinha`. |
-| `Análise final - Rafinha` | Quando existe validação, Rafinha executa a partir dela (seção 5.6). |
-| `Análise final - Claude` | Passa a auditar também o estado da validação vinculada (seção 5.7). |
+| `QA - Claude` | Passa a mover a issue aprovada para `Análise Final - Rafinha` (antes ia para `Documentar`). |
+| `Análise Final - Rafinha` | Quando existe validação, Rafinha executa a partir dela (seção 5.7). Issues aprovadas seguem para `Documentar`. |
+| `Documentar` | Documenta o estado **aceito**, não só o testado. **Ignora issues com a label `validacao-humana`** na varredura. |
+| `Análise Final - Claude` | Passa a receber de `Documentar` e audita também o estado da validação vinculada (seção 5.9). |
 | `Fazer - Claude` | Reconhece `validação humana reprovada` como gatilho de correção, ao lado de `review reprovada por…`. |
 | Demais etapas | Nada. |
+
+### 12.7 Ciclo próprio da issue de validação
+
+A issue do tipo `Validação Humana` nasce em `Análise Final - Rafinha` e vai
+**direto para `Concluído`**. Ela **não** passa por `Documentar` nem por
+`Análise Final - Claude`.
+
+**Por quê.** Uma validação é um registro de aceite, não uma entrega de
+produto. Não há o que documentar sobre ela, e a auditoria final audita as
+issues agregadas, não o ticket de aceite.
+
+**Consequência operacional.** A `jira-doc-executor` **ignora** issues com a
+label `validacao-humana` ao varrer `Documentar`. É por isso que a
+identificação é por label e não por tipo — o filtro precisa funcionar mesmo
+em projeto onde o tipo não foi criado.
+
+**Consequência no Jira.** Precisa existir transição direta de
+`Análise Final - Rafinha` para `Concluído`.
+
+### 12.8 Labels de cenário
+
+Além das três labels de estado (`validacao-humana`, `validacao-reprovada`,
+`validacao-bloqueada`), os cenários podem ser tipificados:
+
+| Label | Foco do cenário |
+|---|---|
+| `acceptance-check` | Aceite do fluxo |
+| `visual-check` | Percepção visual |
+| `business-flow-check` | Coerência com a regra de negócio |
+| `copy-check` | Revisão de textos |
+| `usability-check` | Usabilidade |
+
+Elas tornam explícito **o que Rafinha precisa observar**, em vez de deixar
+isso só na prosa da descrição.
+
+> A label `validacao-aprovada` **saiu do contrato**. O estado aprovado já é
+> representado pela coluna `Concluído` e pelo histórico.
 
 ---
 
@@ -945,13 +1143,19 @@ antes de a issue seguir para `Análise - Rafinha`/Integração, para nunca
 chegar a `develop` por merge.
 
 Nas etapas que operam **depois do merge**, direto sobre `develop`/`main`
-(`Integração`, `QA - Claude`, `Documentar`, `Análise final - Claude`), o
+(`Integração`, `QA - Claude`, `Documentar`, `Análise Final - Claude`), o
 arquivo **nunca é commitado** — cairia na regra existente de nunca
 commitar direto no trunk. Ele existe só localmente (adicionar
 `.claude/execution-state/` ao `.gitignore` do projeto, na primeira vez que
 a etapa criar o diretório) — isso ainda cobre o cenário central da
 proposta (mesma pasta de trabalho, nova sessão, troca de conta); só não
 sobrevive a uma máquina diferente, cenário que a proposta não exige.
+
+> **Duas pastas locais, mesma regra.** `.claude/execution-state/` e
+> `.claude/design-packages/` (seção 14) são ambas locais e não versionadas.
+> As duas entram no `.gitignore` do projeto. A diferença é que o Execution
+> State *pode* ser commitado na branch isolada da issue, enquanto o Design
+> Package **nunca** vai para o Git.
 
 ### 13.4 Recovery Check
 
@@ -988,7 +1192,7 @@ Git, GitHub e Confluence sempre prevalecem sobre o que está escrito nele.
 | Integração | `jira-integration-executor` | Não (local) |
 | QA - Claude | `jira-qa-executor` | Não (local) |
 | Documentar | `jira-doc-executor` | Não (local) |
-| Análise final - Claude | `jira-review-executor` | Não (local) |
+| Análise Final - Claude | `jira-review-executor` | Não (local) |
 
 Cada uma dessas skills declara os próprios pontos de checkpoint (marcos
 relevantes da própria etapa) e o momento de apagar o arquivo — sempre ao
@@ -1009,6 +1213,150 @@ só texto operacional (estado, próxima ação, decisões, bloqueios).
 
 ---
 
+## 14. Camada de Design de Produto
+
+Camada transversal que entra **antes** de `Fazer - Claude`. Não substitui
+nenhuma etapa; ela produz o insumo que a implementação consome.
+
+### 14.1 A label `requires-design`
+
+É a **única** label do vocabulário com regra de aplicação diferenciada.
+
+| Regra | Detalhe |
+|---|---|
+| Quem aplica | **Rafinha, manualmente. Sempre** |
+| O que a skill pode fazer | `jira-issue-creator` pode **sugerir** no rascunho, marcada como sugestão |
+| O que a skill não pode fazer | Aplicar `requires-design` silenciosamente. Nunca |
+| `ui` e `correcao-ui` | **Não** obrigam Design Package. O gatilho é exclusivamente `requires-design` |
+| Depois da entrega | A label **permanece** como marcador histórico |
+
+**Por que permanece.** `requires-design` é o registro rastreável de que
+aquela implementação dependeu de um Design Package. Depois da
+implementação, ela **não** significa que a issue ainda aguarda design.
+
+### 14.2 O Design Package
+
+```text
+.claude/
+└── design-packages/
+    └── <ISSUE-KEY>/
+        └── conteúdo extraído do Design Package
+```
+
+| Regra | Detalhe |
+|---|---|
+| Versionamento | **Nunca** vai para o Git nem para o remoto |
+| `.gitignore` | `.claude/design-packages/` entra no `.gitignore` do projeto |
+| Persistência | Não precisa ser preservado como histórico permanente |
+| Escopo | Local à máquina onde a implementação roda |
+| ZIP | Meio de **transporte**. O conteúdo **extraído** é a referência |
+
+**Sem documento auxiliar obrigatório.** Não é preciso gerar
+`implementation-contract.md` nem equivalente. A rastreabilidade entre design
+e implementação é feita pelos **IDs canônicos**, não por um arquivo por issue.
+
+### 14.3 O bloqueio
+
+Quando a issue tem `requires-design` e a pasta não existe na máquina, a
+`jira-issue-executor` **para antes de escrever código** e reporta que o
+artefato não está disponível **naquela máquina**.
+
+> A skill nunca conclui "o design não foi feito". Ela conclui "o artefato não
+> está aqui". O pacote é local e efêmero por definição — a ausência numa
+> máquina não diz nada sobre o estado do design.
+
+Não é preciso Execution State para esse bloqueio: ele ocorre antes de a
+implementação começar, e o Jira já representa o estado da issue.
+
+### 14.4 IDs canônicos de componentes reutilizáveis
+
+A ponte entre Claude Design e Claude Code é **contrato textual**, não
+integração automática:
+
+```text
+<sigla>.<tipo-do-componente>.<subtipo-do-componente>
+```
+
+A **sigla** vem da página de Controle de workflow do produto, no Confluence.
+Ela é definida **manualmente** — **nenhuma skill infere sigla**.
+
+O mesmo ID precisa existir em três lugares: página de Design System do
+projeto no Claude Design, catálogo de componentes no Confluence, e
+documentação do componente no código.
+
+**Componente candidato** usa `<sigla>.candidate.<nome>` e **não** é
+componente reutilizável oficial até haver aprovação, implementação e entrada
+no catálogo.
+
+**Regra de implementação:** reaproveitar componente existente com ID
+correspondente; **nunca recriar** o que já existe; **reportar divergência**
+quando o design citar um ID que não existe no código nem no catálogo.
+
+### 14.5 Registro na execução
+
+Issue com `requires-design` exige, no comentário de execução, o registro de
+que o pacote foi encontrado e usado, e quais IDs canônicos foram considerados.
+
+A `jira-review-executor` audita **esse registro**, não a pasta local — que é
+efêmera e pode não existir mais quando a auditoria rodar.
+
+> 📄 Contrato completo: páginas **Design Package e requires-design**,
+> **Controle de workflow por produto** e **Componentes reutilizáveis por
+> produto** no Confluence (espaço CS1).
+
+---
+
+## 15. Vocabulário de labels
+
+### 15.1 A regra central
+
+> **Nenhum agente pode inventar label fora da matriz oficial.**
+
+- Label **documentada** na matriz → a skill pode aplicá-la e criá-la no Jira
+  sob demanda, mesmo que ainda não exista naquele projeto.
+- Label **não documentada** → a skill não inventa, não aplica, e **pergunta**.
+- **Não existe limite fixo** de labels por issue. A regra é usar apenas
+  labels necessárias, documentadas e justificáveis.
+
+**A fonte de verdade é o Confluence, não esta skill.** Esta seção descreve as
+categorias e as regras de consumo; a lista completa, com significado e
+exemplos de cada label, vive na página **Vocabulário operacional de labels**
+(espaço CS1).
+
+### 15.2 Padrão de nomenclatura
+
+Minúsculas, sem acento, sem espaço, `kebab-case` quando composta.
+
+### 15.3 As 10 categorias
+
+| Categoria | Para quê | Fonte |
+|---|---|---|
+| Área técnica | `ui`, `frontend`, `backend`, `database`, `api`, `state-management`, `integration`, `infra`, `pipeline`, `architecture` | matriz global |
+| Plataforma | `web`, `mobile`, `desktop`, `android`, `ios`, `api-only` | matriz global |
+| Protocolo de QA | `functional-qa`, `visual-qa`, `regression-qa`, `e2e-qa`, `smoke-qa`, `manual-qa`, `maestro` | matriz global |
+| Design | `requires-design` | matriz global |
+| Validação humana | `validacao-*` e os `*-check` | matriz global |
+| Risco e controle | `high-risk`, `breaking-change`, `legacy`, `needs-human-review`, `do-not-expand-scope`, `needs-evidence`, `needs-manual-decision`, `intermittent`, `reproducible`, `regression` | matriz global |
+| Natureza do defeito | `correcao-ui`, `visual-bug`, `data-bug`, `build-bug` | matriz global |
+| Refatoração técnica | `cleanup`, `deduplication`, `performance`, `testability`, `dependency`, `naming` | matriz global |
+| Documentação | trilhas documentais (`rn-doc`, `module-doc`, `screen-doc`, `component-doc`, …) | matriz global |
+| **Produto / módulo / feature** | labels específicas de um produto | **página de Controle de workflow daquele produto** |
+
+> ⚠️ A décima categoria é a única cuja lista **não** vive na matriz global. A
+> matriz define que a categoria existe e como ela se comporta; **quais** labels
+> existem é declarado por produto. Se a label não estiver declarada na página
+> do produto, a skill pergunta.
+
+### 15.4 O que saiu do contrato
+
+| Saiu | Motivo |
+|---|---|
+| Label genérica de revisão, em todas as grafias | A revisão já é representada por coluna do workflow |
+| `validacao-aprovada` | O estado aprovado já é a coluna `Concluído` mais o histórico |
+| Labels de agente/modelo (`needs-opus`, `needs-sonnet`, `claude-suitable`, `codex-suitable`) | Modelo e esforço são a Model Escalation Policy (seção 11), não label |
+
+---
+
 ## Quando Rafinha aciona esta skill diretamente
 
 Perguntas do tipo:
@@ -1024,12 +1372,21 @@ Perguntas do tipo:
 - "E uma issue que tocou dois componentes, entra em qual versão?"
 - "Consigo fechar uma versão sem o Claude?" / "Onde fica o botão de gerar
   versão?"
-- "O que é uma Validação Manual?" / "Ela substitui o QA?" / "O que acontece
+- "O que é uma Validação Humana?" / "Ela substitui o QA?" / "O que acontece
   quando eu reprovo uma validação?"
 - "Como uma nova sessão retoma uma issue interrompida?" / "O que é o
   Execution State?"
-- Qualquer dúvida sobre nomenclatura de colunas, ordem das etapas, ou
-  regra de bloqueio de avanço.
+- "Como funciona o gate de design?" / "Quando uma issue precisa de
+  `requires-design`?" / "Onde fica o Design Package?"
+- "Quem aplica `requires-design`?" / "A skill pode aplicar sozinha?"
+- "Essa label é oficial?" / "Posso criar uma label nova?" / "Onde fica a
+  matriz de labels?"
+- "Qual tipo de ticket eu uso aqui?" / "Isso é Correção ou Bug?"
+- "O campo `Tipo` ainda vale?"
+- "O que acontece se faltar a label de plataforma no QA?"
+- "Por que a Validação Humana não passa por `Documentar`?"
+- Qualquer dúvida sobre nomenclatura de colunas, ordem das etapas, gates,
+  ou regra de bloqueio de avanço.
 
 ## O que esta skill NUNCA faz
 
@@ -1043,3 +1400,8 @@ Perguntas do tipo:
 - ❌ Não decide (nem sugere sozinha, fora do contexto de uma execução real
   de `jira-release-executor`) o incremento de versão de uma release — essa
   decisão é sempre de Rafinha (seção 10.3).
+- ❌ Não substitui a matriz oficial de labels do Confluence. A seção 15
+  descreve as categorias e as regras de consumo; **quais** labels existem é
+  o Confluence que diz.
+- ❌ Não autoriza aplicar `requires-design`. Essa label é sempre confirmada
+  manualmente por Rafinha (seção 14.1).

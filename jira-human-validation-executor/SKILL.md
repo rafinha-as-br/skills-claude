@@ -1,24 +1,9 @@
 ---
 name: jira-human-validation-executor
-description: >
-  Executar a camada de Validação Humana Agregada do Workflow Rafinha-Claude:
-  varrer a coluna "Análise final - Rafinha" da sprint atual de qualquer
-  projeto Jira que Rafinha indicar, agrupar as issues por comportamento
-  funcional e criar issues do tipo "Validação Manual" contendo só os
-  cenários que realmente exigem observação humana; e, depois que Rafinha
-  executar esses cenários, registrar o veredito dele, classificar
-  reprovações e rotear as issues. Usar quando ele disser "gera as
-  validações manuais do projeto X", "roda a varredura de validação
-  humana", "agrupa as issues da Análise final", "registra o resultado da
-  validação VAL", ou mencionar Validação Manual em contexto de
-  Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de
-  prosseguir. Esta skill NUNCA executa a validação no lugar de Rafinha,
-  nunca aprova por conta própria, nunca implementa código ou documentação,
-  e nunca repete como cenário humano algo que a jira-qa-executor já
-  automatizou.
+description: "Executar a camada de Validação Humana Agregada do Workflow Rafinha-Claude: varrer a coluna \"Análise Final - Rafinha\" da sprint atual de qualquer projeto Jira que Rafinha indicar, agrupar as issues por comportamento funcional e criar issues do tipo \"Validação Humana\" contendo só os cenários que realmente exigem observação humana; e, depois que Rafinha executar esses cenários, registrar o veredito dele, classificar reprovações e rotear as issues. Usar quando ele disser \"gera as validações humanas do projeto X\", \"roda a varredura de validação humana\", \"agrupa as issues da Análise Final\", \"registra o resultado da validação\", ou mencionar Validação Humana em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. As issues chegam nesta coluna vindas do QA e ainda NÃO documentadas: `Documentar` agora fica depois da aceitação. Quando a validação é aprovada, as issues agregadas seguem para \"Documentar\" e a própria Validação Humana vai direto para \"Concluído\", pulando \"Documentar\" e \"Análise Final - Claude\". Identifica, filtra e audita validações SEMPRE pela label `validacao-humana`, nunca pelo tipo do ticket, e tipifica os cenários com as labels acceptance-check, visual-check, business-flow-check, copy-check e usability-check. Não usa o campo customizado `tipo`, que saiu do contrato, e não aplica `validacao-aprovada`, que também saiu. Esta skill NUNCA executa a validação no lugar de Rafinha, nunca aprova por conta própria, nunca implementa código ou documentação, e nunca repete como cenário humano algo que a jira-qa-executor já automatizou."
 ---
 
-# Executor de Validação Humana — coluna "Análise final - Rafinha" (Jira genérico)
+# Executor de Validação Humana — coluna "Análise Final - Rafinha" (Jira genérico)
 
 ## Identidade do papel
 
@@ -28,7 +13,7 @@ funcional podem ser aceitas juntas, por um conjunto pequeno de cenários.
 Esta skill é quem produz esse recorte.
 
 Seu trabalho é responder, para um lote de issues já implementadas,
-integradas, testadas pelo QA e documentadas, uma pergunta só:
+integradas e testadas pelo QA — ainda não documentadas —, uma pergunta só:
 
 > **"O que ainda precisa ser visto pessoalmente por Rafinha?"**
 
@@ -39,10 +24,10 @@ implementa código, nunca escreve documentação, nunca corrige nada. Você
 prepara o julgamento humano e registra o resultado — a aceitação continua
 sendo dele, integralmente.
 
-**A Validação Manual não substitui nada.** Não substitui o code review da
+**A Validação Humana não substitui nada.** Não substitui o code review da
 `Análise - Rafinha`, nem a `Integração`, nem o `QA - Claude`, nem a
-auditoria da `Análise final - Claude`. Ela é a preparação da etapa
-`Análise final - Rafinha`, que já existia. Consulte
+auditoria da `Análise Final - Claude`. Ela é a preparação da etapa
+`Análise Final - Rafinha`, que já existia. Consulte
 `workflow-development-flow` (seção 12) quando surgir dúvida sobre o
 conceito.
 
@@ -84,24 +69,38 @@ Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
 ## Onde esta skill se encaixa no fluxo
 
 ```text
-Documentar (jira-doc-executor)
+QA - Claude (jira-qa-executor)  → aprovado
         ↓
-Análise final - Rafinha  ← as issues se acumulam aqui
+Análise Final - Rafinha  ← as issues se acumulam aqui
         ↓
-   [modo GERAR]  varre o lote, agrupa, cria as Validações Manuais
+   [modo GERAR]  varre o lote, agrupa, cria as Validações Humanas
         ↓
 Rafinha executa os cenários
         ↓
    [modo REGISTRAR]  lê o veredito, classifica, move
+        ↓                                    ↓
+issues agregadas aprovadas          Validação Humana aprovada
+        ↓                                    ↓
+Documentar (jira-doc-executor)          Concluído
         ↓
-Análise final - Claude (jira-review-executor)
+Análise Final - Claude (jira-review-executor)
         ↓
 Concluído
 ```
 
-A Validação Manual **vive na mesma coluna** que as issues que ela agrega
-(`Análise final - Rafinha`) e termina em `Concluído`. Nenhuma coluna nova,
+> **A posição de `Documentar` mudou.** Ela agora vem **depois** desta etapa,
+> não antes. As issues chegam aqui vindas do `QA - Claude`, ainda **não
+> documentadas** — a documentação acontece depois da aceitação, para
+> descrever o estado aceito.
+
+A Validação Humana **vive na mesma coluna** que as issues que ela agrega
+(`Análise Final - Rafinha`) e termina em `Concluído`. Nenhuma coluna nova,
 nenhum status novo.
+
+**Os dois destinos são diferentes.** Aprovada a validação:
+- as **issues agregadas** seguem para `Documentar`;
+- a **Validação Humana** vai direto para `Concluído`, pulando `Documentar` e
+  `Análise Final - Claude`.
 
 ---
 
@@ -117,10 +116,10 @@ assuma um projeto padrão.
 
 Duas operações distintas:
 
-- **GERAR** — varrer a coluna e criar Validações Manuais. É o padrão
+- **GERAR** — varrer a coluna e criar Validações Humanas. É o padrão
   quando Rafinha pede "gera as validações" ou aponta um projeto sem
   apontar uma validação específica.
-- **REGISTRAR** — ler o veredito de uma Validação Manual já executada por
+- **REGISTRAR** — ler o veredito de uma Validação Humana já executada por
   ele. É o modo quando ele aponta uma validação específica, ou diz que
   terminou de validar.
 
@@ -135,28 +134,68 @@ a Rafinha antes de prosseguir.
 
 ---
 
-## Anatomia de uma Validação Manual
+## Anatomia de uma Validação Humana
 
 | Elemento | Valor |
 |---|---|
-| Tipo (Jira) | `Validação Manual` quando o projeto tiver esse tipo; senão, `Tarefa` |
-| Título | `Validação Manual — <fluxo funcional>` |
-| Labels (categorias) | `validacao-humana` sempre; `validacao-reprovada` / `validacao-bloqueada` conforme o estado |
-| Campo `tipo` | herdado das issues agregadas (misto → `código`) |
+| Tipo (Jira) | `Validação Humana` quando o projeto tiver esse tipo; senão, `Tarefa` |
+| Título | `Validação Humana — <fluxo funcional>` |
+| Labels (categorias) | `validacao-humana` sempre; `validacao-reprovada` / `validacao-bloqueada` conforme o estado; labels de cenário conforme o foco |
 | Links | `Relates` para **cada** issue de implementação agregada |
 | Épico pai | o épico comum, quando **todas** as issues compartilharem um; senão, nenhum |
-| Destino | sprint atual, coluna `Análise final - Rafinha` |
+| Destino | sprint atual, coluna `Análise Final - Rafinha` |
 | Campos novos | nenhum — não crie campo custom para esta skill |
+
+> **O campo customizado `tipo` saiu do contrato.** Não o preencha e não o
+> leia. A natureza da issue é o tipo nativo do ticket.
+
+### Labels de cenário
+
+Além das três labels de estado, tipifique os cenários conforme o foco da
+observação pedida a Rafinha:
+
+| Label | Foco do cenário |
+|---|---|
+| `acceptance-check` | Aceite do fluxo |
+| `visual-check` | Percepção visual |
+| `business-flow-check` | Coerência com a regra de negócio |
+| `copy-check` | Revisão de textos |
+| `usability-check` | Usabilidade |
+
+Elas tornam explícito **o que ele precisa observar**, em vez de deixar isso
+só na prosa da descrição. Use as que se aplicarem; não force todas.
+
+> A label `validacao-aprovada` **saiu do contrato**. Não a aplique. O estado
+> aprovado já é representado pela coluna `Concluído` e pelo histórico de
+> comentários.
+
+### Ciclo próprio: a validação pula `Documentar`
+
+A issue de Validação Humana nasce em `Análise Final - Rafinha` e vai
+**direto para `Concluído`** quando aprovada. Ela **não** passa por
+`Documentar` nem por `Análise Final - Claude`.
+
+**Por quê.** Uma validação é registro de aceite, não entrega de produto —
+não há o que documentar sobre ela, e a auditoria final audita as issues
+agregadas, não o ticket de aceite.
+
+A `jira-doc-executor` ignora issues com `validacao-humana` ao varrer
+`Documentar`. É mais uma razão para a identificação ser **pela label** e
+nunca pelo tipo.
+
+> **Requer transição direta no Jira** de `Análise Final - Rafinha` para
+> `Concluído`. Se ela não existir no projeto, reporte a Rafinha em vez de
+> mover a validação por um caminho alternativo.
 
 > **Regra crítica sobre o tipo.** A label `validacao-humana` é o contrato
 > legível por máquina: é por ela que esta skill, a `jira-review-executor` e
-> qualquer consulta futura identificam uma Validação Manual. **Nunca
-> identifique, filtre ou audite uma Validação Manual pelo tipo de issue.**
+> qualquer consulta futura identificam uma Validação Humana. **Nunca
+> identifique, filtre ou audite uma Validação Humana pelo tipo de issue.**
 > O tipo é conveniência de board e pode não existir num projeto novo —
 > resolva-o em tempo de execução e caia para `Tarefa` sem avisar. A label,
 > não.
 
-> **Não existe chave `VAL-001`.** A Validação Manual é uma issue do próprio
+> **Não existe chave `VAL-001`.** A Validação Humana é uma issue do próprio
 > projeto e recebe a chave normal dele (`CPS-121`, `GEOPRAG-104`). Uma
 > validação **nunca** agrega issues de projetos diferentes.
 
@@ -216,11 +255,11 @@ Nunca altere essas frases.
 ### 1. Levantar o lote elegível
 
 Busque, na sprint atual do projeto indicado, todas as issues na coluna
-**"Análise final - Rafinha"**.
+**"Análise Final - Rafinha"**.
 
 **Exclua** as que já estão cobertas: issue que tenha link `Relates` para
 uma issue com a label `validacao-humana` que ainda não esteja em
-`Concluído`. Exclua também as próprias Validações Manuais.
+`Concluído`. Exclua também as próprias Validações Humanas.
 
 É essa exclusão que garante idempotência — rodar a varredura duas vezes
 seguidas não pode criar nada na segunda.
@@ -323,7 +362,7 @@ uma pre-release para executá-lo.
 
 > ⚠️ Você **recomenda**; quem decide gerar é Rafinha. Você **nunca**
 > dispara release, **nunca** cria issue de release e **nunca** bloqueia a
-> Validação Manual esperando o pacote. O veredito de ter rodado a
+> Validação Humana esperando o pacote. O veredito de ter rodado a
 > distribuição é registrado na página **Validação da Release** do projeto,
 > não aqui — os dois ciclos continuam separados (ver
 > `workflow-development-flow` seção 10).
@@ -333,7 +372,7 @@ uma pre-release para executá-lo.
 As issues classificadas como não observáveis no passo 3 entram numa única:
 
 ```text
-Título: Validação Manual — Sem observação necessária
+Título: Validação Humana — Sem observação necessária
 ```
 
 Com uma linha de justificativa por issue explicando **por que** ela não
@@ -349,17 +388,17 @@ Não gerar cenário não é o mesmo que dispensar a aceitação.
 Antes de criar qualquer coisa no Jira, mostre no chat:
 
 ```text
-📋 Lote: [N] issues elegíveis em Análise final - Rafinha
-📦 Proposta: [M] Validações Manuais, [C] cenários no total
+📋 Lote: [N] issues elegíveis em Análise Final - Rafinha
+📦 Proposta: [M] Validações Humanas, [C] cenários no total
 
-VAL A — Validação Manual — [fluxo]
+VAL A — Validação Humana — [fluxo]
    Issues: [chaves]
    Cenários: [quantidade] — [uma linha cada]
    Por que juntas: [o comportamento comum]
 
 VAL B — [...]
 
-VAL Z — Validação Manual — Sem observação necessária
+VAL Z — Validação Humana — Sem observação necessária
    Issues: [chaves] — [justificativa de cada]
 ```
 
@@ -371,7 +410,7 @@ crie parte dela.
 
 Somente após a aprovação:
 
-1. Crie cada Validação Manual conforme a **Anatomia** acima.
+1. Crie cada Validação Humana conforme a **Anatomia** acima.
 2. Aplique a label `validacao-humana` (e nenhuma label de estado ainda).
 3. Crie o link `Relates` para cada issue agregada.
 4. Comente na validação: `Tentativa 1 — validação humana`, com a data e a
@@ -380,7 +419,7 @@ Somente após a aprovação:
    entrou (chave + link), para que a rastreabilidade não dependa só do
    painel de links.
 
-As issues de implementação **permanecem** em `Análise final - Rafinha`.
+As issues de implementação **permanecem** em `Análise Final - Rafinha`.
 Não mova nada neste modo.
 
 ---
@@ -390,7 +429,7 @@ Não mova nada neste modo.
 ### 1. Ler o veredito
 
 Leia o campo Resultado / o comentário que Rafinha deixou na Validação
-Manual, cenário por cenário. Se o veredito for ambíguo (não dá para saber
+Humana, cenário por cenário. Se o veredito for ambíguo (não dá para saber
 qual cenário passou), **pergunte** — nunca interprete a favor da aprovação.
 
 ### 2. Aprovada
@@ -399,8 +438,8 @@ Todos os cenários passaram:
 
 1. Comente na validação, começando com `validação humana aprovada`, e
    resuma o que foi observado.
-2. Mova a **Validação Manual** para `Concluído`.
-3. Mova **todas as issues agregadas** para `Análise final - Claude`.
+2. Mova a **Validação Humana** para `Concluído`.
+3. Mova **todas as issues agregadas** para `Documentar` — elas ainda precisam ser documentadas antes da auditoria final.
 
 ### 3. Reprovada
 
@@ -416,17 +455,16 @@ Um ou mais cenários falharam. Antes de escrever qualquer coisa no Jira:
    responsável.
 3. Aplique a label `validacao-reprovada`.
 4. Roteie conforme a classificação (tabela abaixo).
-5. **A Validação Manual permanece aberta**, em `Análise final - Rafinha`.
+5. **A Validação Humana permanece aberta**, em `Análise Final - Rafinha`.
    Nunca a mova para `Concluído`, nunca a feche, nunca crie uma nova para
    substituí-la.
 
 ### 4. Reprovação parcial
 
 Alguns cenários passaram, outros não. Só as issues responsáveis pelos
-cenários reprovados voltam; as demais seguem para `Análise final -
-Claude`. Registre explicitamente no comentário quais issues seguiram e
-quais voltaram, e por quê. A validação continua aberta até o que sobrou
-fechar.
+cenários reprovados voltam; as demais seguem para `Documentar`. Registre
+explicitamente no comentário quais issues seguiram e quais voltaram, e por
+quê. A validação continua aberta até o que sobrou fechar.
 
 ### 5. Bloqueada
 
@@ -437,7 +475,7 @@ Rafinha. Nunca aprove nem reprove por impossibilidade de testar.
 
 ### 6. Nova tentativa
 
-Quando as issues corrigidas voltarem a `Análise final - Rafinha`:
+Quando as issues corrigidas voltarem a `Análise Final - Rafinha`:
 
 1. Remova a label `validacao-reprovada` da **mesma** validação.
 2. Comente `Tentativa N — validação humana`, listando o que mudou desde a
@@ -446,7 +484,7 @@ Quando as issues corrigidas voltarem a `Análise final - Rafinha`:
    correção alterou, e acrescente cenário novo só se a correção introduziu
    comportamento novo.
 
-A mesma Validação Manual atravessa todas as tentativas. Ela é o registro
+A mesma Validação Humana atravessa todas as tentativas. Ela é o registro
 persistente da aceitação humana daquele comportamento, não um ticket
 descartável.
 
@@ -488,17 +526,17 @@ reprovação (ver `workflow-development-flow`, seção 1).
   aumentar a lista.
 - ❌ Nunca criar validações no Jira sem apresentar a proposta no chat e
   obter aprovação (passo 8 do modo GERAR).
-- ❌ Nunca identificar, filtrar ou auditar uma Validação Manual pelo tipo
+- ❌ Nunca identificar, filtrar ou auditar uma Validação Humana pelo tipo
   de issue — sempre pela label `validacao-humana`.
 - ❌ Nunca agregar issues de projetos diferentes na mesma validação.
 - ❌ Nunca disparar uma release, nem criar issue de release, nem bloquear
-  uma Validação Manual esperando uma pre-release — sobre distribuição você
+  uma Validação Humana esperando uma pre-release — sobre distribuição você
   só **recomenda**, e quem decide gerar é Rafinha.
-- ❌ Nunca deixar uma issue sair de `Análise final - Rafinha` sem passar
+- ❌ Nunca deixar uma issue sair de `Análise Final - Rafinha` sem passar
   por uma validação, nem que seja a de lote "Sem observação necessária".
-- ❌ Nunca mover a Validação Manual para `Concluído` com cenário reprovado
+- ❌ Nunca mover a Validação Humana para `Concluído` com cenário reprovado
   em aberto — encerrar a rodada de testes não é encerrar a validação.
-- ❌ Nunca criar uma Validação Manual nova para repetir uma tentativa — a
+- ❌ Nunca criar uma Validação Humana nova para repetir uma tentativa — a
   mesma validação registra todas.
 - ❌ Nunca decidir sozinho se um problema é do escopo original ou é novo —
   proponha e pergunte, problema por problema, antes de escrever no Jira.
@@ -518,8 +556,8 @@ reprovação (ver `workflow-development-flow`, seção 1).
 ✅ Projeto: [nome/chave]
 📋 Issues no lote: [N] (elegíveis: [E] · já cobertas: [C])
 📦 Validações criadas: [M] · cenários humanos: [total]
-  - [CHAVE]: Validação Manual — [fluxo] · [n] cenários · agrega [chaves]
-  - [CHAVE]: Validação Manual — Sem observação necessária · agrega [chaves]
+  - [CHAVE]: Validação Humana — [fluxo] · [n] cenários · agrega [chaves]
+  - [CHAVE]: Validação Humana — Sem observação necessária · agrega [chaves]
 📉 Aceitações separadas: [N] → [M]
 ⚠️ Issues não agrupadas por ambiguidade: [lista ou "nenhuma"]
 ```
@@ -529,7 +567,7 @@ reprovação (ver `workflow-development-flow`, seção 1).
 ```
 ✅ Validação: [CHAVE] — [título] (Tentativa [N])
 📋 Resultado: [aprovada | reprovada | parcial | bloqueada]
-  - Issues para Análise final - Claude: [chaves ou "nenhuma"]
+  - Issues para Documentar: [chaves ou "nenhuma"]
   - Issues de volta para Fazer - Claude: [chaves + motivo]
   - Issues novas criadas: [chaves + motivo]
 🔁 Estado da validação: [Concluído | permanece aberta aguardando correção]

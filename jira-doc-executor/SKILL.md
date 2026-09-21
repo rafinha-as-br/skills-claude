@@ -1,38 +1,33 @@
 ---
 name: jira-doc-executor
-description: >
-  Processar, uma a uma, as issues que estão na coluna "Documentar" da
-  sprint atual de qualquer projeto Jira que Rafinha indicar. Usar quando
-  ele disser "roda a coluna Documentar do projeto X", "atualiza a
-  documentação das issues aprovadas no QA", ou mencionar essa coluna em
-  contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes
-  de prosseguir. Esta skill NUNCA escreve conteúdo de página do Confluence
-  diretamente — ela identifica qual documentação foi impactada por cada
-  issue (regra de negócio, módulo, ou tela/UI) e delega para
-  business-rule-writer, module-doc-writer ou screen-doc-writer conforme o
-  caso. Qual página é a afetada nunca é adivinhado — sempre confirmado com
-  Rafinha quando não houver um único candidato claro. Depois de delegar,
-  move a issue para "Análise final - Rafinha".
+description: "Processar, uma a uma, as issues que estão na coluna \"Documentar\" da sprint atual de qualquer projeto Jira que Rafinha indicar. Usar quando ele disser \"roda a coluna Documentar do projeto X\", \"atualiza a documentação das issues aceitas\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. A coluna Documentar fica DEPOIS de \"Análise Final - Rafinha\" e ANTES de \"Análise Final - Claude\": a issue que chega aqui já foi testada no QA e já foi ACEITA por Rafinha, então a documentação descreve o estado aceito, não apenas o testado. IGNORA obrigatoriamente issues com a label `validacao-humana` — a issue do tipo Validação Humana vai direto de \"Análise Final - Rafinha\" para \"Concluído\" e não passa por esta coluna. Em issue do tipo Documentação, a trilha é declarada por label: `rn-doc` vai para business-rule-writer, `module-doc` para module-doc-writer, `screen-doc` para screen-doc-writer — sem label de trilha, pergunta a Rafinha antes de prosseguir e nunca infere pelo conteúdo. Em issue de código (Implementação, Correção, Bug, Refatoração Técnica), mantém a análise de impacto, que pode gerar várias delegações. Esta skill NUNCA escreve conteúdo de página do Confluence diretamente. Qual página é a afetada nunca é adivinhado — sempre confirmado com Rafinha quando não houver um único candidato claro. Depois de delegar, move a issue para \"Análise Final - Claude\"."
 ---
 
 # Executor de Documentação — Coluna "Documentar" (Jira genérico)
 
 ## Identidade do papel
 
-Toda issue que chega na coluna "Documentar" já passou pela `QA - Claude` e
-foi aprovada — ou seja, o código funciona como esperado. O trabalho desta
-skill é puramente de **análise de impacto e delegação**: descobrir o que,
-na documentação existente, ficou desatualizado por causa dessa mudança, e
-acionar a skill de escrita certa para atualizar.
+Toda issue que chega na coluna "Documentar" já passou pela `QA - Claude`
+**e pela aceitação funcional de Rafinha em `Análise Final - Rafinha`** — ou
+seja, o código funciona como esperado **e foi aceito como produto**. O
+trabalho desta skill é puramente de **análise de impacto e delegação**:
+descobrir o que, na documentação existente, ficou desatualizado por causa
+dessa mudança, e acionar a skill de escrita certa para atualizar.
+
+> **`Documentar` mudou de posição no fluxo.** Antes ficava logo depois do
+> QA; agora fica **depois** da aceitação de Rafinha e **antes** da
+> `Análise Final - Claude`. Consequência prática: a documentação descreve o
+> **estado aceito**, não apenas o estado testado. Se algo foi ajustado entre
+> o QA e a aceitação, é o resultado aceito que vale.
 
 Você **nunca** escreve conteúdo de página do Confluence por conta própria
 dentro desta skill — isso é sempre `business-rule-writer`,
 `module-doc-writer` ou `screen-doc-writer`. Você também nunca implementa
 ou corrige código.
 
-Esta skill só recebe issues que **foram código** (issues nativamente de
-RN/documentação nunca passam por aqui — já tiveram sua página escrita na
-própria `jira-issue-executor`).
+Esta skill recebe issues de código e também issues do tipo Documentação (essas
+com a trilha já declarada por label — ver passo 1). Issues cuja página já foi
+escrita na própria `jira-issue-executor` não precisam de nova delegação.
 
 **Contexto de uso do Jira.** Este Jira é usado exclusivamente por Rafinha,
 para a própria organização — não há outras pessoas lendo essas issues por
@@ -84,6 +79,35 @@ completo.
 
 Busque, na sprint atual do projeto indicado, todas as issues na coluna
 **"Documentar"**. Processe-as uma de cada vez.
+
+**Exclusão obrigatória — issues de validação.** Ignore qualquer issue que
+tenha a label **`validacao-humana`**. A issue do tipo `Validação Humana`
+nasce em `Análise Final - Rafinha` e vai direto para `Concluído`: ela não
+passa por `Documentar`. Se uma aparecer aqui, é engano de movimentação —
+**não a documente e não a mova**; registre a observação para Rafinha.
+
+> A exclusão é **pela label**, nunca pelo tipo do ticket. Os projetos são
+> team-managed e o tipo pode não existir num projeto novo; a label
+> `validacao-humana` é o contrato legível por máquina.
+
+**Trilha documental declarada.** Se a issue for do **tipo Documentação** e
+tiver label de trilha (`rn-doc`, `module-doc`, `screen-doc`), a trilha já
+está declarada — delegue direto ao writer correspondente, sem repetir a
+análise de impacto:
+
+| Label | Writer |
+|---|---|
+| `rn-doc` | `business-rule-writer` |
+| `module-doc` | `module-doc-writer` |
+| `screen-doc` | `screen-doc-writer` |
+
+Se for do tipo Documentação **sem** label de trilha, **pergunte a Rafinha**
+antes de prosseguir — não infira pelo conteúdo. A label `confluence` é
+destino/meio e não resolve essa escolha.
+
+Para issues de **código** (Implementação, Correção, Bug, Refatoração
+Técnica), a análise de impacto do passo 2 continua valendo integralmente —
+uma issue de código pode afetar várias trilhas ao mesmo tempo.
 
 ### 2. Reunir o contexto da mudança
 
@@ -155,14 +179,20 @@ Publique um comentário na issue com:
 
 ### 6. Mover a issue
 
-Sempre para **"Análise final - Rafinha"**, independentemente de ter havido
+Sempre para **"Análise Final - Claude"**, independentemente de ter havido
 delegação ou não. Apague `.claude/execution-state/{CHAVE}.md` se existir —
 o comentário no Jira e as páginas do Confluence já são o registro
 permanente a partir daqui.
 
-Lá a issue **aguarda a varredura de Validação Humana Agregada** (skill
-`jira-human-validation-executor`), que agrupa as issues da coluna por
-comportamento funcional. Não crie nem proponha Validação Manual aqui — a
+> **O destino mudou.** Antes esta skill movia para `Análise Final - Rafinha`,
+> porque `Documentar` vinha antes da aceitação. Agora a aceitação já
+> aconteceu, e a próxima etapa é a auditoria final do Claude.
+
+Lá a `jira-review-executor` faz a auditoria final — incluindo verificar se
+a documentação ficou consistente com a entrega aceita.
+
+A Validação Humana Agregada acontece **antes** desta etapa, na coluna
+`Análise Final - Rafinha`. Não crie nem proponha Validação Humana aqui — a
 agregação exige o lote inteiro, e disparar por issue produziria uma
 validação para cada uma.
 
@@ -196,7 +226,7 @@ validação para cada uma.
 ```
 ✅ Projeto processado: [nome/chave do projeto]
 📋 Issues processadas: [quantidade]
-  - [ISSUE-1]: impacto em RN e tela → 2 páginas atualizadas (links) → movida para Análise final - Rafinha
-  - [ISSUE-2]: sem impacto real de documentação → movida para Análise final - Rafinha
+  - [ISSUE-1]: impacto em RN e tela → 2 páginas atualizadas (links) → movida para Análise Final - Claude
+  - [ISSUE-2]: sem impacto real de documentação → movida para Análise Final - Claude
 ⚠️ Issues com página ambígua, aguardando decisão de Rafinha: [lista ou "nenhuma"]
 ```
