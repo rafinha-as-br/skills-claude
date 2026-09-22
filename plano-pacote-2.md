@@ -19,6 +19,7 @@ e o estado de cada fase.
 | 2026-09-22 | Fase 5 concluída. D2 implementada como gate G10; D6 decidida |
 | 2026-09-22 | Fase 6 concluída. Auditoria fecha o ciclo das duas labels |
 | 2026-09-22 | Fase 7 concluída. Skill mãe ganha a seção 16 e três gates novos |
+| 2026-09-22 | Fase 9 concluída. 12 páginas do Confluence, uma delas nova |
 
 ---
 
@@ -33,8 +34,8 @@ e o estado de cada fase.
 | 5 | `jira-release-executor` — `release/current`, manifest, bump | ✅ ver §9 |
 | 6 | `jira-review-executor` — auditoria de destino e labels | ✅ ver §10 |
 | 7 | `workflow-development-flow` — consolidação | ✅ ver §11 |
-| 8 | CI e branch protection (`epic/**`, `release/current`) | ⬜ manual, Rafinha |
-| 9 | Confluence — fichas das skills tocadas | ⬜ |
+| 8 | CI e branch protection (`epic/**`, `release/current`) | ⬜ manual, Rafinha — prompt entregue |
+| 9 | Confluence — fichas das skills tocadas | ✅ ver §12 |
 
 **Estado do contrato: `preparado`.** Esta branch descreve o contrato de destino
 do Pacote 2. O merge em `master` é o corte de vigência. Até lá, o pipeline
@@ -714,3 +715,78 @@ do Pacote 2.
 | O modo nunca é inferido | integration-executor, skill mãe | sim |
 | Base = destino do PR = destino validado | issue-executor, integration-executor, skill mãe | sim |
 | Ciclo das duas labels | 4 skills + Confluence + skill mãe | sim |
+
+---
+
+## 12. Registro — Fase 9
+
+**Concluída em 2026-09-22.** Doze páginas do Confluence, uma delas nova.
+
+### A página nova
+
+**Modelo de branches** (`71139329`), filha de *Workflow*. O conceito não
+existia no Confluence de forma nenhuma — estava espalhado pelas fichas, cada
+uma vendo a sua fatia.
+
+A página carrega o contrato do Pacote 2 inteiro: os cinco níveis, a branch de
+épico opcional, a base da branch da issue, os três modos, os critérios de
+aptidão, as duas labels de estado, o Execution State, o lado de release e a
+matriz de CI/branch protection.
+
+### As páginas atualizadas
+
+| Página | Versão | O quê |
+| --- | --- | --- |
+| Gates operacionais | v4 | Gates 9, 10 e 11 + painel separando o gate 10 do G10 |
+| jira-integration-executor | v6 | Três modos, rotinas R1–R6, smoke test, subtarefas |
+| jira-issue-executor | v8 | Branch de épico, base da branch, destino do PR |
+| jira-qa-executor | v7 | Labels operacionais, QA de lote |
+| jira-review-executor | v9 | Auditoria de dez pontos |
+| jira-release-executor | v7 | `release/current`, G10, bump dividido |
+| workflow-development-flow | v10 | Seção 16, gates 9–11, três modos |
+| Hierarquia Épico → Issue → Subtask | v3 | Verificação de subtarefas + drift |
+| Release & Versionamento | v5 | Três branches, G10, bump + drift |
+| Camadas de validação | v3 | O smoke test entra como camada |
+| Workflow (índice) | v6 | Aponta para a página nova |
+| Vocabulário operacional de labels | v4 e v5 | Feitas nas fases 1 e 4 |
+
+### Drift do Pacote 1 corrigido de passagem
+
+Três páginas ainda descreviam o workflow como **"8 etapas"**:
+
+- *Hierarquia Épico → Issue → Subtask*, em dois lugares;
+- *Release & Versionamento*, no texto e no diagrama de dois ciclos, com
+  `Documentar` na posição antiga;
+- a referência `release-lifecycle.md`, corrigida na fase 5.
+
+Nenhuma delas tinha relação com o Pacote 2. Foram corrigidas porque estavam
+abertas na mesma tela.
+
+### Um defeito estrutural corrigido
+
+A ficha da `jira-issue-executor` tinha a tabela de prefixos de branch presa
+num bloco `legacy-content`, com a nota *"A table in list item can't be created
+or edited in the new editor"*. A seção 5 foi reestruturada em subtítulos e a
+tabela saiu do item de lista — a página voltou a ser editável pelo editor
+novo.
+
+### Uma afirmação que eu quase deixei falsa
+
+Ao atualizar o índice de *Workflow*, escrevi que *Camadas de validação* cobria
+"local / pipeline / **smoke** / QA / aceitação". A página tinha quatro
+camadas e não mencionava smoke test nenhum.
+
+Corrigi a página em vez de corrigir o índice: o smoke test **é** uma camada
+distinta — a pipeline valida a branch de origem isolada, o smoke valida o
+resultado da junção, no destino.
+
+### O que ficou de fora
+
+- Páginas de setup por passo (*1. Preparar o repositório GitHub*, *7.
+  Configurar branch protection*) — elas descrevem como montar um projeto novo,
+  e o conteúdo de branch/CI do Pacote 2 está na fase 8, ainda não aplicada.
+  Faz sentido atualizá-las **depois** que a fase 8 rodar e o procedimento
+  estiver confirmado na prática.
+- *Release Lifecycle — guia de consulta* (`61505539`), *Release Orchestrator*
+  (`61636609`) e *Visão geral do fluxo* (`44302381`) — candidatas a uma
+  passada de consistência, sem urgência.
