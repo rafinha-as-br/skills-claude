@@ -107,6 +107,13 @@ Documentação, Revisões) já recebem a Issue certa nessa altura do fluxo e
 não precisam reaplicar essa decisão — a referência fica aqui só para
 consulta quando surgir dúvida.
 
+> ⚠️ **Não confunda com a verificação de subtarefas.** Não reaplicar a
+> decisão de nível é diferente de ignorar as subtarefas existentes. A
+> `jira-integration-executor` **inspeciona as subtarefas da Issue pai antes
+> de movê-la para `QA - Claude`** e bloqueia se houver subtarefa obrigatória
+> pendente. A Subtask continua sem ciclo próprio; o que ela ganha é ser
+> verificada antes de uma movimentação crítica da Issue pai.
+
 ---
 
 ## 2. Princípios do fluxo

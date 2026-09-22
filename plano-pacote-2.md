@@ -12,7 +12,8 @@ e o estado de cada fase.
 
 | Data | O que mudou |
 | --- | --- |
-| 2026-09-22 | Versão inicial. D1 e D2 decididas por Rafinha. Fase 1 em execução |
+| 2026-09-22 | Versão inicial. D1 e D2 decididas por Rafinha. Fase 1 concluída |
+| 2026-09-22 | Fase 2 concluída. D3 aplicada na `jira-integration-executor` |
 
 ---
 
@@ -21,7 +22,7 @@ e o estado de cada fase.
 | Fase | O quê | Status |
 | --- | --- | --- |
 | 1 | Labels `integrado-epico` e `qa-develop-aprovado` na matriz oficial | ✅ ver §5 |
-| 2 | `jira-integration-executor` — modos A/B/C, smoke test, subtarefas | ⬜ |
+| 2 | `jira-integration-executor` — modos A/B/C, smoke test, subtarefas | ✅ ver §6 |
 | 3 | `jira-issue-executor` — branch de épico, Execution State | ⬜ |
 | 4 | `jira-qa-executor` — aplica `qa-develop-aprovado`, remove `integrado-epico` | ⬜ |
 | 5 | `jira-release-executor` — `release/current`, manifest, bump | ⬜ |
@@ -217,3 +218,78 @@ O parágrafo novo na seção *Revisão* foi escrito com um link âncora para a
 seção 11 da mesma página. O Confluence descartou a âncora e manteve o texto.
 A frase funciona sem o link — a seção 11 fica logo acima —, mas o link não
 existe. Não foi refeito para não gastar uma versão da página só nisso.
+
+---
+
+## 6. Registro — Fase 2
+
+**Concluída em 2026-09-22.**
+
+`jira-integration-executor/SKILL.md`: 262 → 577 linhas.
+
+### Estrutura escolhida: rotinas compartilhadas, não três fluxos paralelos
+
+Os três modos têm muito em comum — confirmar PR, checar CI, reconciliar por
+merge, registrar evidência. Escrever cada modo do começo ao fim triplicaria o
+texto e criaria três lugares para a mesma regra divergir.
+
+A skill ficou com seis rotinas definidas uma vez:
+
+| Rotina | O quê |
+| --- | --- |
+| R1 | Confirmar o Pull Request e **que ele aponta para o destino do modo** |
+| R2 | Verificar o GitHub Actions |
+| R3 | Reconciliar com a branch de destino, por merge |
+| R4 | Smoke test mínimo (10 checks) |
+| R5 | Verificar subtarefas |
+| R6 | Registrar evidência |
+
+Cada modo virou uma sequência curta que chama as rotinas e acrescenta o que é
+só dele.
+
+### Decisões tomadas dentro da fase
+
+**O Modo A não move a issue de coluna.** A página do Notion lista as
+responsabilidades do Modo A e termina em "aplicar `integrado-epico`" — sem
+transição. O Modo B é que move o lote para `QA - Claude`. Isso é coerente com
+a finalidade declarada da label: "evidência visual temporária no board
+enquanto o épico ainda não foi promovido". Se a issue saísse de `Integração`
+no Modo A, não haveria board onde a evidência fosse visível.
+
+**R1 verifica o destino do PR, não só a existência.** Um PR aberto contra a
+`develop` não serve para o Modo A. Sem essa checagem, o Modo A mergearia
+usando um PR que descreve outra operação. A skill para e pergunta; não
+reaponta o PR sozinha.
+
+**Conflito semântico no Modo B não devolve issue nenhuma.** Nos modos A e C a
+válvula é mover a issue de volta para `Análise - Rafinha`. No Modo B o
+conflito é entre a branch do épico e a `develop` — não há issue única a quem
+atribuí-lo. A skill para, registra e pede decisão, sem mexer em coluna.
+
+**A branch da issue precisa ter nascido da branch do épico.** Verificação
+acrescentada ao Modo A que não estava explícita na página. Se a branch nasceu
+da `develop` e for mergeada no épico, ela traz a `develop` inteira para dentro
+do épico — o que contamina o escopo da promoção e quebra o critério de
+aptidão nº 10.
+
+### Fora da skill
+
+`workflow-development-flow` §1 dizia que as skills posteriores "já recebem a
+Issue certa e não precisam reaplicar essa decisão". Com R5, a Integração passa
+a inspecionar subtarefas — o que é diferente de reaplicar a decisão de nível,
+mas perto o bastante para confundir. Acrescentado um aviso em §1 separando as
+duas coisas.
+
+O tratamento completo do modelo de branches na skill mãe continua sendo da
+fase 7. O aviso de §1 entrou agora só para não abrir uma janela de contradição
+entre as fases 2 e 7.
+
+### Defeito pré-existente corrigido de passagem
+
+O arquivo tinha **frontmatter duplicado**: um bloco válido nas linhas 1–4 e um
+segundo bloco nas linhas 6–9, que o parser tratava como corpo. Como o arquivo
+foi reescrito por inteiro, o bloco morto saiu junto.
+
+**O mesmo defeito existe em outras três skills** e não foi tocado aqui:
+`business-rule-writer`, `module-doc-writer` e `doc-pendency-resolver`. Não faz
+parte do Pacote 2.

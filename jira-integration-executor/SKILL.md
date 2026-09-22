@@ -1,11 +1,6 @@
 ---
 name: "jira-integration-executor"
-description: "Executar a etapa \"Integração\" do Workflow Rafinha-Claude — mergear de verdade issues aprovadas na coluna \"Integração\" para a branch develop, validando antes o GitHub Actions do Pull Request e a ausência de conflitos. Usar quando Rafinha disser \"roda a Integração do projeto X\", \"processa a coluna Integração\", \"faz o merge das issues aprovadas\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Opera só sobre issues que já passaram por Análise - Rafinha, com Pull Request já aberto por jira-issue-executor. Sequência obrigatória: confirma PR existente → verifica GitHub Actions (bloqueia avanço se falhar) → verifica merge limpo com develop (resolve conflito mecânico sozinha, para em conflito semântico e devolve para Análise - Rafinha) → merge real para develop → move para QA - Claude. Nunca usa git push --force nem rebase. Herda as regras de segurança de jira-issue-executor."
----
-
----
-name: jira-integration-executor
-description: "Executar a etapa \"Integração\" do Workflow Rafinha-Claude — mergear de verdade issues aprovadas na coluna \"Integração\" para a branch develop, validando antes o GitHub Actions do Pull Request e a ausência de conflitos. Usar quando Rafinha disser \"roda a Integração do projeto X\", \"processa a coluna Integração\", \"faz o merge das issues aprovadas\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Opera só sobre issues que já passaram por Análise - Rafinha, com Pull Request já aberto por jira-issue-executor. Sequência obrigatória: confirma PR existente → verifica GitHub Actions (bloqueia avanço se falhar) → verifica merge limpo com develop (resolve conflito mecânico sozinha, para em conflito semântico e devolve para Análise - Rafinha) → merge real para develop → move para QA - Claude. Nunca usa git push --force nem rebase. Herda as regras de segurança de jira-issue-executor."
+description: "Executar a etapa \"Integração\" do Workflow Rafinha-Claude — mergear de verdade código aprovado, em três modos explícitos: Modo A (branch da issue → branch do épico), Modo B (branch do épico → develop, promovendo o épico inteiro) e Modo C (branch da issue → develop, integração direta). Usar quando Rafinha disser \"roda a Integração do projeto X\", \"processa a coluna Integração\", \"promove o épico Y para develop\", \"faz o merge das issues aprovadas\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. A SKILL NUNCA INFERE O MODO: Rafinha informa o modo, ou a skill para e pergunta — mesmo quando a estrutura da issue, do épico e das branches parece indicar um caminho óbvio. Antes de qualquer merge, imprime o resumo operacional (modo, issues, épico, branch de origem, branch de destino, operação, riscos) e só prossegue com confirmação, salvo quando Rafinha já informou modo e escopo no comando inicial. Sequência comum aos três modos: confirma PR existente → verifica GitHub Actions (bloqueia avanço se falhar) → reconcilia com a branch de destino por merge, nunca rebase (resolve conflito mecânico sozinha, para em conflito semântico) → merge real → smoke test mínimo → registra evidência. No Modo A aplica a label `integrado-epico` e NÃO move a issue de coluna. No Modo B exige `integrado-epico` em todas as issues obrigatórias do escopo — ausência da label é BLOQUEIO, nunca \"ainda não integrada\" — valida os critérios de aptidão do épico e move o lote para QA - Claude. No Modo C move a issue para QA - Claude. Verifica subtarefas antes de qualquer movimentação para QA - Claude: subtarefa aberta é tratada como obrigatória salvo marcação explícita de opcional. Promoção de épico é completa por padrão; parcial só por comando explícito de Rafinha. Nunca usa git push --force nem rebase. Nunca commita Execution State — ele é local em toda operação de integração. Herda as regras de segurança de jira-issue-executor."
 ---
 
 # Executor de Integração — Coluna "Integração" (Jira genérico)
@@ -17,18 +12,18 @@ Ao executar esta skill, você atua como o responsável pela etapa de
 mesmo repositório real de Rafinha usado por `jira-issue-executor`.
 
 Diferente das demais skills do pipeline, esta é a única que **realiza merge
-de verdade** para a branch `develop` — não apenas commit e push numa branch
-isolada. Essa responsabilidade é nova: antes, o merge sempre dependia de
-Rafinha abrir e mergear o Pull/Merge Request manualmente. A partir desta
-skill, você mesma mergeia, depois de validar que o Pull Request já existe,
-que o GitHub Actions passou, e que não há conflito não resolvido com a
-`develop`.
+de verdade** — não apenas commit e push numa branch isolada. Você mesma
+mergeia, depois de validar que o Pull Request já existe, que o GitHub Actions
+passou, e que não há conflito não resolvido com a branch de destino.
+
+**O destino não é mais só a `develop`.** Esta skill opera em três modos, e
+qual deles está em jogo é a decisão mais importante de toda a execução.
 
 Você **herda as mesmas regras de segurança de `jira-issue-executor`**:
 nunca `git push --force` ou `--force-with-lease`; nunca descarta trabalho
 não commitado sem perguntar a Rafinha; sempre roda `git status` antes de
-qualquer checkout; nunca commita direto em `main` ou `develop` fora do
-merge desta própria etapa.
+qualquer checkout; nunca commita direto em `main`, `develop` ou
+`release/current` fora do merge desta própria etapa.
 
 Consulte a skill `workflow-development-flow` sempre que tiver dúvida sobre
 como esta etapa se encaixa no fluxo geral, sobre as camadas de validação, ou
@@ -53,7 +48,9 @@ Effort padrão: Medium
 
 Escalonar effort quando:
 - o merge encontra conflito não-trivial, exigindo entender a lógica de
-  ambos os lados antes de decidir se é mecânico ou semântico.
+  ambos os lados antes de decidir se é mecânico ou semântico;
+- a execução é **Modo B** — promover um épico inteiro exige avaliar os
+  critérios de aptidão sobre um conjunto de issues, não sobre uma só.
 
 Escalonar para Opus quando:
 - (raramente necessário aqui) um conflito semântico já tem válvula
@@ -63,6 +60,54 @@ Escalonar para Opus quando:
 
 Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
 `workflow-development-flow` para o mecanismo de interrupção.
+
+---
+
+## Os três modos
+
+```text
+Modo A: branch da issue  → branch do épico
+Modo B: branch do épico  → develop
+Modo C: branch da issue  → develop
+```
+
+| Modo | Quando se aplica | O que acontece com a issue |
+|---|---|---|
+| **A** | A issue pertence a um épico **com branch ativa** | Recebe `integrado-epico`. **Não muda de coluna** — fica em `Integração` |
+| **B** | Promoção do épico inteiro para a `develop` | Todo o lote do escopo vai para `QA - Claude` |
+| **C** | A issue não pertence a épico com branch ativa, ou Rafinha determinou integração direta | Vai para `QA - Claude` |
+
+### Modelo de branches
+
+```text
+develop
+  ↓
+epic/<EPIC-KEY>-<nome-do-epico>
+  ↓
+{tipo}/<ISSUE-KEY>-claude
+```
+
+A convenção de nome da branch de issue **não mudou**. O épico acrescenta um
+nível intermediário; não substitui nada.
+
+### O modo nunca é inferido
+
+> **A escolha do modo pertence a Rafinha, não à automação.**
+
+1. A skill **nunca** assume automaticamente o modo de integração.
+2. O modo é informado explicitamente por Rafinha, ou confirmado por ele
+   antes de qualquer execução.
+3. Quando Rafinha **já informou** o modo, siga o modo informado — e ainda
+   assim apresente o resumo operacional antes de executar.
+4. Quando Rafinha **não informou** o modo, **pare e pergunte** qual usar.
+5. Não é permitido inferir e executar sem confirmação, **mesmo que** a
+   estrutura da issue, do épico ou das branches pareça indicar um caminho
+   provável.
+
+Esta regra existe para impedir que a skill transforme uma inferência técnica
+numa decisão operacional. Uma issue que pertence a um épico com branch ativa
+*sugere* o Modo A — mas Rafinha pode legitimamente querer integração direta
+naquele momento, e só ele sabe disso.
 
 ---
 
@@ -96,167 +141,437 @@ trabalho:
 
 ### 4. Recovery Check (Execution State)
 
-Antes de processar uma issue (passo 2), verifique se existe
+Antes de processar uma issue, verifique se existe
 `.claude/execution-state/{CHAVE}.md` — arquivo **local, nunca commitado**
-nesta etapa (ela opera direto sobre a branch da issue e depois sobre
-`develop`, sem branch isolada própria para ancorar um commit). Ver
-`workflow-development-flow`, seção 13, para o mecanismo completo e o
+em nenhuma operação desta skill. Ver `workflow-development-flow`, seção 13,
+para o mecanismo completo, e a seção **Execution State** abaixo para o
 motivo de não commitar aqui.
+
+### 5. Modo declarado
+
+Nenhum merge acontece antes de o modo estar declarado por Rafinha ou
+confirmado por ele. Ver **O modo nunca é inferido**, acima.
 
 ---
 
-## Passo a passo geral
+## Resumo operacional obrigatório
 
-### 1. Localizar as issues elegíveis
+**Antes de executar qualquer merge**, imprima o entendimento operacional e
+só prossiga com a confirmação de Rafinha:
 
-Busque, na sprint atual do projeto indicado, todas as issues que estão na
-coluna **"Integração"** (via `searchJiraIssuesUsingJql` ou equivalente,
-filtrando por status/coluna e sprint ativa). Essas issues chegaram aqui só
-depois de `Análise - Rafinha` aprovada — o Pull Request já foi aberto por
-`jira-issue-executor` durante a `Fazer - Claude`. Processe-as **uma de cada
-vez**, do início ao fim do fluxo abaixo, antes de passar para a próxima.
+```text
+Modo informado ou confirmado: <A | B | C>
+Issue(s):                     <lista de chaves>
+Épico:                        <chave e nome, ou "nenhum">
+Branch de origem:             <nome da branch>
+Branch de destino:            <nome da branch>
+Operação:                     <issue → epic branch | epic branch → develop | issue → develop>
+Riscos ou bloqueios:          <lista, ou "nenhum detectado">
+```
 
-### 2. Confirmar que o Pull Request já existe
+A execução só prossegue depois da confirmação, **salvo** quando Rafinha já
+tiver informado explicitamente a operação, o modo e o escopo no comando
+inicial. Mesmo nesse caso, o resumo é impresso — ele é o registro do que a
+skill entendeu, não apenas um pedido de permissão.
 
-Localize o PR associado à issue (pela branch `{tipo}/{CHAVE}-claude`, ou
-pelo link registrado na issue). Ele deve ter sido aberto na etapa
-`Fazer - Claude` — esta skill nunca abre um PR do zero.
+> ⚠️ Se qualquer linha do resumo não puder ser preenchida com um valor real
+> — origem desconhecida, épico ambíguo, escopo indefinido — **pare e
+> pergunte**. Um resumo com lacuna não autoriza merge nenhum.
 
-- **PR existe** → siga para o passo 3.
-- **PR não existe** → **pare e avise Rafinha**, tanto no comentário da
-  issue quanto no resumo final. Não abra o PR você mesma — isso indica algo
-  fora do fluxo esperado (ex.: issue movida manualmente para Integração sem
-  passar por `Fazer - Claude`).
+---
 
-### 3. Verificar o GitHub Actions do PR
+## Modo A — branch da issue → branch do épico
 
-O PR já deve estar rodando (ou já ter rodado) o GitHub Actions desde a
-`Fazer - Claude`/`Análise - Rafinha` — esta é a segunda camada de
-validação, independente do ambiente local do Claude (ver
-`workflow-development-flow`, seção de camadas de validação).
+Usado quando a issue pertence a um épico com branch ativa.
 
-- **Ainda rodando** → aguarde a conclusão antes de prosseguir.
-- **Passou** → siga para o passo 4.
-- **Falhou** → leia o log da execução (`gh run view` ou equivalente),
-  corrija localmente o que estiver causando a falha, commite, dê
-  `git push` (dispara uma nova rodada da pipeline), e repita este passo até
-  passar. **Falha aqui é bloqueio de avanço, nunca só diagnóstico** — a
-  issue não segue para o passo 4 sem a pipeline verde.
+1. Confirme que a issue **pertence a um épico**.
+2. Confirme que **existe branch ativa** para esse épico
+   (`epic/<EPIC-KEY>-<nome>`). Se não existir, **pare e pergunte a Rafinha**
+   qual caminho seguir — esta skill **nunca cria** branch de épico; isso é
+   responsabilidade da `jira-issue-executor`, sob comando explícito.
+3. Confirme que a **branch da issue nasceu da branch do épico**, não da
+   `develop`. Se nasceu da `develop`, pare e reporte — mergear assim traria
+   a `develop` inteira para dentro do épico.
+4. Imprima o **resumo operacional** e obtenha a confirmação.
+5. **R1** — confirme o Pull Request, apontando para a **branch do épico**.
+6. **R2** — verifique o GitHub Actions.
+7. **R3** — reconcilie com a branch do épico.
+8. Faça o merge da branch da issue na branch do épico e envie.
+9. **R4** — smoke test mínimo, sobre a **branch do épico**.
+10. **R6** — registre a evidência no comentário da issue.
+11. Aplique a label **`integrado-epico`**.
 
-### 4. Verificar se a branch mergeia limpo com a `develop`
+> **A issue não muda de coluna no Modo A.** Ela permanece em `Integração`
+> até que o épico seja promovido. A label `integrado-epico` é o que
+> distingue, no board, uma issue já mergeada no épico de uma ainda por
+> integrar — porque a coluna, sozinha, não consegue dizer isso.
+
+---
+
+## Modo B — branch do épico → develop
+
+Usado para promover o épico para a `develop`. É o modo com mais verificação,
+porque promove um conjunto, não uma unidade.
+
+### Regra de escopo
+
+```text
+Promoção de épico para develop é COMPLETA por padrão.
+Promoção parcial só acontece mediante comando explícito de Rafinha.
+```
+
+A skill **não infere** uma promoção parcial sozinha.
+
+Quando Rafinha comandar uma promoção parcial, separe e apresente três
+listas antes de qualquer merge:
+
+1. **Escopo total do épico** — todas as issues obrigatórias.
+2. **Escopo desta promoção** — o subconjunto que vai subir.
+3. **Issues que ficam fora** — e o risco de deixar comportamento
+   incompleto na `develop`.
+
+Se essa separação não estiver clara, **pare e peça decisão de Rafinha**.
+
+### Passo a passo
+
+1. Confirme que Rafinha **solicitou ou confirmou explicitamente** o Modo B.
+2. Identifique o épico e sua branch.
+3. **Liste as issues obrigatórias** do épico consideradas no escopo.
+4. Confirme que todas foram **mergeadas na branch do épico**.
+5. Confirme que todas possuem a label **`integrado-epico`**.
+6. **R5** — verifique subtarefas de todas as issues do escopo.
+7. Avalie os **critérios de aptidão** (abaixo). Qualquer um que falhe
+   **bloqueia a promoção**; registre a causa.
+8. Imprima o **resumo operacional** e obtenha a confirmação.
+9. **R3** — reconcilie a branch do épico com a `develop`, por merge.
+10. **R1** e **R2** — Pull Request da branch do épico para `develop`, e
+    GitHub Actions verde.
+11. Faça o merge da branch do épico na `develop` e envie.
+12. **R4** — smoke test mínimo sobre a `develop`.
+13. **R6** — registre a evidência da promoção, no épico e em cada issue do
+    escopo.
+14. Mova **todas as issues do escopo** para `QA - Claude`.
+
+### Critérios de aptidão do épico
+
+Todos precisam valer para uma promoção completa:
+
+1. Existe uma branch do épico criada a partir da `develop`.
+2. Todas as issues obrigatórias do épico estão mergeadas na branch do épico.
+3. Todas as issues obrigatórias possuem `integrado-epico`.
+4. Não existem issues obrigatórias pendentes de implementação, análise,
+   integração ou correção dentro do escopo do épico.
+5. Não existem subtarefas obrigatórias pendentes que comprometam o
+   funcionamento do épico.
+6. A branch do épico está sincronizada ou reconciliada com a `develop` por
+   merge, sem conflitos não resolvidos.
+7. A CI aplicável da branch do épico está verde.
+8. O smoke test da integração do épico passou.
+9. Não há conflitos semânticos pendentes de decisão de Rafinha.
+10. O comportamento entregue pelo conjunto está minimamente funcional e não
+    depende de partes ausentes para não quebrar a `develop`.
+
+### Ausência de `integrado-epico` é bloqueio
+
+> ❗ Uma issue obrigatória do escopo **sem** `integrado-epico` faz a skill
+> **parar e perguntar** — nunca concluir que ela não foi integrada.
+
+As duas leituras possíveis da ausência levam a consequências opostas:
+
+| Leitura | Consequência se estiver errada |
+|---|---|
+| "não foi integrada" | Reporta como incompleto um épico que está completo, e trava uma promoção válida |
+| "foi integrada, a label falhou" | Promove um épico furado, levando comportamento quebrado para a `develop` |
+
+A skill não tem como distinguir as duas a partir da ausência. Por isso ela
+para. É o mesmo princípio do gate **proibido fallback silencioso**.
+
+### Conflito semântico no Modo B
+
+Diferente dos modos A e C, aqui **não há issue única para devolver**. Um
+conflito semântico entre a branch do épico e a `develop` faz a skill
+**parar, registrar e pedir decisão de Rafinha** — sem mover nenhuma issue
+de coluna.
+
+---
+
+## Modo C — branch da issue → develop
+
+Usado quando a issue não pertence a um épico com branch ativa, ou quando
+Rafinha confirmar integração direta.
+
+1. Confirme que Rafinha **solicitou ou confirmou explicitamente** o Modo C.
+2. Confirme que **não há branch de épico ativa aplicável**, ou que Rafinha
+   determinou integração direta mesmo havendo uma.
+3. Imprima o **resumo operacional** e obtenha a confirmação.
+4. **R1** — confirme o Pull Request, apontando para a `develop`.
+5. **R2** — verifique o GitHub Actions.
+6. **R3** — reconcilie com a `develop`.
+7. **R5** — verifique subtarefas.
+8. Faça o merge da branch da issue na `develop` e envie.
+9. **R4** — smoke test mínimo sobre a `develop`.
+10. **R6** — registre a evidência no comentário da issue.
+11. Mova a issue para `QA - Claude`.
+
+---
+
+## Rotinas compartilhadas
+
+### R1 — Confirmar o Pull Request
+
+Localize o PR associado à branch de origem. Ele deve ter sido aberto na
+etapa `Fazer - Claude` — esta skill **nunca abre um PR do zero**.
+
+Confirme que o **destino do PR é a branch de destino do modo em execução**.
+Um PR aberto contra a `develop` não serve para o Modo A.
+
+- **PR existe e aponta para o destino certo** → siga.
+- **PR não existe** → **pare e avise Rafinha**, no comentário da issue e no
+  resumo final. Isso indica algo fora do fluxo esperado.
+- **PR existe mas aponta para outro destino** → **pare e pergunte**. Não
+  reaponte o PR sozinha.
+
+### R2 — Verificar o GitHub Actions do PR
+
+Esta é a segunda camada de validação, independente do ambiente local do
+Claude (ver `workflow-development-flow`, seção 6).
+
+- **Ainda rodando** → aguarde a conclusão.
+- **Passou** → siga.
+- **Falhou** → leia o log (`gh run view` ou equivalente), corrija
+  localmente, commite, dê `git push` (dispara nova rodada), e repita até
+  passar. **Falha aqui é bloqueio de avanço, nunca só diagnóstico.**
+
+Vale para os três modos: `epic/**`, `develop` e `release/current` rodam os
+mesmos checks essenciais. Nenhuma integração avança com CI essencial
+vermelha.
+
+### R3 — Reconciliar com a branch de destino
 
 1. `git fetch origin`.
-2. Checkout na branch da issue.
-3. `git merge origin/develop` — **nunca `git rebase`**. Rebase reescreveria
-   os commits já enviados ao remoto e exigiria `push --force` depois, o que
-   é proibido pelas regras de segurança herdadas de `jira-issue-executor`.
+2. Checkout na branch de origem.
+3. `git merge origin/<destino>` — **nunca `git rebase`**. Rebase
+   reescreveria commits já enviados ao remoto e exigiria `push --force`
+   depois, o que é proibido pelas regras de segurança herdadas.
 
 Resultado:
 
-- **Sem conflito** → siga para o passo 5.
+- **Sem conflito** → siga.
 - **Conflito mecânico** (trechos diferentes do mesmo arquivo, sem
   contradição de fato — formatação, import, adições que não se sobrepõem)
-  → resolva sozinha, registrando no comentário da issue exatamente o que
-  foi reconciliado.
+  → resolva sozinha, registrando exatamente o que foi reconciliado.
 - **Conflito semântico real** (duas implementações incompatíveis da mesma
   lógica) → grave `.claude/execution-state/{CHAVE}.md` com
   `Estado: AGUARDANDO_RAFINHA` e os trechos em conflito em "Bloqueios",
-  depois **pare e pergunte a Rafinha**, mostrando os trechos em conflito,
-  antes de decidir qual versão prevalece ou como combiná-las.
+  depois **pare e pergunte a Rafinha**, mostrando os trechos, antes de
+  decidir qual versão prevalece.
 
-Depois de qualquer resolução de conflito (mecânica ou semântica):
+Depois de qualquer resolução de conflito:
 - `git push` normal (**nunca `--force`**).
-- Isso **sempre volta para o passo 3** — a pipeline precisa rodar de novo e
-  passar antes de prosseguir, independente do tipo de conflito resolvido.
-- **Se o conflito foi semântico** (envolveu decisão de Rafinha durante a
-  resolução): além de revalidar a pipeline, **mova a issue de volta para
-  `Análise - Rafinha`** — uma nova rodada completa de revisão humana antes
-  de seguir para o merge, mesmo que a pipeline passe. Registre no
-  comentário o que mudou e por quê. Isso vale mesmo quando a resolução já
-  teve a participação pontual de Rafinha: uma revisão formal de novo é o
+- Volte sempre para **R2** — a pipeline precisa rodar de novo e passar.
+- **Se o conflito foi semântico**, nos modos **A e C**: além de revalidar a
+  pipeline, **mova a issue de volta para `Análise - Rafinha`**. Uma nova
+  rodada completa de revisão humana antes do merge, mesmo que a pipeline
+  passe. Registre no comentário o que mudou e por quê. Isso vale mesmo
+  quando Rafinha participou pontualmente da resolução: a revisão formal é o
   que garante identificar se algo passou despercebido na aprovação
-  original. Ao mover de volta, **encerre esta execução para essa issue** —
-  ela só retorna para `Integração` depois de uma nova aprovação.
+  original. Ao mover de volta, **encerre esta execução para essa issue**.
+- **No Modo B**, conflito semântico não devolve issue nenhuma — ver
+  **Conflito semântico no Modo B**.
 
-### 5. Realizar o merge para `develop`
+### R4 — Smoke test mínimo
 
-Só depois dos passos 3 e 4 totalmente resolvidos (e, se aplicável, depois
-da nova `Análise - Rafinha` do passo 4). Faça o merge da branch da issue
-para `develop` e envie (`git push origin develop`).
+Executado **depois do merge**, sobre a branch de destino. Leve, direcionado
+e suficiente para detectar quebra evidente.
 
-### 6. Registrar o resultado
+> **O smoke test não substitui o QA.** A validação funcional ampla é da
+> `jira-qa-executor`, na coluna `QA - Claude`.
 
-Monte um resumo objetivo e publique como comentário na própria issue. O
-comentário deve conter:
+Checks mínimos:
 
+1. O projeto compila, ou executa o build mínimo aplicável.
+2. A análise estática / lint obrigatório passa.
+3. Os testes automatizados diretamente relacionados à issue ou ao épico
+   passam.
+4. O fluxo principal afetado abre/executa sem erro bloqueante.
+5. A funcionalidade alterada está operante no destino da integração.
+6. Não há erro evidente entre issues já integradas no mesmo épico, quando
+   aplicável.
+7. Não há regressão óbvia no caminho principal.
+8. Não há dependência ausente ou configuração quebrada que impeça a próxima
+   etapa.
+9. Se a alteração for **visual**, a tela principal envolvida renderiza e
+   permite o fluxo básico esperado.
+10. Se a alteração envolver **API, estado, persistência ou integração entre
+    camadas**, a chamada/fluxo principal é validado no menor nível viável.
+
+Smoke test reprovado é **bloqueio**: registre o que quebrou e pare. Não
+prossiga para mover issue nenhuma.
+
+### R5 — Verificar subtarefas
+
+```text
+Subtask não avança sozinha pelo workflow, mas precisa ser inspecionada
+antes da issue pai avançar.
+```
+
+Antes de mover qualquer issue para `QA - Claude`:
+
+1. Consulte a issue no Jira.
+2. Liste **todas** as subtarefas vinculadas.
+3. Verifique o status de cada uma.
+4. Identifique se existe subtarefa obrigatória pendente.
+5. Se houver, **bloqueie a movimentação da issue pai**.
+6. Se estiver tudo compatível, mova a issue pai.
+7. Quando o Jira permitir, mova também as subtarefas relevantes.
+8. Se a transição da subtarefa não estiver disponível, registre no
+   comentário da issue e no resumo final.
+
+**Subtarefa obrigatória** é qualquer subtarefa aberta ligada à
+implementação, correção, teste, integração, documentação necessária ou
+ajuste bloqueante da issue pai, e que comprometa a validade funcional ou
+técnica da entrega caso fique pendente.
+
+> ⚠️ **Toda subtarefa aberta é tratada como potencialmente obrigatória**,
+> salvo quando estiver claramente marcada ou descrita como opcional, futura
+> ou não bloqueante. Na dúvida, a skill pergunta — não decide sozinha que
+> uma pendência é irrelevante.
+
+### R6 — Registrar a evidência
+
+Publique um comentário na issue contendo:
+
+- **Modo** executado (A, B ou C).
+- **Origem → destino** do merge.
 - Link/número do Pull Request.
-- Resultado final do GitHub Actions (passou, e se houve correções no
-  caminho).
+- Resultado final do GitHub Actions, e se houve correções no caminho.
 - Se houve conflito: tipo (mecânico/semântico), o que foi reconciliado, e
   se a issue precisou voltar para `Análise - Rafinha`.
-- Confirmação do merge realizado (branch → `develop`).
+- Resultado do smoke test.
+- Subtarefas verificadas e seu estado.
+- Labels aplicadas ou removidas nesta operação.
+- Confirmação do merge realizado.
 
-### 7. Mover a issue para o status correto
+No **Modo B**, registre também **no épico**: quais issues compuseram o
+conjunto promovido, e — em promoção parcial — quais ficaram fora e por quê.
 
-- Merge realizado com sucesso → mova para **"QA - Claude"**.
-- Issue devolvida por conflito semântico (passo 4) → mova para
-  **"Análise - Rafinha"** em vez de QA - Claude.
-- Issue com PR ausente (passo 2) ou GitHub Actions sem configuração
-  (pré-requisito) → **não mova**, deixe onde está, e destaque isso no
-  resumo final.
+---
+
+## Labels operacionais
+
+| Label | Quando esta skill a aplica | Quando esta skill a remove |
+|---|---|---|
+| `integrado-epico` | Modo A, depois do merge issue → branch do épico | Nunca. Quem remove é a `jira-qa-executor`, ao aprovar sobre a `develop` |
+| `qa-develop-aprovado` | Nunca — é da `jira-qa-executor` | Nunca |
+
+Ver a matriz oficial no Confluence (**Vocabulário operacional de labels**,
+categoria 11) para o ciclo de vida completo.
+
+---
+
+## Execution State
+
+O Execution State versionado **pertence à branch da issue**. Fora dela, é
+apenas estado local de execução.
+
+Em **toda** operação desta skill — Modo A, Modo B e Modo C —
+`.claude/execution-state/{CHAVE}.md` permanece **local e não commitado**.
+
+Nunca recebem commit de Execution State:
+
+- a branch do épico (`epic/**`);
+- a `develop`;
+- a `release/current`;
+- branches efêmeras de release.
+
+A rastreabilidade das integrações fica nos comentários da issue, nas
+evidências, nos PRs e nos logs da skill — **não** em Execution State
+versionado fora da branch da issue.
 
 Em qualquer caso que mova a issue (sucesso ou devolução), apague
-`.claude/execution-state/{CHAVE}.md` se existir — a partir daqui, Jira e
-Git já são a fonte de verdade permanente.
+`.claude/execution-state/{CHAVE}.md` se existir — a partir daí, Jira e Git
+já são a fonte de verdade permanente.
 
 ---
 
 ## O que NÃO fazer
 
+- ❌ **Nunca inferir o modo de integração** — mesmo quando a estrutura da
+  issue, do épico e das branches parecer indicar um caminho óbvio. O modo é
+  informado ou confirmado por Rafinha.
+- ❌ Nunca executar merge sem antes imprimir o resumo operacional.
+- ❌ Nunca preencher uma linha do resumo operacional com suposição — se o
+  valor real não for conhecido, pare e pergunte.
+- ❌ **Nunca criar branch de épico** — isso é da `jira-issue-executor`, sob
+  comando explícito de Rafinha. Se a branch do épico não existir durante uma
+  integração, pare e pergunte.
+- ❌ Nunca promover um épico parcialmente sem comando explícito de Rafinha.
+- ❌ **Nunca tratar ausência de `integrado-epico` como "ainda não
+  integrada"** — é bloqueio, e a skill para e pergunta.
+- ❌ Nunca mover a issue de coluna no Modo A — ela fica em `Integração` até
+  o épico ser promovido.
+- ❌ Nunca mover uma issue para `QA - Claude` sem verificar subtarefas.
+- ❌ Nunca decidir sozinha que uma subtarefa aberta é irrelevante.
 - ❌ Nunca usar `git push --force` ou `--force-with-lease` — se o push
-  normal for rejeitado por divergência, pare e avise Rafinha em vez de
-  forçar.
-- ❌ Nunca usar `git rebase` para reconciliar com a `develop` — sempre
-  `git merge origin/develop`.
-- ❌ Nunca avançar para o merge (passo 5) sem o GitHub Actions verde —
-  falha na pipeline é sempre bloqueio, nunca diagnóstico a ser ignorado.
+  normal for rejeitado por divergência, pare e avise Rafinha.
+- ❌ Nunca usar `git rebase` para reconciliar — sempre
+  `git merge origin/<destino>`.
+- ❌ Nunca avançar para o merge sem o GitHub Actions verde — falha na
+  pipeline é sempre bloqueio, nunca diagnóstico a ser ignorado.
 - ❌ Nunca resolver um conflito semântico sozinha — sempre parar e mostrar
-  os trechos em conflito a Rafinha antes de decidir qual versão prevalece.
+  os trechos em conflito a Rafinha.
 - ❌ Nunca pular a devolução para `Análise - Rafinha` depois de resolver um
-  conflito semântico, mesmo que a pipeline passe depois — essa revisão
-  humana extra é obrigatória, não opcional.
+  conflito semântico nos modos A e C, mesmo que a pipeline passe depois.
+- ❌ Nunca prosseguir com smoke test reprovado.
 - ❌ Nunca abrir um Pull Request nesta skill — se o PR não existir, pare e
-  avise Rafinha em vez de criar um.
-- ❌ Nunca criar uma pipeline de GitHub Actions do zero para um projeto que
-  não tenha uma — pare e avise Rafinha.
+  avise Rafinha.
+- ❌ Nunca reapontar o destino de um PR existente — pare e pergunte.
+- ❌ Nunca criar uma pipeline de GitHub Actions do zero.
 - ❌ Nunca dar checkout em outra branch, ou criar uma nova, sem antes
   checar `git status` e resolver alterações não commitadas com Rafinha.
 - ❌ Nunca declarar que "o aplicativo inteiro" está livre de problemas —
-  esta etapa valida só a integração técnica; a validação funcional ampla é
-  do QA - Claude.
+  esta etapa valida integração técnica e smoke; a validação funcional ampla
+  é do QA - Claude.
 - ❌ Nunca pular a pergunta sobre qual projeto/Jira processar, nem sobre o
   repositório de código quando não estiver claro.
-- ❌ Nunca commitar `.claude/execution-state/{CHAVE}.md` — esta etapa opera
-  sobre `develop`, e commitar cairia na regra de nunca commitar direto no
-  trunk (ver seção 13.3 de `workflow-development-flow`).
+- ❌ **Nunca commitar `.claude/execution-state/{CHAVE}.md`** em nenhuma
+  operação desta skill.
+- ❌ Nunca aplicar `qa-develop-aprovado` — essa label é da
+  `jira-qa-executor`.
 - ❌ Nunca confiar cegamente num Execution State encontrado — sempre
-  reconciliar com o estado real do Git/GitHub/Jira antes de continuar a
-  partir dele.
+  reconciliar com o estado real do Git/GitHub/Jira antes de continuar.
 
 ---
 
 ## Resumo final ao usuário
 
-Depois de processar todas as issues elegíveis da execução, apresente a
-Rafinha um resumo consolidado, por exemplo:
+Depois de processar a execução, apresente a Rafinha um resumo consolidado.
+
+**Modo A ou C:**
 
 ```
 ✅ Projeto processado: [nome/chave do projeto]
+🔀 Modo: A (issue → branch do épico)
 📋 Issues processadas: [quantidade]
-  - [ISSUE-1]: PR #12, pipeline OK, sem conflito → merge em develop → movida para QA - Claude
-  - [ISSUE-2]: PR #13, pipeline corrigida 1x (lint), conflito mecânico resolvido (import duplicado) → merge em develop → movida para QA - Claude
-  - [ISSUE-3]: PR #14, pipeline OK, conflito semântico (duas implementações da mesma validação) — Rafinha decidiu qual prevalece, pipeline revalidada → devolvida para Análise - Rafinha (revisão obrigatória antes do merge)
-⚠️ Issues não processadas (PR ausente ou pipeline não configurada): [lista ou "nenhuma"]
-
-Merges realizados já estão em `develop`, enviados ao remoto. Issues devolvidas por conflito semântico aguardam nova Análise - Rafinha antes de voltar para Integração.
+  - [ISSUE-1]: PR #12, pipeline OK, sem conflito → merge em epic/PROJ-40-cadastro → smoke OK → `integrado-epico` aplicada (permanece em Integração)
+  - [ISSUE-2]: PR #13, pipeline corrigida 1x (lint), conflito mecânico resolvido (import duplicado) → merge em epic/PROJ-40-cadastro → smoke OK → `integrado-epico` aplicada
+  - [ISSUE-3]: PR #14, pipeline OK, conflito semântico (duas implementações da mesma validação) — Rafinha decidiu qual prevalece, pipeline revalidada → devolvida para Análise - Rafinha
+⚠️ Issues não processadas (PR ausente, destino errado, subtarefa pendente ou pipeline não configurada): [lista ou "nenhuma"]
 ```
+
+**Modo B:**
+
+```
+✅ Projeto processado: [nome/chave do projeto]
+🔀 Modo: B (epic/PROJ-40-cadastro → develop)
+📦 Escopo: completo — 5 issues obrigatórias
+  - Todas com `integrado-epico` ✓
+  - Subtarefas verificadas: 3 fechadas, 0 pendentes ✓
+  - Critérios de aptidão: 10/10 ✓
+🔀 Merge realizado: epic/PROJ-40-cadastro → develop
+🧪 Smoke test: OK
+📋 Issues movidas para QA - Claude: PROJ-41, PROJ-42, PROJ-43, PROJ-44, PROJ-45
+```
+
+Quando a promoção for **bloqueada**, diga qual critério falhou e o que falta
+— nunca só "não foi possível promover".
