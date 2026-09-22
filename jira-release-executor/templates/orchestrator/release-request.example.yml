@@ -36,7 +36,10 @@ release_request:
   carried:
     geoprag_api: 2.1.0
 
-  ref: develop                       # base quando nao ha' promocao
+  # A release parte da release/current, nao da develop. Usar develop aqui so'
+  # por excecao explicitamente autorizada por Rafinha, registrada abaixo em
+  # eligibility.exceptions. Ver release-lifecycle.md secao 22.
+  ref: release/current
 
   commits:                           # repositorio -> commit exato usado
     geoprag-admin: 9f2c1ab
@@ -44,5 +47,23 @@ release_request:
 
   issues:                            # componente -> issues incluidas
     geoprag_admin: [GEO-41, GEO-44]
+
+  # OBRIGATORIO. Prova do gate G10: todo merge commit do intervalo
+  # release/current..develop rastreia, pelo nome da branch de origem, para uma
+  # issue com a label qa-develop-aprovado. Sem este bloco o request nao e'
+  # executavel.
+  eligibility:
+    checked_range: 9f2c1ab..77be004
+    approved:                        # issue -> commit que a trouxe
+      GEO-41: 3ac91fe
+      GEO-44: b207d5c
+    # Obrigatorio mesmo vazio: a lista vazia afirma "verifiquei e nao houve
+    # excecao". O campo ausente nao afirma nada, e o orchestrator bloqueia.
+    # Cada excecao tem QUATRO campos, todos obrigatorios:
+    #   - item: GEO-52
+    #     risco: "Fluxo de exportacao nao passou por QA sobre a develop"
+    #     autorizacao: "pode seguir sem o QA da 52, eu valido na mao depois"
+    #     impacto: "Se a exportacao quebrar, a correcao sai em PATCH"
+    exceptions: []
 
   created_at: 2026-09-12T14:00:00Z

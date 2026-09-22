@@ -72,6 +72,26 @@ if ($null -eq $m.runtime_package -or $null -eq $m.runtime_package.required) {
     Fail "runtime_package.required nao declarado. Ausencia silenciosa nao e' permitida."
 }
 
+# Gate G10 - elegibilidade. O bloco e' a prova de que a promocao
+# develop -> release/current foi verificada. Ver release-lifecycle.md secao 22.
+if ($null -eq $req.eligibility) {
+    Fail "release_request.eligibility ausente. Sem a prova do gate G10 o request nao e' executavel."
+}
+if ($null -eq $req.eligibility.checked_range) {
+    Fail "eligibility.checked_range ausente. Nao da' para auditar o que foi verificado."
+}
+if ($null -eq $req.eligibility.exceptions) {
+    Fail "eligibility.exceptions ausente. Use uma lista vazia quando nao houver excecao - ausencia silenciosa nao e' permitida."
+}
+foreach ($e in @($req.eligibility.exceptions)) {
+    foreach ($f in @('item', 'risco', 'autorizacao', 'impacto')) {
+        if (-not $e.$f) { Fail "excecao autorizada sem '$f'. Os quatro campos sao obrigatorios." }
+    }
+}
+if ($req.ref -ne 'release/current' -and @($req.eligibility.exceptions).Count -eq 0) {
+    Fail "ref = '$($req.ref)' diferente de release/current sem excecao registrada em eligibility.exceptions."
+}
+
 $repoIds = @($m.repositories | ForEach-Object { $_.id })
 foreach ($name in $m.components.Keys) {
     $c = $m.components[$name]

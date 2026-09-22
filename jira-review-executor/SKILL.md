@@ -1,6 +1,6 @@
 ---
 name: jira-review-executor
-description: "Fazer a auditoria final (revisão do Claude) das issues que estão na coluna \"Análise Final - Claude\" da sprint atual de qualquer projeto Jira que Rafinha indicar (ou que já esteja claro pelo contexto da conversa) — a última etapa antes de \"Concluído\". Recebe as issues vindas de \"Documentar\", que agora fica depois da aceitação de Rafinha em \"Análise Final - Rafinha\": a documentação auditada descreve o estado ACEITO, não apenas o testado. Usar sempre que Rafinha disser algo como \"revisa as issues do Jira X\", \"roda a coluna Análise Final - Claude\", \"faz a auditoria final do projeto Y\", ou mencionar explicitamente essa coluna em qualquer contexto de Jira/Atlassian Rovo/Confluence. Além das pendências clássicas e do estado da Validação Humana vinculada, audita o contrato de labels, tipos e gates: se o tipo do ticket é coerente com o que foi entregue, se as labels estão na matriz oficial do Confluence, se a issue com `requires-design` registrou o uso do Design Package no comentário (audita o REGISTRO, nunca a pasta local, que é efêmera), se o escopo não foi expandido, se as labels de risco e controle foram respeitadas, se o QA executou o protocolo esperado, e se correção visual foi tratada como Correção com correcao-ui em vez de Bug. Aprovação mantém o comentário \"claude review aprovado\" e move para \"Concluído\"; reprovação mantém \"review reprovada por claude\" e move direto para \"Fazer - Claude\" (a coluna de espera \"Review - Rafinha\" foi eliminada do fluxo). Esta skill NUNCA implementa código ou documentação — apenas revisa, comenta e move o ticket."
+description: "Fazer a auditoria final (revisão do Claude) das issues que estão na coluna \"Análise Final - Claude\" da sprint atual de qualquer projeto Jira que Rafinha indicar (ou que já esteja claro pelo contexto da conversa) — a última etapa antes de \"Concluído\". Recebe as issues vindas de \"Documentar\", que agora fica depois da aceitação de Rafinha em \"Análise Final - Rafinha\": a documentação auditada descreve o estado ACEITO, não apenas o testado. Usar sempre que Rafinha disser algo como \"revisa as issues do Jira X\", \"roda a coluna Análise Final - Claude\", \"faz a auditoria final do projeto Y\", ou mencionar explicitamente essa coluna em qualquer contexto de Jira/Atlassian Rovo/Confluence. Além das pendências clássicas e do estado da Validação Humana vinculada, audita o contrato de labels, tipos e gates: se o tipo do ticket é coerente com o que foi entregue, se as labels estão na matriz oficial do Confluence, se a issue com `requires-design` registrou o uso do Design Package no comentário (audita o REGISTRO, nunca a pasta local, que é efêmera), se o escopo não foi expandido, se as labels de risco e controle foram respeitadas, se o QA executou o protocolo esperado, e se correção visual foi tratada como Correção com correcao-ui em vez de Bug. AUDITA TAMBÉM O CONTRATO DE BRANCHES POR ÉPICO: se a integração aconteceu no destino correto para o modo declarado (Modo A com PR contra a branch do épico, Modo C contra a develop), se o resumo operacional da integração está registrado, se o QA rodou sobre a develop integrada, e se as labels operacionais foram aplicadas E removidas na hora certa — `integrado-epico` presente numa issue que chega aqui é achado, porque o QA deveria tê-la removido no veredito, e `qa-develop-aprovado` ausente é o achado mais consequente de todos, porque só quebra semanas depois, no gate G10 da release. Esta skill NUNCA aplica nem remove essas labels: ela audita as duas pontas, que pertencem a skills diferentes. Issue trabalhada antes da vigência do contrato de branches por épico não é reprovada por esses pontos — a observação é registrada e a revisão segue. Aprovação mantém o comentário \"claude review aprovado\" e move para \"Concluído\"; reprovação mantém \"review reprovada por claude\" e move direto para \"Fazer - Claude\" (a coluna de espera \"Review - Rafinha\" foi eliminada do fluxo). Esta skill NUNCA implementa código ou documentação — apenas revisa, comenta e move o ticket."
 ---
 
 # Revisor de Issues — Coluna "Análise Final - Claude" (Jira genérico)
@@ -163,9 +163,14 @@ Para cada issue, revise:
 
 ### 2.1 Auditoria do contrato de labels, tipos e gates
 
-Além do acima, audite estes sete pontos. Cada um é uma regra que alguma
+Além do acima, audite estes dez pontos. Cada um é uma regra que alguma
 skill do pipeline tinha obrigação de respeitar — seu papel aqui é verificar
 se ela respeitou.
+
+> **Issues anteriores à vigência.** Os pontos 8, 9 e 10 dependem do contrato
+> de branches por épico e release controlada. Uma issue trabalhada antes
+> dessa vigência não tem como cumpri-los — registre a observação, mas **não
+> reprove por isso**. O mesmo critério que já vale para o ponto 2.
 
 **1. Tipo do ticket coerente com o que foi entregue.**
 Uma issue tipo **Implementação** que só corrigiu espaçamento deveria ser
@@ -226,6 +231,49 @@ label de plataforma — sem ela, o QA deveria ter bloqueado, não passado.
 Problema visual percebido depois da entrega deve ter virado issue nova do
 tipo **Correção** com `correcao-ui` — não Bug, não feature nova, e **não**
 retorno da issue original para a coluna de design.
+
+**8. A integração aconteceu no destino correto.**
+A `jira-integration-executor` opera em três modos, e o comentário dela
+registra qual foi usado. Confira se a evidência é coerente com o modo
+declarado:
+
+| Modo declarado | O que a evidência precisa mostrar |
+|---|---|
+| **A** — issue → branch do épico | PR aberto **contra a branch do épico**; branch da issue nascida da branch do épico; `integrado-epico` aplicada; a issue **não** mudou de coluna naquele momento |
+| **B** — branch do épico → develop | Todas as issues obrigatórias do escopo com `integrado-epico` antes da promoção; critérios de aptidão registrados; lote movido junto |
+| **C** — issue → develop | PR aberto **contra a `develop`**; branch da issue nascida da `develop` |
+
+Modo declarado que não bate com o destino do PR é achado — e é o tipo de
+achado que só aparece aqui, porque tudo passou.
+
+> **Resumo operacional ausente** é achado por si só. A skill de integração é
+> obrigada a imprimi-lo e registrá-lo antes de qualquer merge; sem ele não há
+> como saber qual operação foi entendida.
+
+**9. As labels operacionais foram aplicadas *e removidas* na hora certa.**
+Este é o ponto que fecha o ciclo das duas labels de estado. Nenhuma skill
+aplica e remove a mesma label, então cada ponta é auditável:
+
+| Estado na issue que chega aqui | Veredito |
+|---|---|
+| `integrado-epico` **ausente** | ✅ esperado — o QA a remove no veredito |
+| `integrado-epico` **presente** | ❌ achado: o QA não removeu, ou alguém reaplicou |
+| `qa-develop-aprovado` **presente** | ✅ esperado — a issue passou pelo QA aprovada |
+| `qa-develop-aprovado` **ausente** | ❌ achado: ou o QA não aplicou, ou a issue pulou o QA |
+
+> ❗ **`qa-develop-aprovado` ausente é o achado mais consequente desta
+> auditoria.** Ele não quebra nada agora. Ele quebra a release, semanas
+> depois, quando o gate G10 bloquear a promoção `develop → release/current`
+> por causa de um commit que não rastreia para issue aprovada — e aí ninguém
+> vai lembrar desta issue.
+>
+> Esta coluna é a última chance de pegar isso enquanto ainda é barato.
+
+**10. O QA rodou sobre a branch certa.**
+O registro do QA precisa dizer que os testes rodaram sobre a **`develop`
+integrada** — é exatamente isso que `qa-develop-aprovado` certifica. Registro
+que indique branch da issue, branch do épico, ou que não diga qual branch foi
+testada, é achado.
 
 ### 3. Decidir o resultado da revisão
 
@@ -294,6 +342,16 @@ documentação faltante:
 - ❌ Nunca executar, aprovar ou reprovar uma Validação Humana — isso é
   `jira-human-validation-executor`, e o veredito é sempre de Rafinha. Aqui
   você só confere o estado dela.
+- ❌ **Nunca aplicar nem remover `integrado-epico` ou `qa-develop-aprovado`.**
+  Esta skill **audita** o estado das duas labels; quem as aplica é a
+  `jira-integration-executor` e quem as remove é a `jira-qa-executor`.
+  Corrigir a label aqui apagaria a evidência do próprio achado.
+- ❌ Nunca deixar passar `qa-develop-aprovado` ausente como se fosse
+  detalhe — é o que trava a release semanas depois, no gate G10, quando
+  ninguém mais lembra desta issue.
+- ❌ Nunca reprovar uma issue pelos pontos 8, 9 e 10 quando ela foi
+  trabalhada antes da vigência do contrato de branches por épico — registre
+  a observação e siga.
 - ❌ Nunca pular a identificação do projeto/Jira quando não estiver claro
   pelo contexto.
 - ❌ Nunca escrever o comentário de reprovação sem antes perguntar a

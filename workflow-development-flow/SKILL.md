@@ -1,6 +1,6 @@
 ---
 name: workflow-development-flow
-description: "Skill mãe do Workflow Rafinha-Claude — referência consultável sobre a lista canônica de 10 colunas (A fazer, Design de produto - Rafinha, Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Análise Final - Rafinha, Documentar, Análise Final - Claude, Concluído), a camada de Design de Produto e o gate `requires-design` com Design Package em `.claude/design-packages/<ISSUE-KEY>/`, os 7 tipos oficiais de ticket (Epic, Implementação, Correção, Bug, Refatoração Técnica, Documentação, Validação Humana) que substituíram o campo customizado `Tipo`, a matriz oficial de labels mantida no Confluence, os 8 gates operacionais e a proibição de fallback silencioso, a hierarquia Épico → Issue → Subtask, as camadas de validação, a integração GitHub Issues ↔ Jira ↔ Pull Request, o ciclo separado de Release & Versionamento (contratos completos em `references/release-lifecycle.md`), a Validação Humana Agregada (seção 12) e o Execution State (seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, qual gate se aplica, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'como funciona o gate de design', 'quais labels são oficiais', 'como funciona o ciclo de release', ou qualquer dúvida sobre o workflow."
+description: "Skill mãe do Workflow Rafinha-Claude — referência consultável sobre a lista canônica de 10 colunas (A fazer, Design de produto - Rafinha, Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Análise Final - Rafinha, Documentar, Análise Final - Claude, Concluído), a camada de Design de Produto e o gate `requires-design` com Design Package em `.claude/design-packages/<ISSUE-KEY>/`, os 7 tipos oficiais de ticket (Epic, Implementação, Correção, Bug, Refatoração Técnica, Documentação, Validação Humana) que substituíram o campo customizado `Tipo`, a matriz oficial de labels mantida no Confluence, os 11 gates operacionais e a proibição de fallback silencioso, a hierarquia Épico → Issue → Subtask e a verificação de subtarefas antes de movimentação crítica, as camadas de validação, a integração GitHub Issues ↔ Jira ↔ Pull Request, o MODELO DE BRANCHES (seção 16) — branch da issue, branch de épico opcional e criada só sob comando explícito, develop, release/current e main, mais os três modos da Integração (A: issue→épico, B: épico→develop, C: issue→develop), a regra de que o modo nunca é inferido, e o ciclo das duas labels de estado `integrado-epico` e `qa-develop-aprovado` —, o ciclo separado de Release & Versionamento (contratos completos em `references/release-lifecycle.md`), a Validação Humana Agregada (seção 12) e o Execution State (seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, qual gate se aplica, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'como funciona o gate de design', 'quais labels são oficiais', 'como funciona o ciclo de release', ou qualquer dúvida sobre o workflow."
 ---
 
 # Fluxo de Desenvolvimento — Skill Mãe (Rafinha + Claude)
@@ -106,6 +106,42 @@ recebido na execução, é responsabilidade de `jira-issue-creator` e
 Documentação, Revisões) já recebem a Issue certa nessa altura do fluxo e
 não precisam reaplicar essa decisão — a referência fica aqui só para
 consulta quando surgir dúvida.
+
+> ⚠️ **Não confunda com a verificação de subtarefas.** Não reaplicar a
+> decisão de nível é diferente de ignorar as subtarefas existentes.
+
+### Verificação de subtarefas antes de movimentação crítica
+
+```text
+Subtask não avança sozinha pelo workflow, mas precisa ser inspecionada
+antes da issue pai avançar.
+```
+
+A Subtask continua **sem ciclo de vida próprio** — ela não percorre colunas.
+O que ela ganha é ser **verificada** antes de uma movimentação crítica da
+Issue pai.
+
+Antes de mover uma issue para `QA - Claude`, a `jira-integration-executor`:
+
+1. Consulta a issue no Jira.
+2. Lista **todas** as subtarefas vinculadas.
+3. Verifica o status de cada uma.
+4. Identifica se existe subtarefa obrigatória pendente.
+5. Se houver, **bloqueia a movimentação da issue pai** (gate 11).
+6. Se estiver tudo compatível, move a issue pai.
+7. Quando o Jira permitir, move também as subtarefas relevantes.
+8. Se a transição da subtarefa não estiver disponível, registra no comentário
+   da issue e no resumo final.
+
+**Subtarefa obrigatória** é qualquer subtarefa aberta ligada à implementação,
+correção, teste, integração, documentação necessária ou ajuste bloqueante da
+Issue pai, e que comprometa a validade funcional ou técnica da entrega caso
+fique pendente.
+
+> ⚠️ **Toda subtarefa aberta é tratada como potencialmente obrigatória**,
+> salvo quando estiver claramente marcada ou descrita como opcional, futura
+> ou não bloqueante. Na dúvida, a skill pergunta — não decide sozinha que uma
+> pendência é irrelevante.
 
 ---
 
@@ -350,26 +386,60 @@ insuficientes para o risco, ou comportamento incorreto.
 
 ### 5.5 Integração
 
-> **Objetivo:** integrar a alteração à `develop`, verificando que ela passa
-> pelos gates técnicos num ambiente independente (GitHub Actions) e que
+> **Objetivo:** integrar a alteração ao destino correto, verificando que ela
+> passa pelos gates técnicos num ambiente independente (GitHub Actions) e que
 > consegue coexistir com o restante do sistema.
 
-Responsabilidades, nesta ordem (pipeline antes de conflito, conflito antes do
-merge):
-1. Confirmar que o Pull Request já existe.
+**O destino não é sempre a `develop`.** Esta etapa opera em **três modos**
+(ver seção 16):
+
+```text
+Modo A: branch da issue  → branch do épico
+Modo B: branch do épico  → develop
+Modo C: branch da issue  → develop
+```
+
+> ❗ **O modo nunca é inferido.** Rafinha informa o modo, ou a skill para e
+> pergunta — mesmo quando a estrutura da issue, do épico e das branches
+> parece indicar um caminho óbvio. A escolha do modo pertence a Rafinha, não
+> à automação. Antes de qualquer merge, a skill imprime o resumo operacional
+> (modo, issues, épico, origem, destino, operação, riscos).
+
+Responsabilidades comuns aos três modos, nesta ordem (pipeline antes de
+conflito, conflito antes do merge):
+1. Confirmar que o Pull Request já existe **e que aponta para o destino do
+   modo em execução**.
 2. Verificar o GitHub Actions do PR — ainda rodando: aguardar; passou: segue;
    falhou: corrigir e repetir até passar (bloqueio de avanço).
-3. Verificar se a branch mergeia limpo com a `develop` — conflito mecânico:
-   resolve e registra; conflito semântico real: para e pergunta a Rafinha.
-   Depois de qualquer resolução, volta ao passo 2. Se o conflito foi
-   semântico, a issue também volta para `Análise - Rafinha` antes do merge.
-4. Merge para `develop`.
-5. Registrar o resultado (PR, resultado da pipeline, merge realizado).
+3. Reconciliar com a branch de destino por `git merge` — nunca rebase.
+   Conflito mecânico: resolve e registra; conflito semântico real: para e
+   pergunta a Rafinha. Depois de qualquer resolução, volta ao passo 2.
+4. Merge para o destino.
+5. **Smoke test mínimo** sobre o destino — leve, direcionado, suficiente para
+   detectar quebra evidente. Não substitui o QA.
+6. Registrar o resultado (modo, origem → destino, PR, pipeline, smoke, merge).
+
+O que é específico de cada modo:
+
+| Modo | Específico |
+|---|---|
+| **A** | Aplica `integrado-epico`. **A issue não muda de coluna** — fica em `Integração` até o épico ser promovido |
+| **B** | Exige `integrado-epico` em todas as issues obrigatórias do escopo; valida os 10 critérios de aptidão do épico; move o **lote inteiro** para `QA - Claude` |
+| **C** | Move a issue para `QA - Claude` |
+
+**Verificação de subtarefas.** Antes de mover qualquer issue para
+`QA - Claude`, a skill consulta a hierarquia real do Jira e bloqueia se
+houver subtarefa obrigatória pendente (ver seção 1).
+
+**Conflito semântico** nos modos A e C devolve a issue para
+`Análise - Rafinha` antes do merge. No Modo B não há issue única a quem
+atribuí-lo: a skill para, registra e pede decisão, sem mover coluna nenhuma.
 
 A integração não declara que o aplicativo inteiro está livre de problemas —
 isso é o QA.
 
-**Resultado esperado:** `Pronto para QA - Claude`
+**Resultado esperado:** `Pronto para QA - Claude` (modos B e C) ou
+`Integrado no épico, aguardando promoção` (modo A)
 
 ### 5.6 QA - Claude
 
@@ -397,9 +467,25 @@ e criação controlada por Rafinha.
 o ambiente permite, mas não decide se o design está certo ou errado como
 decisão de produto.
 
+**QA de lote.** O Modo B da Integração promove um épico inteiro de uma vez, e
+o lote que chega aqui pode ser o épico completo. O **veredito continua sendo
+por issue**: cada uma mantém evidência própria e é julgada pelo seu mérito.
+Uma reprovação não bloqueia a aprovação das demais. O conjunto é registrado
+no épico como fato, não como unidade de julgamento.
+
+**Labels operacionais.** Esta é a única etapa que aplica
+`qa-develop-aprovado` e a única que remove `integrado-epico` (seção 16):
+
+| Veredito | `qa-develop-aprovado` | `integrado-epico` |
+|---|---|---|
+| Aprovado | aplica | remove |
+| Reprovado | não aplica | remove |
+| Inconclusivo por infraestrutura | não aplica | **não mexe** |
+
 - **Aprovado** → segue para `Análise Final - Rafinha`.
 - **Reprovado** → volta para `Fazer - Claude`. **Nunca** para a coluna de
   design.
+- **Inconclusivo por infraestrutura** → não move e não mexe em label.
 
 **Resultado esperado:** `Pronto para Análise Final - Rafinha`
 
@@ -570,7 +656,12 @@ Aprovação técnica e funcional
     ↓
 Integração
     ↓
-GitHub Actions aprovado + conflitos resolvidos + merge
+Modo declarado por Rafinha (A, B ou C) + resumo operacional confirmado
+    ↓
+GitHub Actions aprovado + conflitos resolvidos + merge + smoke test
+    ↓
+(Modo A → volta a aguardar em Integração, com `integrado-epico`)
+(Modos B e C → subtarefas verificadas → segue)
     ↓
 QA - Claude
     ↓
@@ -610,6 +701,15 @@ entrada delas.
 | 6 | Labels | Label necessária fora da matriz oficial | todas |
 | 7 | Design System | ID canônico no design sem componente correspondente | `jira-issue-executor` |
 | 8 | Avanço entre colunas | Saída esperada da etapa não comprovadamente atendida | skill dona da etapa |
+| 9 | Modo de integração | Modo não informado por Rafinha nem confirmado por ele | `jira-integration-executor` |
+| 10 | Integração de épico | Issue obrigatória do escopo sem `integrado-epico` na promoção | `jira-integration-executor` |
+| 11 | Subtarefa | Subtarefa obrigatória pendente antes de mover a issue pai para `QA - Claude` | `jira-integration-executor` |
+
+> O gate **G10 de elegibilidade de release** (todo commit do intervalo
+> `release/current..develop` precisa rastrear para issue com
+> `qa-develop-aprovado`) pertence ao ciclo separado de Release — ver
+> `references/release-lifecycle.md`, §22. Ele não é um gate do fluxo de
+> issues e não aparece na tabela acima.
 
 ### 8.3 Proibido fallback silencioso
 
@@ -1136,16 +1236,25 @@ fonte que pode divergir da real.
 
 ### 13.3 Política de Git
 
+```text
+Execution State versionado pertence à branch da issue.
+Fora dela, é apenas estado local de execução.
+```
+
 Só é **commitado** quando a etapa opera numa branch isolada da issue
 (`Fazer - Claude`, via `jira-issue-executor`) — nesse caso o arquivo viaja
 junto dos commits normais da issue, e é removido (com commit próprio)
 antes de a issue seguir para `Análise - Rafinha`/Integração, para nunca
-chegar a `develop` por merge.
+chegar por merge à branch de destino, seja ela a `develop` ou a branch do
+épico.
 
-Nas etapas que operam **depois do merge**, direto sobre `develop`/`main`
-(`Integração`, `QA - Claude`, `Documentar`, `Análise Final - Claude`), o
-arquivo **nunca é commitado** — cairia na regra existente de nunca
-commitar direto no trunk. Ele existe só localmente (adicionar
+**Nenhuma outra branch recebe commit de Execution State:** `epic/**`, a
+`develop`, a `release/current` e as branches efêmeras de release estão
+todas fora. Nas etapas que operam **depois do merge** (`Integração`,
+`QA - Claude`, `Documentar`, `Análise Final - Claude`), o arquivo **nunca
+é commitado** — cairia na regra existente de nunca commitar direto no
+trunk. Isso vale para os três modos da `jira-integration-executor`,
+inclusive o Modo A, que opera sobre a branch do épico. Ele existe só localmente (adicionar
 `.claude/execution-state/` ao `.gitignore` do projeto, na primeira vez que
 a etapa criar o diretório) — isso ainda cobre o cenário central da
 proposta (mesma pasta de trabalho, nova sessão, troca de conta); só não
@@ -1327,7 +1436,7 @@ exemplos de cada label, vive na página **Vocabulário operacional de labels**
 
 Minúsculas, sem acento, sem espaço, `kebab-case` quando composta.
 
-### 15.3 As 10 categorias
+### 15.3 As 11 categorias
 
 | Categoria | Para quê | Fonte |
 |---|---|---|
@@ -1341,11 +1450,28 @@ Minúsculas, sem acento, sem espaço, `kebab-case` quando composta.
 | Refatoração técnica | `cleanup`, `deduplication`, `performance`, `testability`, `dependency`, `naming` | matriz global |
 | Documentação | trilhas documentais (`rn-doc`, `module-doc`, `screen-doc`, `component-doc`, …) | matriz global |
 | **Produto / módulo / feature** | labels específicas de um produto | **página de Controle de workflow daquele produto** |
+| Estado operacional de integração | `integrado-epico`, `qa-develop-aprovado` | matriz global |
 
 > ⚠️ A décima categoria é a única cuja lista **não** vive na matriz global. A
 > matriz define que a categoria existe e como ela se comporta; **quais** labels
 > existem é declarado por produto. Se a label não estiver declarada na página
 > do produto, a skill pergunta.
+
+**A décima primeira categoria é estado, não natureza.** `integrado-epico` diz
+em qual branch o código da issue já foi mergeado — informação que a coluna
+`Integração` não carrega, porque ela é uma só para três destinos de merge.
+`qa-develop-aprovado` diz que aquele QA sobre a `develop` passou — informação
+que o ciclo de release precisa ler muito depois de a issue já ter saído de
+`QA - Claude`, e release não é coluna do board.
+
+Por isso elas não contradizem a regra que tirou a label genérica de revisão do
+contrato: aquela duplicava a coluna, estas duas carregam o que nenhuma coluna
+tem. O ciclo de vida completo das duas vive na matriz do Confluence.
+
+> ⚠️ **Ausência de `integrado-epico` é bloqueio, não "ainda não integrada".**
+> As duas leituras possíveis — "não foi integrada" e "foi integrada mas a
+> label falhou" — levam a consequências opostas, e a skill não tem como
+> distinguir. Ela para e pergunta.
 
 ### 15.4 O que saiu do contrato
 
@@ -1354,6 +1480,117 @@ Minúsculas, sem acento, sem espaço, `kebab-case` quando composta.
 | Label genérica de revisão, em todas as grafias | A revisão já é representada por coluna do workflow |
 | `validacao-aprovada` | O estado aprovado já é a coluna `Concluído` mais o histórico |
 | Labels de agente/modelo (`needs-opus`, `needs-sonnet`, `claude-suitable`, `codex-suitable`) | Modelo e esforço são a Model Escalation Policy (seção 11), não label |
+
+---
+
+## 16. Modelo de branches
+
+O workflow de issues tem colunas. O de branches tem **níveis**, e eles não se
+confundem: uma coluna diz em que etapa a issue está; uma branch diz onde o
+código dela vive.
+
+### 16.1 Os níveis
+
+```text
+main                          produção / publicado
+  ↑
+release/current               estabilização da próxima release (persistente)
+  ↑
+develop                       integração do produto
+  ↑
+epic/<EPIC-KEY>-<nome>        agrupamento técnico de um épico (opcional)
+  ↑
+{tipo}/<ISSUE-KEY>-claude     trabalho de uma issue
+```
+
+| Branch | Representa | Criada por |
+|---|---|---|
+| `{tipo}/<ISSUE-KEY>-claude` | Trabalho de uma issue | `jira-issue-executor` |
+| `epic/<EPIC-KEY>-<nome>` | Agrupamento técnico de um épico | `jira-issue-executor`, **só sob comando explícito** |
+| `develop` | Integração do produto | — |
+| `release/current` | Estabilização da próxima release | `jira-release-executor` |
+| `main` | Produção/publicado, quando o projeto usa assim | — |
+
+A convenção de nome da branch de issue **não mudou** com a entrada do nível
+de épico. O prefixo continua vindo do tipo do ticket (seção 3.1).
+
+### 16.2 A branch de épico é opcional e explícita
+
+```text
+Branch de épico só é criada mediante comando explícito de Rafinha.
+```
+
+> ❗ **Pertencer a um épico não autoriza, por si só, a criação da branch.**
+> Uma issue vinculada a um épico sem branch segue o fluxo normal e integra
+> direto na `develop` (Modo C). Isso é o comportamento esperado, **não** uma
+> lacuna a ser corrigida pela automação.
+
+A branch do épico nasce da `develop`, e a origem é registrada em comentário
+no épico. Rodar a coluna `Fazer - Claude` **nunca** cria branch de épico.
+
+### 16.3 A base da branch da issue
+
+| Situação | Branch base | Destino do PR |
+|---|---|---|
+| Issue de épico **com** branch ativa | `epic/<EPIC-KEY>-<nome>` | a branch do épico |
+| Issue de épico **sem** branch | `develop` | `develop` |
+| Issue sem épico | `develop` | `develop` |
+
+```text
+base da branch da issue = destino do PR = destino que a Integração valida
+```
+
+Os três são o mesmo valor. A `jira-issue-executor` escolhe a base e abre o PR
+contra ela; a `jira-integration-executor` valida que bate com o modo. A base
+escolhida é **registrada** no Execution State e no comentário da issue, para
+a validação não depender de arqueologia de histórico.
+
+> ⚠️ Mais de uma branch `epic/<EPIC-KEY>-*` para o mesmo épico é **bloqueio**.
+> Escolher sozinha significaria decidir onde o trabalho vai parar.
+
+### 16.4 As duas labels de estado
+
+O board tem **uma** coluna `Integração` para três destinos de merge, e o ciclo
+de release lê a issue muito depois de ela ter saído de `QA - Claude`. Duas
+labels carregam o que nenhuma coluna consegue dizer:
+
+| Label | Significa | Aplica | Remove |
+|---|---|---|---|
+| `integrado-epico` | O código está na branch do épico, ainda não validado na `develop` | `jira-integration-executor` (Modo A) | `jira-qa-executor`, no veredito |
+| `qa-develop-aprovado` | A issue passou no QA sobre a `develop` | `jira-qa-executor`, só na aprovação | ninguém — é permanente |
+
+**Nenhuma skill aplica e remove a mesma label.** Quem cria um estado nunca é
+quem o encerra, e as duas pontas ficam auditáveis pela
+`jira-review-executor` (pontos 8, 9 e 10 da auditoria de contrato).
+
+> ❗ **Ausência de `integrado-epico` é bloqueio, não "ainda não integrada".**
+> As duas leituras possíveis — "não foi integrada" e "foi integrada mas a
+> label falhou" — levam a consequências opostas, e a skill não tem como
+> distinguir. Ela para e pergunta.
+
+> ❗ **`qa-develop-aprovado` ausente é o achado mais consequente do fluxo.**
+> Não quebra nada no momento. Quebra a release semanas depois, no gate G10,
+> quando ninguém mais lembra daquela issue.
+
+Ciclo de vida completo das duas: página **Vocabulário operacional de labels**
+no Confluence, categoria 11.
+
+### 16.5 Onde o Execution State pode ser commitado
+
+```text
+Execution State versionado pertence à branch da issue.
+Fora dela, é apenas estado local de execução.
+```
+
+`epic/**`, `develop`, `release/current` e branches efêmeras de release
+**nunca** recebem commit de Execution State. Ver seção 13.3.
+
+### 16.6 Do outro lado: release
+
+A promoção `develop → release/current` não é livre, e o commit de bump da
+versão semântica vive na `release/current`, não na branch efêmera. O contrato
+completo está em `references/release-lifecycle.md` — §1 (as três branches do
+ciclo) e §22 (promoção, gate G10 e a divisão do bump).
 
 ---
 
@@ -1385,6 +1622,15 @@ Perguntas do tipo:
 - "O campo `Tipo` ainda vale?"
 - "O que acontece se faltar a label de plataforma no QA?"
 - "Por que a Validação Humana não passa por `Documentar`?"
+- "De onde nasce a branch dessa issue?" / "O PR aponta pra onde?"
+- "Quando se cria uma branch de épico?" / "Toda issue de épico precisa de
+  uma?"
+- "O que são os três modos da Integração?" / "Quem escolhe o modo?"
+- "Por que essa issue continua em `Integração` depois do merge?"
+- "O que é `integrado-epico`?" / "Por que ela some depois do QA?"
+- "O que é `qa-develop-aprovado`?" / "Por que a release depende dela?"
+- "Por que a release não parte da `develop`?" / "O que é `release/current`?"
+- "Uma subtarefa aberta trava a issue pai?"
 - Qualquer dúvida sobre nomenclatura de colunas, ordem das etapas, gates,
   ou regra de bloqueio de avanço.
 

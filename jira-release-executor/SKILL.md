@@ -1,6 +1,6 @@
 ---
 name: "jira-release-executor"
-description: "Preparar e executar uma release do Workflow Rafinha-Claude — transformar um estado do software numa distribuição versionada, identificável, reproduzível e utilizável fora do ambiente de desenvolvimento. Usar quando Rafinha disser algo como \"prepara a release 0.5.0\", \"gera uma pre-release do APK do Routecraft\", \"fecha a versão completa do Compass\", \"que issues entram na próxima release\", ou pedir para publicar/versionar/distribuir o projeto. NUNCA é acionada por varredura de coluna do Jira — Release não é uma etapa do workflow de issue (ver workflow-development-flow), é um ciclo sob demanda e separado. Todo pedido tem dois eixos: TIPO (PRE_RELEASE ou FINAL) e ESCOPO (parcial ou completa). Projeto ≠ repositório: um projeto pode ser monorepo ou multi-repo, e a topologia é declarada no manifesto `.release/project.yml`, nunca inferida. Versiona por COMPONENTE (tags namespaced `<componente>/vX.Y.Z`), e uma distribuição completa recebe também uma versão de PRODUTO. Resolve dependências declaradas para expandir o escopo pedido no escopo efetivo, separando quem recebe versão nova de quem entra como `carried`. Mapeia issue → componente pelos arquivos do Pull Request, monta as notas a partir do campo Resumo das issues, sugere os incrementos com justificativa mas nunca decide sozinha, produz o Release Request e entrega a execução ao Release Orchestrator local (que dispara as Actions e monta a distribuição) ou dispara a Action direto quando não há o que agregar. Ao final aguarda a validação da distribuição fora da IDE, associa as Fix Versions namespaced (só em release final) e atualiza o Confluence. Herda as regras de segurança de jira-integration-executor (nunca --force, nunca descarta trabalho não commitado sem perguntar)."
+description: "Preparar e executar uma release do Workflow Rafinha-Claude — transformar um estado do software numa distribuição versionada, identificável, reproduzível e utilizável fora do ambiente de desenvolvimento. Usar quando Rafinha disser algo como \"prepara a release 0.5.0\", \"gera uma pre-release do APK do Routecraft\", \"fecha a versão completa do Compass\", \"que issues entram na próxima release\", ou pedir para publicar/versionar/distribuir o projeto. NUNCA é acionada por varredura de coluna do Jira — Release não é uma etapa do workflow de issue (ver workflow-development-flow), é um ciclo sob demanda e separado. Todo pedido tem dois eixos: TIPO (PRE_RELEASE ou FINAL) e ESCOPO (parcial ou completa). Projeto ≠ repositório: um projeto pode ser monorepo ou multi-repo, e a topologia é declarada no manifesto `.release/project.yml`, nunca inferida. Versiona por COMPONENTE (tags namespaced `<componente>/vX.Y.Z`), e uma distribuição completa recebe também uma versão de PRODUTO. Resolve dependências declaradas para expandir o escopo pedido no escopo efetivo, separando quem recebe versão nova de quem entra como `carried`. Mapeia issue → componente pelos arquivos do Pull Request, monta as notas a partir do campo Resumo das issues, sugere os incrementos com justificativa mas nunca decide sozinha, produz o Release Request e entrega a execução ao Release Orchestrator local (que dispara as Actions e monta a distribuição) ou dispara a Action direto quando não há o que agregar. Ao final aguarda a validação da distribuição fora da IDE, associa as Fix Versions namespaced (só em release final) e atualiza o Confluence. A RELEASE NÃO PARTE DA DEVELOP: ela parte de `release/current`, a branch persistente de estabilização, e chegar lá passa pelo GATE G10 DE ELEGIBILIDADE — todo merge commit do intervalo `release/current..develop` precisa rastrear, pelo nome da branch de origem, para uma issue com a label `qa-develop-aprovado`. Commit sem chave extraível (inclusive commit direto na develop, sem PR), chave sem a label, ou chave que não resolve para issue existente BLOQUEIAM a promoção. O mapeamento commit → issue → label vira o bloco `eligibility` do Release Request, obrigatório, registrado tanto na aprovação quanto no bloqueio. Rafinha pode autorizar exceção explícita, e aí a skill registra qual issue/épico ficou fora, o risco aceito, a frase de autorização e o impacto — exceção sem esses quatro itens não é exceção, é lacuna, e a skill não prossegue. O COMMIT DE BUMP VAI DIRETO NA `release/current`, não na branch efêmera: a versão semântica pertence à linha persistente e o metadado de build (+run_number) continua sendo carimbado pela Action na branch efêmera `release/<data>-<run_number>`, que passa a nascer da `release/current` já preparada. Na primeira promoção de um projeto, sem `release/current` para comparar, o intervalo é perguntado a Rafinha, nunca inferido. Herda as regras de segurança de jira-integration-executor (nunca --force, nunca descarta trabalho não commitado sem perguntar)."
 ---
 
 # Executor de Release — Ciclo de Distribuição do Produto
@@ -15,7 +15,7 @@ Significa:
 > versionada, identificável, reproduzível e **utilizável fora do ambiente de
 > desenvolvimento**.
 
-Isso é um ciclo **completamente separado** do workflow de 8 etapas: uma issue
+Isso é um ciclo **completamente separado** do workflow de 10 colunas: uma issue
 termina em `Concluído`, mas isso não significa "lançado".
 
 Diferente de todas as outras skills do pipeline, esta **nunca é acionada por
@@ -44,14 +44,20 @@ final é sempre de Rafinha.
 > de Jira, Confluence e decisão humana. Ninguém reimplementa o vizinho, e
 > ninguém decide pelo vizinho.**
 
-Criar branch, bump, build, artefato, tag e Release é da Action. Disparar as
+Criar a branch efêmera, build, artefato, tag e Release é da Action. Disparar as
 Actions, coletar artefatos, montar a distribuição e gerar o ZIP é do
 Orchestrator. Você **não** faz nada disso na mão.
 
 O que é seu: descobrir o que entra, mapear issue → componente, expandir o escopo
 pelas dependências declaradas, propor os incrementos, escrever as notas em
-português, produzir o Release Request, e depois registrar tudo no Jira e no
-Confluence.
+português, **provar a elegibilidade e promover `develop → release/current`**,
+**commitar o bump da versão semântica nessa branch**, produzir o Release
+Request, e depois registrar tudo no Jira e no Confluence.
+
+> **A linha divisória do bump.** A versão semântica é decisão de produto e
+> mora na linha persistente de estabilização — é sua. O build number é um
+> detalhe daquela execução e mora na branch efêmera — é da Action. Os dois
+> convivem sem duplicar.
 
 Consequência que você precisa preservar: **Rafinha consegue fechar um componente
 sozinho**, pela aba Actions do GitHub, sem você e sem o Orchestrator. Você é
@@ -318,24 +324,94 @@ ela cai no `--generate-notes` e publica a lista crua de PRs.
 
 ---
 
-## Fase 5 — Execução (Gate G6)
+## Fase 5 — Execução (Gates G10, G6)
 
-### 5.1 Produzir o Release Request
+### 5.0 Promover `develop → release/current` (Gate G10)
+
+A release não parte da `develop`. Ela parte da `release/current`, e chegar lá
+exige provar que a `develop` só carrega trabalho aprovado.
+
+**O merge não é seletivo.** Ele leva tudo que está na `develop` — não existe
+"promover só as issues do escopo". Ou a `develop` inteira está apta, ou a
+promoção para.
+
+**Como provar (§22 da referência):**
+
+```text
+1. Calcular o intervalo  release/current..develop
+2. Para cada merge commit do intervalo:
+     extrair a chave da issue do nome da branch de origem
+     (convenção {tipo}/<ISSUE-KEY>-claude, mantida pela jira-issue-executor)
+3. Para cada chave extraída:
+     verificar a presença de `qa-develop-aprovado`
+4. BLOQUEAR se:
+     - commit sem chave extraível        (inclui commit direto na develop)
+     - chave sem `qa-develop-aprovado`
+     - chave que não resolve para issue existente
+5. Montar o mapeamento commit → issue → label
+```
+
+Esse mapeamento vira o bloco `eligibility` do Release Request (passo 5.2).
+Ele é registrado **tanto na aprovação quanto no bloqueio** — o bloqueio
+também é evidência.
+
+> ⚠️ **Primeira promoção de um projeto.** Não existe `release/current` para
+> comparar. O intervalo é decidido **com Rafinha** — tipicamente a última tag
+> publicada, ou o ponto em que o projeto adotou o workflow. Pergunte; não
+> infira.
+
+**Exceção autorizada.** Rafinha pode mandar seguir com item fora da regra.
+Nesse caso registre os quatro itens: qual issue/épico ficou fora, qual risco
+foi aceito, a frase de autorização dele, e o impacto esperado na release.
+Exceção sem os quatro registrados **não é exceção, é lacuna** — não prossiga.
+
+Com o gate verde, faça o merge `develop → release/current` e envie.
+
+### 5.1 Commit de bump na `release/current`
+
+Com a promoção feita e as versões já decididas na Fase 3, aplique o bump
+**direto na `release/current`** e commite. A partir daqui, a
+`release/current` carrega o estado estabilizado **e já versionado** da
+release.
+
+> **Isto não duplica o bump da Action.** A versão semântica (`1.2.0`) é
+> decisão de Rafinha e pertence à linha persistente. O metadado de build
+> (`+<run_number>`) só existe no contexto de uma execução e continua sendo
+> carimbado pela Action, na branch efêmera. O step de bump da Action roda
+> `versions:set` com a mesma versão que já está no arquivo, não gera diff
+> semântico, e o `git diff --quiet` do template resolve sozinho.
+>
+> **Não "conserte" o step de bump da Action achando que virou redundante** —
+> em Flutter/Android ele ainda é quem aplica o build number.
+
+### 5.2 Produzir o Release Request
 
 Escreva `.release/requests/<data>-<tipo>.yml` no formato do contrato (§8 da
 referência, exemplo em `templates/orchestrator/release-request.example.yml`):
 tipo, versão de produto, escopo pedido e efetivo, `version_scope`, `carried`,
-`ref`, commits por repositório e issues por componente.
+`ref`, commits por repositório, issues por componente e o bloco
+`eligibility` montado no passo 5.0.
+
+`ref` é **`release/current`**, e o commit é o do bump (passo 5.1). Usar a
+`develop` como `ref` só acontece por exceção explicitamente autorizada por
+Rafinha, e essa autorização entra em `eligibility.exceptions`.
+
+> ❗ **Release Request sem o bloco `eligibility` não é executável.** Ele é a
+> evidência de que o G10 rodou, não um campo opcional de auditoria.
 
 Em FINAL que promove uma pre-release validada, preencha `promotes` — e então os
 commits vêm do `release-manifest.yml` daquele rc, **não** do `HEAD` da branch.
 
-### 5.2 Escolher o caminho
+### 5.3 Escolher o caminho
 
 | Caso | O que fazer |
 | --- | --- |
 | Há distribuição a montar (completa, ou parcial agregada) | `.\.release\scripts\orchestrate.ps1 -Request <caminho>` |
-| Release parcial sem distribuição | `gh workflow run release.yml --repo <remote> --ref <ref> -f <input>=<versao> -f release_type=<tipo> -f publish=true` |
+| Release parcial sem distribuição | `gh workflow run release.yml --repo <remote> --ref release/current -f <input>=<versao> -f release_type=<tipo> -f publish=true` |
+
+O `--ref` é a `release/current` — é dela que a Action cria a branch efêmera
+`release/<data>-<run_number>`. Despachar contra a `develop` traz para a
+distribuição tudo que ainda não passou pelo G10.
 
 Rode o Orchestrator com `-Validate` primeiro: ele confere manifesto, escopo e
 estado dos repositórios sem tocar na rede.
@@ -415,8 +491,26 @@ rastreabilidade histórica.
 ## O que NÃO fazer
 
 - ❌ Nunca decidir sozinha o incremento de versão — de componente ou de produto.
-- ❌ Nunca criar branch de release, bump, build, `git tag` ou `gh release create`
-  na mão. Se a Action falhar, conserte a Action.
+- ❌ Nunca criar a branch efêmera de release, build, `git tag` ou
+  `gh release create` na mão. Se a Action falhar, conserte a Action.
+  **Exceção única e explícita:** o commit de bump da versão semântica na
+  `release/current` (passo 5.1) é seu — ele pertence à linha persistente de
+  estabilização, não à execução. Tudo o mais continua sendo da Action.
+- ❌ Nunca aplicar o build number (`+<run_number>`) na `release/current` —
+  ele é da execução, e quem o carimba é a Action, na branch efêmera.
+- ❌ Nunca mergear `develop → release/current` sem o gate G10 verde.
+- ❌ Nunca usar a `develop` como `ref` do Release Request sem exceção
+  explicitamente autorizada por Rafinha e registrada em
+  `eligibility.exceptions`.
+- ❌ Nunca produzir Release Request sem o bloco `eligibility` — ele é a
+  evidência de que o G10 rodou.
+- ❌ Nunca registrar uma exceção autorizada pela metade: os quatro itens
+  (issue/épico fora, risco aceito, frase de autorização, impacto) são
+  obrigatórios. Sem eles não é exceção, é lacuna.
+- ❌ Nunca inferir o intervalo de comparação na primeira promoção de um
+  projeto — pergunte a Rafinha qual é o ponto de partida.
+- ❌ Nunca tratar commit direto na `develop`, sem PR, como aprovado — ele não
+  rastreia para issue nenhuma e por isso bloqueia.
 - ❌ Nunca montar a distribuição na mão. Se o Orchestrator falhar, conserte-o.
 - ❌ Nunca gerar release automaticamente a partir de issue concluída.
 - ❌ Nunca varrer coluna do board para disparar esta skill.

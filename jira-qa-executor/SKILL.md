@@ -1,6 +1,6 @@
 ---
 name: jira-qa-executor
-description: "Executar QA funcional/visual, uma issue de cada vez, das issues que estão na coluna \"QA - Claude\" da sprint atual de qualquer projeto Jira que Rafinha indicar. Usar quando ele disser \"roda a coluna QA - Claude do projeto X\", \"testa as issues do jira X\", \"faz o QA do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. A PLATAFORMA ESCOLHE O EXECUTOR e o PROTOCOLO ESCOLHE A ESTRATÉGIA: Flutter Web usa Claude in Chrome (Chrome real, não o navegador embutido do Claude Code); Flutter Android usa Maestro (MCP preferencial, fallback CLI) contra um Android Emulator, subido sob demanda pela própria skill; e as labels de protocolo (functional-qa, visual-qa, regression-qa, e2e-qa, smoke-qa, manual-qa, maestro) definem a estratégia dentro do executor. Sem label de plataforma na issue, a skill BLOQUEIA e pergunta — o antigo fallback silencioso para Web foi removido do contrato. Não julga se o design está certo ou errado como decisão de produto: isso é manual de Rafinha, e issue reprovada volta para \"Fazer - Claude\", nunca para \"Design de produto - Rafinha\". Defeito real fora do escopo da issue é DELEGADO para jira-issue-creator, nunca criado como Bug por esta skill — e ajuste visual de algo já entregue vira Correção com correcao-ui, não Bug. Considera as labels de contexto intermittent, reproducible, regression, needs-evidence, high-risk e do-not-expand-scope. Gera/seleciona casos de teste, executa os fluxos de verdade, coleta evidências, registra resultados no AIO Tests e move a issue aprovada para \"Análise Final - Rafinha\". Esta skill NUNCA corrige código, nunca implementa funcionalidades, e só tem permissão de commit/push para arquivos de teste Maestro (`.maestro/**`) — nunca para código do projeto."
+description: "Executar QA funcional/visual, uma issue de cada vez, das issues que estão na coluna \"QA - Claude\" da sprint atual de qualquer projeto Jira que Rafinha indicar. Usar quando ele disser \"roda a coluna QA - Claude do projeto X\", \"testa as issues do jira X\", \"faz o QA do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. A PLATAFORMA ESCOLHE O EXECUTOR e o PROTOCOLO ESCOLHE A ESTRATÉGIA: Flutter Web usa Claude in Chrome (Chrome real, não o navegador embutido do Claude Code); Flutter Android usa Maestro (MCP preferencial, fallback CLI) contra um Android Emulator, subido sob demanda pela própria skill; e as labels de protocolo (functional-qa, visual-qa, regression-qa, e2e-qa, smoke-qa, manual-qa, maestro) definem a estratégia dentro do executor. Sem label de plataforma na issue, a skill BLOQUEIA e pergunta — o antigo fallback silencioso para Web foi removido do contrato. Não julga se o design está certo ou errado como decisão de produto: isso é manual de Rafinha, e issue reprovada volta para \"Fazer - Claude\", nunca para \"Design de produto - Rafinha\". Defeito real fora do escopo da issue é DELEGADO para jira-issue-creator, nunca criado como Bug por esta skill — e ajuste visual de algo já entregue vira Correção com correcao-ui, não Bug. Considera as labels de contexto intermittent, reproducible, regression, needs-evidence, high-risk e do-not-expand-scope. Gera/seleciona casos de teste, executa os fluxos de verdade, coleta evidências, registra resultados no AIO Tests e move a issue aprovada para \"Análise Final - Rafinha\". É A ÚNICA SKILL QUE APLICA `qa-develop-aprovado` e A ÚNICA QUE REMOVE `integrado-epico`, no mesmo gesto do veredito: aprovada recebe `qa-develop-aprovado` e perde `integrado-epico`; reprovada apenas perde `integrado-epico`, porque a label descreve um estado que acabou quando o épico foi promovido; inconclusiva por infraestrutura NÃO MEXE EM LABEL NENHUMA, porque sem veredito nada mudou. O lote que chega pode ser um épico inteiro promovido pelo Modo B da jira-integration-executor — nesse caso cada issue mantém evidência própria e recebe veredito individual, o conjunto é registrado no épico, e uma issue reprovada não bloqueia a aprovação das demais. Esta skill NUNCA corrige código, nunca implementa funcionalidades, nunca valida um épico como bloco único, e só tem permissão de commit/push para arquivos de teste Maestro (`.maestro/**`) — nunca para código do projeto."
 ---
 
 # Executor de QA — Coluna "QA - Claude" (Jira genérico)
@@ -657,8 +657,12 @@ texto exato** correspondente ao resultado:
 
 Depois da frase fixa, informe: plataforma testada, executor utilizado,
 quantidade de casos e aprovados/reprovados, regressões executadas, link do
-Cycle/Run no AIO Tests, e observações relevantes (ex.: "regressão Android
-não executada — issue exclusiva de Web").
+Cycle/Run no AIO Tests, **as labels operacionais aplicadas ou removidas**,
+e observações relevantes (ex.: "regressão Android não executada — issue
+exclusiva de Web").
+
+Quando a issue fizer parte de um lote de épico promovido, cite também o
+épico e o conjunto de issues testadas junto com ela.
 
 > **Dependência para trabalho futuro:** a `jira-issue-executor` reconhece
 > hoje "review reprovada por rafinha"/"review reprovada por claude" como
@@ -669,13 +673,96 @@ não executada — issue exclusiva de Web").
 
 ---
 
+## Labels operacionais de integração
+
+Esta skill é a **única** que aplica `qa-develop-aprovado` e a **única** que
+remove `integrado-epico`. As duas operações acontecem no mesmo gesto do
+veredito, junto com a movimentação da issue.
+
+O QA desta coluna roda **sobre a `develop` integrada** (pré-requisito 5) —
+é exatamente isso que a label `qa-develop-aprovado` certifica.
+
+| Veredito | `qa-develop-aprovado` | `integrado-epico` |
+|---|---|---|
+| **Aprovado** | aplica | remove, se existir |
+| **Reprovado** | não aplica | remove, se existir |
+| **Inconclusivo por infraestrutura** | não aplica | **não mexe** |
+
+### Por que remover também na reprovação
+
+A label `integrado-epico` significa *"o código desta issue está na branch do
+épico e ainda não foi validado na `develop`"*. Quando a issue chega ao QA,
+o épico **já foi promovido** — esse estado acabou, independente do veredito.
+
+Deixar a label numa issue reprovada é perigoso: se o mesmo épico tiver uma
+promoção posterior (o caso da promoção parcial), essa issue satisfaria o
+critério de aptidão nº 3 sem ter sido reintegrada. A skill de integração
+leria uma label verdadeira sobre um estado que não existe mais.
+
+> ⚠️ **Inconclusivo não mexe em label nenhuma.** Sem veredito não houve
+> validação, e a issue nem se move de coluna. Alterar label aqui registraria
+> um julgamento que não aconteceu.
+
+### Issue que nunca teve `integrado-epico`
+
+É o caso normal da integração direta (Modo C). Não há o que remover —
+aplique só `qa-develop-aprovado` na aprovação e siga.
+
+### Correção de issue reprovada que veio de épico
+
+A branch do épico já cumpriu o papel quando o épico foi promovido. O código
+da issue já está na `develop`. A correção segue o fluxo normal a partir da
+`develop` e integra direto (Modo C) — **não** volta para a branch do épico.
+
+Se Rafinha quiser outro caminho, ele diz; a skill não decide isso sozinha,
+mas também não deve sugerir reabrir a branch do épico como se fosse o
+padrão.
+
+---
+
+## QA de lote — quando um épico inteiro foi promovido
+
+A `jira-integration-executor`, no Modo B, move para `QA - Claude` **todas as
+issues do escopo** de uma vez. O lote que chega aqui pode ser um épico
+inteiro.
+
+```text
+Cada issue continua testável individualmente, mas as issues promovidas
+juntas formam um conjunto de QA do épico.
+```
+
+Diretrizes:
+
+1. **Cada issue mantém a própria evidência de QA.** Casos, execução, Cycle e
+   Run no AIO Tests continuam por issue. Não existe "evidência do épico" que
+   substitua as individuais.
+2. **Cada issue aprovada recebe `qa-develop-aprovado`** — uma a uma, pelo
+   seu próprio mérito.
+3. **O épico só é estável para release** quando todas as suas issues
+   obrigatórias tiverem a label. Quem verifica isso é a
+   `jira-release-executor`, não esta skill.
+4. Quando várias issues do mesmo épico forem testadas no mesmo lote,
+   **registre no épico** quais issues compuseram aquele conjunto, e o
+   resultado de cada uma.
+5. Uma issue reprovada **não bloqueia** a aprovação das demais do lote. Elas
+   são validadas individualmente.
+
+> **Por que por issue e não por épico.** Validar o épico como bloco único
+> acoplaria issues que não dependem umas das outras, e perderia a
+> rastreabilidade individual que o release precisa ler depois. O conjunto é
+> um fato de registro, não uma unidade de veredito.
+
+---
+
 ## Movimentação da issue
 
-* **Aprovada** → "Análise Final - Rafinha".
-* **Reprovada** → "Fazer - Claude".
-* **Inconclusiva por infraestrutura** → **não move**. Informe Rafinha e
-  aguarde decisão — nunca mova para "Análise Final - Rafinha" nem para "Fazer - Claude"
-  quando não houver condições de um QA confiável.
+* **Aprovada** → "Análise Final - Rafinha", com `qa-develop-aprovado`
+  aplicada e `integrado-epico` removida.
+* **Reprovada** → "Fazer - Claude", com `integrado-epico` removida.
+* **Inconclusiva por infraestrutura** → **não move** e **não mexe em
+  label**. Informe Rafinha e aguarde decisão — nunca mova para "Análise
+  Final - Rafinha" nem para "Fazer - Claude" quando não houver condições de
+  um QA confiável.
 
 Sempre que a issue for movida (aprovada ou reprovada), apague
 `.claude/execution-state/{CHAVE}.md` se existir — o comentário no Jira já
@@ -687,6 +774,20 @@ Sempre que a issue for movida (aprovada ou reprovada), apague
 
 * ❌ Nunca corrigir, ajustar ou "consertar rapidinho" código encontrado
   quebrado — isso é sempre trabalho da `jira-issue-executor`.
+* ❌ Nunca aplicar `qa-develop-aprovado` sem ter executado o QA de fato
+  sobre a `develop` — a label é a pré-condição que a release lê para decidir
+  o que pode ser promovido, não um carimbo de passagem.
+* ❌ Nunca aplicar `qa-develop-aprovado` numa issue reprovada ou
+  inconclusiva.
+* ❌ Nunca deixar `integrado-epico` numa issue que já recebeu veredito —
+  aprovada ou reprovada, a label sai. Ela descreve um estado que acabou
+  quando o épico foi promovido.
+* ❌ Nunca mexer em label operacional quando o QA for inconclusivo por
+  infraestrutura — sem veredito, nada mudou.
+* ❌ Nunca validar um épico como bloco único — o veredito é por issue,
+  sempre. O conjunto é registro, não unidade de julgamento.
+* ❌ Nunca bloquear a aprovação de uma issue do lote porque outra issue do
+  mesmo épico reprovou.
 * ❌ Nunca aprovar uma issue sem executar de fato os casos de teste — nunca
   aprove só por leitura do código ou por "parecer que funciona".
 * ❌ Nunca inventar um critério de aceite quando a issue não deixa claro o

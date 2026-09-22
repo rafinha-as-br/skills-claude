@@ -18,25 +18,29 @@ dentro e obrigadas por fora, pelo que está definido aqui.
 
 > **Issue workflow e Release workflow não são a mesma coisa.**
 
-- **Issue workflow** (as 8 etapas) → processo de conclusão de uma unidade de
+- **Issue workflow** (as 10 colunas) → processo de conclusão de uma unidade de
   mudança. Termina em `Concluído`.
 - **Release workflow** (este arquivo) → processo de entrega do produto. Agrupa
   várias issues concluídas numa versão publicada.
 
 ```text
-ISSUE WORKFLOW (inalterado)                RELEASE WORKFLOW
+ISSUE WORKFLOW                             RELEASE WORKFLOW
 
-Fazer - Claude                             Pedido de release (sob demanda)
+A fazer                                    Pedido de release (sob demanda)
       ↓                                           ↓
-Análise - Rafinha                          Tipo + Escopo
+Design de produto - Rafinha                Tipo + Escopo
       ↓                                           ↓
-Integração                                 Dependências → Escopo efetivo
+Fazer - Claude                             Dependências → Escopo efetivo
       ↓                                           ↓
-QA - Claude                                Versões decididas por Rafinha
+Análise - Rafinha                          Versões decididas por Rafinha
       ↓                                           ↓
-Documentar                                 Release Request
+Integração                                 develop → release/current (G10)
       ↓                                           ↓
-Análise Final - Rafinha                    Actions → artefatos
+QA - Claude                                Commit de bump em release/current
+      ↓                                           ↓
+Análise Final - Rafinha                    Release Request
+      ↓                                           ↓
+Documentar                                 Actions → artefatos
       ↓                                           ↓
 Análise Final - Claude                     Distribuição + Runtime
       ↓                                           ↓
@@ -47,10 +51,41 @@ Uma issue chegar a `Concluído` **não** significa que ela foi lançada.
 
 **Regras invioláveis:**
 
-- Release **nunca** vira uma nona coluna do Jira.
+- Release **nunca** vira uma coluna do Jira.
 - Release **nunca** é acionada por varredura automática de coluna.
 - Release só começa quando Rafinha pede explicitamente.
 - Nenhuma issue concluída gera release automaticamente.
+
+### As três branches do ciclo
+
+O ciclo de release não tem coluna, mas tem **branch**. São três, com papéis
+que não se sobrepõem:
+
+| Branch | Representa |
+| --- | --- |
+| `develop` | **Integração** do produto — onde o trabalho aprovado se junta |
+| `release/current` | **Estabilização** da próxima release — linha persistente, já versionada |
+| `main` | **Produção / publicado**, quando o projeto usa `main` dessa forma |
+
+```text
+develop
+  → release/current
+  → commit de bump em release/current
+  → release/<data>-<run_number>        (branch efêmera, criada pela Action)
+  → tag / GitHub Release
+```
+
+**A release não parte da `develop` por padrão.** O Release Request usa
+`release/current` como referência, salvo exceção explícita autorizada por
+Rafinha.
+
+`release/current` é a linha **persistente** de estabilização e versionamento.
+`release/<data>-<run_number>` continua sendo a branch **efêmera** de uma
+execução específica — ela só passa a nascer da `release/current` já preparada,
+em vez da `develop`.
+
+A promoção `develop → release/current` não é livre: ver
+**§22 — Promoção para `release/current`** e o gate **G10**.
 
 ---
 
@@ -397,14 +432,41 @@ release_request:
     geoprag_admin: 1.2.0-rc.1
   carried:                      # componente -> versão já existente
     geoprag_api: 2.1.0
-  ref: develop                  # referência base quando não há promoção
+  ref: release/current          # referência base — ver §22; develop só por exceção autorizada
   commits:                      # repositório -> commit exato usado
     geoprag-admin: 9f2c1ab
     geoprag-api:   77be004
   issues:                       # componente -> issues incluídas
     geoprag_admin: [GEO-41, GEO-44]
+  eligibility:                  # §22 — prova de que release/current só levou trabalho aprovado
+    checked_range: 9f2c1ab..77be004
+    approved:                   # issue -> commit que a trouxe
+      GEO-41: 3ac91fe
+      GEO-44: b207d5c
+    exceptions: []              # exceções autorizadas por Rafinha; vazio = nenhuma
   created_at: 2026-09-12T14:00:00Z
 ```
+
+**`eligibility` é obrigatório.** Um Release Request sem esse bloco não pode
+ser executado — ele é a evidência de que o gate G10 rodou, não um campo
+opcional de auditoria. O Orchestrator recusa o request na validação.
+
+`exceptions: []` é obrigatório mesmo vazio. Ausência silenciosa não é
+permitida: a lista vazia afirma "verifiquei e não houve exceção", enquanto o
+campo ausente não afirma nada.
+
+Cada exceção tem **quatro campos, todos obrigatórios**:
+
+```yaml
+    exceptions:
+      - item: GEO-52            # issue ou épico que ficou fora da regra
+        risco: "Fluxo de exportação não passou por QA sobre a develop"
+        autorizacao: "pode seguir sem o QA da 52, eu valido na mão depois"
+        impacto: "Se a exportação quebrar, a correção sai em PATCH"
+```
+
+Exceção com campo faltando **não é exceção, é lacuna** — e o Orchestrator
+bloqueia.
 
 **Onde vive:** `.release/requests/<data>-<tipo>.yml`, seguindo a mesma regra de
 versionamento do manifesto. Uma cópia vai dentro do ZIP da distribuição.
@@ -877,6 +939,109 @@ que pode carregar artifacts como assets.
 | **G7 Distribuição** | Rafinha | Release completa sem Runtime Package funcional quando `required: true`, ou FINAL sem execução real fora da IDE |
 | **G8 Promoção** | orchestrator | FINAL que promove um rc, com repositório fora dos commits daquele rc |
 | **G9 Registro** | skill | Fix Versions, Confluence e cópia do Drive não atualizados |
+| **G10 Elegibilidade** | skill | `develop` contém commit que não rastreia para issue com `qa-develop-aprovado` (§22) |
+
+> Os números dos gates são **identificadores, não ordem de execução**. G10 é o
+> mais recente a entrar no ciclo, mas roda cedo: antes da promoção
+> `develop → release/current`, logo depois de as versões serem decididas.
 
 **Falha em gate é bloqueio de avanço**, mesmo princípio das demais camadas de
 validação do workflow. Corrija e repita. Nunca contorne fazendo o passo na mão.
+
+---
+
+## 22. Promoção para `release/current`
+
+A promoção `develop → release/current` é o ponto em que trabalho integrado
+vira trabalho **candidato a ser publicado**. Ela não é um merge qualquer.
+
+### A regra
+
+```text
+A skill de release não pode mergear develop → release/current se a develop
+contiver alterações não aprovadas que seriam levadas junto.
+```
+
+O problema é que o merge não é seletivo: ele leva **tudo** que está na
+`develop`. Não existe "promover só as issues do escopo" — ou a `develop`
+inteira está apta, ou a promoção para.
+
+### Critério de estabilidade por épico
+
+1. Todas as issues obrigatórias do épico foram integradas na `develop`.
+2. Todas foram testadas em `QA - Claude` **sobre a `develop`**.
+3. Todas possuem a label `qa-develop-aprovado`.
+4. Não existem issues obrigatórias do épico pendentes de QA, correção ou
+   decisão.
+
+### G10 — como a elegibilidade é provada
+
+A label `qa-develop-aprovado` diz que uma **issue** passou. O gate precisa
+provar algo mais forte: que **todo commit** que vai entrar em
+`release/current` pertence a uma issue que passou.
+
+O caminho é o nome da branch. A convenção `{tipo}/<ISSUE-KEY>-claude` é
+mantida pela `jira-issue-executor` em toda issue de código, o que significa
+que cada merge commit na `develop` carrega a chave da issue no seu segundo
+pai.
+
+```text
+1. Calcular o intervalo  release/current..develop
+2. Para cada merge commit do intervalo:
+     extrair a chave da issue do nome da branch de origem
+3. Para cada chave extraída:
+     verificar a presença de `qa-develop-aprovado`
+4. BLOQUEAR se:
+     - commit sem chave extraível        (inclui commit direto na develop)
+     - chave sem `qa-develop-aprovado`
+     - chave que não resolve para issue existente
+5. Registrar o mapeamento commit → issue → label no bloco `eligibility`
+   do Release Request (§8), aprovado ou bloqueado
+```
+
+**Commit direto na `develop`, sem Pull Request, bloqueia a promoção.** É
+deliberado: um commit sem PR é, por construção, um commit que não passou por
+QA. Se o trabalho é legítimo, o caminho é a exceção autorizada — não o
+silêncio.
+
+> ⚠️ A primeira promoção de um projeto não tem `release/current` para
+> comparar. Nesse caso o intervalo é decidido com Rafinha — tipicamente a
+> última tag publicada, ou o ponto em que o projeto adotou o workflow. Isso
+> é **pergunta**, não inferência.
+
+### Exceção autorizada
+
+Rafinha pode autorizar explicitamente a promoção mesmo com item fora da
+regra. Quando isso acontece, a skill registra, no bloco `eligibility` e no
+Confluence:
+
+1. Qual issue ou épico ficou fora da regra padrão.
+2. Qual risco foi aceito.
+3. A frase ou comando de autorização de Rafinha.
+4. O impacto esperado na release.
+
+Exceção sem esses quatro itens registrados **não é exceção, é lacuna** — e a
+skill não prossegue.
+
+### O bump é dividido em dois
+
+Depois da promoção, o commit de bump vai **direto na `release/current`**.
+Isso significa que a `release/current` carrega o estado estabilizado **e já
+versionado** da release.
+
+Mas a Action continua tendo um step de bump, e isso **não é duplicação**:
+
+| Parte | Onde é aplicada | Por quê |
+| --- | --- | --- |
+| Versão semântica (`1.2.0`) | commit na `release/current`, pela skill | É decisão de Rafinha e pertence à linha persistente |
+| Metadado de build (`+<run_number>`) | branch efêmera, pela Action | Só existe no contexto daquela execução |
+
+Na prática, o step de bump da Action roda `versions:set` com a mesma versão
+que já está no arquivo, não gera diff para a parte semântica, e o
+`git diff --quiet` do template resolve sozinho. **Por isso a migração do bump
+para a `release/current` não exige mudança no `release.yml`.**
+
+> Não "corrija" o step de bump da Action achando que ele virou redundante.
+> Em stacks que usam build number (Flutter, Android), ele ainda é o que
+> carimba o `+<run_number>` — e esse carimbo pertence à execução, não à
+> linha de estabilização.
