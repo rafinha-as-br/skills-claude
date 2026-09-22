@@ -40,12 +40,17 @@ Técnica, Documentação, Validação Humana, Epic. O campo customizado saiu do
 contrato e nenhuma skill deve lê-lo. Correção e Bug são coisas diferentes:
 ajuste visual de algo já entregue é **Correção** com `correcao-ui`.
 
-**Labels têm matriz oficial.** O vocabulário vive no Confluence, em 10
+**Labels têm matriz oficial.** O vocabulário vive no Confluence, em 11
 categorias. Nenhuma skill pode inventar label fora dela; uma label
 documentada pode ser criada no Jira sob demanda. A décima categoria —
 produto/módulo/feature — é declarada **por produto**, na página de controle
 daquele produto. A label genérica de revisão saiu do contrato: a revisão já
 é representada por coluna.
+
+A décima primeira categoria — **estado operacional de integração** —
+registra onde o código da issue está no fluxo de branches: `integrado-epico`
+e `qa-develop-aprovado`. Ela não contradiz a regra acima: cada uma dessas
+duas labels carrega informação que **nenhuma coluna tem**.
 
 **Gates não têm fallback silencioso.** Quando o contrato esperado não é
 encontrado, a skill **para e reporta**. O caso que motivou a regra: o QA

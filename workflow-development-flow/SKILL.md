@@ -1327,7 +1327,7 @@ exemplos de cada label, vive na página **Vocabulário operacional de labels**
 
 Minúsculas, sem acento, sem espaço, `kebab-case` quando composta.
 
-### 15.3 As 10 categorias
+### 15.3 As 11 categorias
 
 | Categoria | Para quê | Fonte |
 |---|---|---|
@@ -1341,11 +1341,28 @@ Minúsculas, sem acento, sem espaço, `kebab-case` quando composta.
 | Refatoração técnica | `cleanup`, `deduplication`, `performance`, `testability`, `dependency`, `naming` | matriz global |
 | Documentação | trilhas documentais (`rn-doc`, `module-doc`, `screen-doc`, `component-doc`, …) | matriz global |
 | **Produto / módulo / feature** | labels específicas de um produto | **página de Controle de workflow daquele produto** |
+| Estado operacional de integração | `integrado-epico`, `qa-develop-aprovado` | matriz global |
 
 > ⚠️ A décima categoria é a única cuja lista **não** vive na matriz global. A
 > matriz define que a categoria existe e como ela se comporta; **quais** labels
 > existem é declarado por produto. Se a label não estiver declarada na página
 > do produto, a skill pergunta.
+
+**A décima primeira categoria é estado, não natureza.** `integrado-epico` diz
+em qual branch o código da issue já foi mergeado — informação que a coluna
+`Integração` não carrega, porque ela é uma só para três destinos de merge.
+`qa-develop-aprovado` diz que aquele QA sobre a `develop` passou — informação
+que o ciclo de release precisa ler muito depois de a issue já ter saído de
+`QA - Claude`, e release não é coluna do board.
+
+Por isso elas não contradizem a regra que tirou a label genérica de revisão do
+contrato: aquela duplicava a coluna, estas duas carregam o que nenhuma coluna
+tem. O ciclo de vida completo das duas vive na matriz do Confluence.
+
+> ⚠️ **Ausência de `integrado-epico` é bloqueio, não "ainda não integrada".**
+> As duas leituras possíveis — "não foi integrada" e "foi integrada mas a
+> label falhou" — levam a consequências opostas, e a skill não tem como
+> distinguir. Ela para e pergunta.
 
 ### 15.4 O que saiu do contrato
 
