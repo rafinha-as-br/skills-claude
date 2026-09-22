@@ -802,6 +802,10 @@ mais fallback** — se a label faltar, o QA bloqueia. Aplicar corretamente aqui
   Rafinha.
 - ❌ Nunca aplicar a label genérica de revisão, em nenhuma grafia. Ela saiu
   do contrato.
+- ❌ **Nunca aplicar `integrado-epico` nem `qa-develop-aprovado`.** A
+  primeira é da `jira-integration-executor` (Modo A); a segunda, da
+  `jira-qa-executor`. As duas registram estados que esta etapa ainda não
+  alcançou.
 - ❌ Nunca inventar label fora da matriz oficial do Confluence.
 - ❌ Nunca recriar um componente reutilizável que já existe com ID canônico.
   Se o ID citado no design não existe no código, **reporte a divergência**.

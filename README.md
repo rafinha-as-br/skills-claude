@@ -109,7 +109,7 @@ GitHub Release só em versão **final** — nenhum RC polui a aba Releases, e ne
 
 | Skill | O que faz |
 |---|---|
-| [`workflow-development-flow`](workflow-development-flow/SKILL.md) | Referência do fluxo: lista canônica de 10 colunas, hierarquia Épico/Issue/Subtask, os 7 tipos oficiais de ticket, os 8 gates operacionais, a camada de Design de Produto, o vocabulário de labels, ciclo de release e Execution State. |
+| [`workflow-development-flow`](workflow-development-flow/SKILL.md) | Referência do fluxo: lista canônica de 10 colunas, hierarquia Épico/Issue/Subtask, os 7 tipos oficiais de ticket, os 11 gates operacionais, a camada de Design de Produto, o vocabulário de labels, o modelo de branches e os três modos da Integração, ciclo de release e Execution State. |
 | [`jira-issue-creator`](jira-issue-creator/SKILL.md) | Cria issues/subtasks no Jira com tipo oficial e labels da matriz — sugere `requires-design`, nunca aplica. Destino: `A fazer` ou backlog. |
 | [`jira-issue-executor`](jira-issue-executor/SKILL.md) | Implementa as issues de "Fazer - Claude": gate de Design, código + testes + review automatizado + PR. |
 | [`jira-integration-executor`](jira-integration-executor/SKILL.md) | Faz o merge real para `develop`, validando GitHub Actions e conflitos antes. |

@@ -15,7 +15,7 @@ Significa:
 > versionada, identificável, reproduzível e **utilizável fora do ambiente de
 > desenvolvimento**.
 
-Isso é um ciclo **completamente separado** do workflow de 8 etapas: uma issue
+Isso é um ciclo **completamente separado** do workflow de 10 colunas: uma issue
 termina em `Concluído`, mas isso não significa "lançado".
 
 Diferente de todas as outras skills do pipeline, esta **nunca é acionada por
