@@ -21,10 +21,12 @@ flowchart LR
 ```
 
 > **Estado do contrato: `preparado`.** Esta branch descreve o contrato de
-> destino do Pacote 1 (Design, labels e gates). O Jira ainda não foi
-> configurado — a configuração é manual e feita por Rafinha, em sessão
-> separada. **O merge desta branch em `master` é o corte de vigência.** Até
-> lá, o pipeline opera com o contrato anterior, a partir de `master`.
+> destino do Pacote 2 (Branches por épico e release controlada). O Pacote 1
+> (Design, labels e gates) já está em vigência em `master`, e o Jira já foi
+> configurado para ele. **O merge desta branch em `master` é o corte de
+> vigência do Pacote 2.** Até lá, o pipeline opera com o contrato do Pacote 1.
+> A configuração de CI e branch protection para `epic/**` e `release/current`
+> é manual e feita por Rafinha, em sessão separada.
 
 **Design de Produto entra como coluna.** `Design de produto - Rafinha` é
 etapa **manual** — nenhuma skill a varre. A issue só passa por ela quando tem
@@ -60,6 +62,32 @@ produz um verde que não significa nada.
 **`Documentar` fica depois da aceitação.** Rafinha valida primeiro se o
 produto resolve o problema; só então a documentação registra o estado
 **aceito**, e a auditoria final vê as duas coisas prontas.
+
+**Branch de épico é opcional e explícita.** A branch da issue nem sempre nasce
+da `develop`: se a issue pertence a um épico com branch ativa, ela nasce de
+`epic/<EPIC-KEY>-<nome>`, e o Pull Request aponta para lá. Mas pertencer a um
+épico **não** cria a branch — ela só nasce sob comando explícito de Rafinha, e
+issue de épico sem branch integra direto na `develop`, normalmente.
+
+**A Integração tem três modos, e nunca escolhe sozinha.** Modo A (issue →
+branch do épico), Modo B (branch do épico → `develop`, promovendo o épico
+inteiro) e Modo C (issue → `develop`). Rafinha informa o modo, ou a skill para
+e pergunta — mesmo quando a estrutura das branches parece indicar o caminho
+óbvio. Antes de qualquer merge, a skill imprime o resumo operacional do que
+entendeu.
+
+**Duas labels carregam o que a coluna não diz.** Existe **uma** coluna
+`Integração` para três destinos de merge, então `integrado-epico` é o único
+jeito de saber em qual branch o código parou. E o ciclo de release lê a issue
+muito depois de ela ter saído de `QA - Claude`, então `qa-develop-aprovado` é o
+único registro durável de que aquele QA passou. Nenhuma skill aplica e remove a
+mesma label — as duas pontas ficam auditáveis na revisão final.
+
+**A release não parte da `develop`.** Ela parte de `release/current`, a branch
+persistente de estabilização, e chegar lá exige provar que **todo** commit do
+intervalo rastreia para uma issue com `qa-develop-aprovado`. Commit direto na
+`develop`, sem PR, bloqueia a promoção. Exceção só com autorização explícita de
+Rafinha, registrada com risco, frase de autorização e impacto.
 
 `workflow-development-flow` é a skill mãe: não executa nada, apenas responde "em qual etapa uma issue está", "o que vem depois de X", "qual gate se aplica" ou "essa label é oficial" para as demais. Release & Versionamento (SemVer, tags, GitHub Release) é um ciclo separado, acionado sob demanda — nunca uma coluna do board.
 

@@ -18,6 +18,7 @@ e o estado de cada fase.
 | 2026-09-22 | Fase 4 concluída. D4 e D5 decididas — remoção de label no veredito |
 | 2026-09-22 | Fase 5 concluída. D2 implementada como gate G10; D6 decidida |
 | 2026-09-22 | Fase 6 concluída. Auditoria fecha o ciclo das duas labels |
+| 2026-09-22 | Fase 7 concluída. Skill mãe ganha a seção 16 e três gates novos |
 
 ---
 
@@ -31,7 +32,7 @@ e o estado de cada fase.
 | 4 | `jira-qa-executor` — aplica `qa-develop-aprovado`, remove `integrado-epico` | ✅ ver §8 |
 | 5 | `jira-release-executor` — `release/current`, manifest, bump | ✅ ver §9 |
 | 6 | `jira-review-executor` — auditoria de destino e labels | ✅ ver §10 |
-| 7 | `workflow-development-flow` — consolidação | ⬜ |
+| 7 | `workflow-development-flow` — consolidação | ✅ ver §11 |
 | 8 | CI e branch protection (`epic/**`, `release/current`) | ⬜ manual, Rafinha |
 | 9 | Confluence — fichas das skills tocadas | ⬜ |
 
@@ -640,3 +641,76 @@ saudável sem que a causa tivesse sido tratada.
 Os pontos 8, 9 e 10 dependem do contrato do Pacote 2. Issue trabalhada antes
 da vigência não tem como cumpri-los: registra observação, **não reprova**. É
 o mesmo critério que o ponto 2 já usava para a label de revisão.
+
+---
+
+## 11. Registro — Fase 7
+
+**Concluída em 2026-09-22.**
+
+`workflow-development-flow/SKILL.md`: 1407 → 1653 linhas.
+
+### O que a skill mãe ganhou
+
+| Onde | Mudança |
+| --- | --- |
+| **§1** | O ponteiro da fase 2 virou a regra completa de verificação de subtarefas, com a definição operacional de "subtarefa obrigatória" |
+| **§5.5 Integração** | Reescrita nos três modos, com o que é comum e o que é específico de cada um |
+| **§5.6 QA** | QA de lote e a tabela de labels por veredito |
+| **§8.1** | Diagrama de passagem mostra o modo declarado e o desvio do Modo A |
+| **§8.2** | Três gates operacionais novos: **9** modo de integração, **10** integração de épico, **11** subtarefa |
+| **§16** | **Nova.** Modelo de branches como conceito de primeira classe |
+| Perguntas diretas | Dez perguntas novas, do tipo que Rafinha faria |
+
+### Por que o modelo de branches virou seção própria
+
+Ele aparecia espalhado em cinco skills, cada uma vendo a sua fatia: a
+`jira-issue-executor` sabe de onde a branch nasce, a
+`jira-integration-executor` sabe para onde ela vai, a `jira-qa-executor` sabe
+sobre o que testa, a `jira-release-executor` sabe de onde parte a release.
+Nenhuma via o desenho inteiro.
+
+A §16 é onde o desenho inteiro existe — os cinco níveis, a base da branch da
+issue, as duas labels de estado, onde o Execution State pode ser commitado, e
+o ponteiro para o lado de release.
+
+A identidade que a seção fixa:
+
+```text
+base da branch da issue = destino do PR = destino que a Integração valida
+```
+
+Os três são o mesmo valor. Escrito assim, num lugar só, fica difícil alguém
+implementar duas pontas divergentes de novo.
+
+### Os gates 9, 10 e 11
+
+São os três pontos onde o Pacote 2 pode falhar silenciosamente se ninguém
+bloquear:
+
+| Gate | Sem ele |
+| --- | --- |
+| 9 — modo de integração | A skill infere o modo e merge no destino errado |
+| 10 — integração de épico | Promove um épico furado, ou trava um épico completo |
+| 11 — subtarefa | Manda para QA uma issue com parte da entrega pendente |
+
+G10 da release **não** entrou nessa tabela. Ele pertence ao ciclo separado e
+vive em `release-lifecycle.md` §22 — a skill mãe aponta para lá em vez de
+duplicar. Nota explícita acrescentada para ninguém confundir o "gate 10" do
+fluxo de issues com o "G10" da release.
+
+### README
+
+Estava descrevendo só o Pacote 1. Ganhou quatro parágrafos — branch de épico,
+três modos, as duas labels, e a release partindo de `release/current` — e o
+bloco de estado do contrato passou a dizer que o corte de vigência agora é o
+do Pacote 2.
+
+### Verificação de coerência
+
+| Afirmação | Onde aparece | Consistente |
+| --- | --- | --- |
+| Quem cria branch de épico | issue-executor, integration-executor, skill mãe | sim |
+| O modo nunca é inferido | integration-executor, skill mãe | sim |
+| Base = destino do PR = destino validado | issue-executor, integration-executor, skill mãe | sim |
+| Ciclo das duas labels | 4 skills + Confluence + skill mãe | sim |
