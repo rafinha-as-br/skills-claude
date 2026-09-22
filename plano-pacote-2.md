@@ -14,6 +14,7 @@ e o estado de cada fase.
 | --- | --- |
 | 2026-09-22 | Versão inicial. D1 e D2 decididas por Rafinha. Fase 1 concluída |
 | 2026-09-22 | Fase 2 concluída. D3 aplicada na `jira-integration-executor` |
+| 2026-09-22 | Fase 3 concluída. Branch de épico e base da branch da issue |
 
 ---
 
@@ -23,7 +24,7 @@ e o estado de cada fase.
 | --- | --- | --- |
 | 1 | Labels `integrado-epico` e `qa-develop-aprovado` na matriz oficial | ✅ ver §5 |
 | 2 | `jira-integration-executor` — modos A/B/C, smoke test, subtarefas | ✅ ver §6 |
-| 3 | `jira-issue-executor` — branch de épico, Execution State | ⬜ |
+| 3 | `jira-issue-executor` — branch de épico, Execution State | ✅ ver §7 |
 | 4 | `jira-qa-executor` — aplica `qa-develop-aprovado`, remove `integrado-epico` | ⬜ |
 | 5 | `jira-release-executor` — `release/current`, manifest, bump | ⬜ |
 | 6 | `jira-review-executor` — auditoria de destino e labels | ⬜ |
@@ -293,3 +294,76 @@ foi reescrito por inteiro, o bloco morto saiu junto.
 **O mesmo defeito existe em outras três skills** e não foi tocado aqui:
 `business-rule-writer`, `module-doc-writer` e `doc-pendency-resolver`. Não faz
 parte do Pacote 2.
+
+---
+
+## 7. Registro — Fase 3
+
+**Concluída em 2026-09-22.**
+
+`jira-issue-executor/SKILL.md`: 755 → 865 linhas.
+
+### O acoplamento que essa fase tinha que acertar
+
+A fase 2 fez a `jira-integration-executor` verificar, na rotina R1, que o
+destino do Pull Request bate com o modo em execução. Isso só funciona se
+quem **abre** o PR apontar para o lugar certo desde o começo.
+
+Se a `jira-issue-executor` continuasse abrindo todo PR contra a `develop`, o
+Modo A bloquearia **sempre**, em toda issue de épico. A fase 3 é o outro lado
+desse contrato.
+
+```text
+base da branch da issue  =  destino do PR  =  destino que a Integração valida
+```
+
+### O que mudou
+
+| Passo | Mudança |
+| --- | --- |
+| Nova seção **Operação especial** | Criação de branch de épico, sob comando explícito, nascida da `develop`, com origem registrada em comentário no épico |
+| **5.2 Resolver a branch** | Tabela de qual é a branch base: épico com branch ativa → `epic/<EPIC-KEY>-<nome>`; senão → `develop` |
+| **5.6 Abrir o PR** | O destino do PR acompanha a base |
+| **5.7 Encerrar Execution State** | A branch da issue é a única que recebe commit de Execution State |
+
+### Decisões tomadas dentro da fase
+
+**Duas branches do mesmo épico é bloqueio.** A página não previu o caso.
+Escolher sozinha entre `epic/PROJ-40-cadastro` e `epic/PROJ-40-cadastros`
+significaria decidir onde o trabalho vai parar — e a issue errada num épico
+errado só aparece na promoção, muito depois. A skill para e pergunta.
+
+**A branch base fica registrada, não é deduzida depois.** A Integração precisa
+validar, no Modo A, que a branch da issue nasceu da branch do épico. Dá para
+descobrir isso escavando `git merge-base`, mas é frágil quando o épico já
+recebeu merges. Registrar no Execution State e no comentário da issue troca
+arqueologia por leitura.
+
+**Issue de épico sem branch usa a `develop` e segue.** É comportamento
+esperado, não lacuna. A skill não cria a branch do épico para "consertar" a
+situação — isso violaria a decisão #12 da página, que reserva a criação ao
+comando explícito de Rafinha.
+
+### Fora da skill
+
+`workflow-development-flow` §13.3 dizia que o Execution State é removido "para
+nunca chegar a `develop` por merge", e que as etapas pós-merge operam "direto
+sobre `develop`/`main`". Com branch de épico no meio, as duas frases ficaram
+incompletas.
+
+§13.3 foi atualizada: a regra agora é enunciada como *"Execution State
+versionado pertence à branch da issue; fora dela, é apenas estado local"*, e
+`epic/**`, `release/current` e branches efêmeras de release entram
+explicitamente na lista do que nunca recebe commit.
+
+Mesmo critério das fases anteriores: o tratamento completo do modelo de
+branches na skill mãe é da fase 7, mas a frase que virou falsa agora foi
+corrigida agora.
+
+### Verificação de coerência entre as duas skills
+
+| Pergunta | `jira-issue-executor` | `jira-integration-executor` |
+| --- | --- | --- |
+| Quem cria branch de épico | "é a **única** que cria" | "esta skill **nunca cria**" |
+| Destino do PR | acompanha a base da branch | validado na R1 |
+| Execution State | commita só na branch da issue | nunca commita |

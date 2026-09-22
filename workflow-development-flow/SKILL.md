@@ -1143,16 +1143,25 @@ fonte que pode divergir da real.
 
 ### 13.3 Política de Git
 
+```text
+Execution State versionado pertence à branch da issue.
+Fora dela, é apenas estado local de execução.
+```
+
 Só é **commitado** quando a etapa opera numa branch isolada da issue
 (`Fazer - Claude`, via `jira-issue-executor`) — nesse caso o arquivo viaja
 junto dos commits normais da issue, e é removido (com commit próprio)
 antes de a issue seguir para `Análise - Rafinha`/Integração, para nunca
-chegar a `develop` por merge.
+chegar por merge à branch de destino, seja ela a `develop` ou a branch do
+épico.
 
-Nas etapas que operam **depois do merge**, direto sobre `develop`/`main`
-(`Integração`, `QA - Claude`, `Documentar`, `Análise Final - Claude`), o
-arquivo **nunca é commitado** — cairia na regra existente de nunca
-commitar direto no trunk. Ele existe só localmente (adicionar
+**Nenhuma outra branch recebe commit de Execution State:** `epic/**`, a
+`develop`, a `release/current` e as branches efêmeras de release estão
+todas fora. Nas etapas que operam **depois do merge** (`Integração`,
+`QA - Claude`, `Documentar`, `Análise Final - Claude`), o arquivo **nunca
+é commitado** — cairia na regra existente de nunca commitar direto no
+trunk. Isso vale para os três modos da `jira-integration-executor`,
+inclusive o Modo A, que opera sobre a branch do épico. Ele existe só localmente (adicionar
 `.claude/execution-state/` ao `.gitignore` do projeto, na primeira vez que
 a etapa criar o diretório) — isso ainda cobre o cenário central da
 proposta (mesma pasta de trabalho, nova sessão, troca de conta); só não
