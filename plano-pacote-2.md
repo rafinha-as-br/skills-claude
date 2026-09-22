@@ -15,6 +15,7 @@ e o estado de cada fase.
 | 2026-09-22 | Versão inicial. D1 e D2 decididas por Rafinha. Fase 1 concluída |
 | 2026-09-22 | Fase 2 concluída. D3 aplicada na `jira-integration-executor` |
 | 2026-09-22 | Fase 3 concluída. Branch de épico e base da branch da issue |
+| 2026-09-22 | Fase 4 concluída. D4 e D5 decididas — remoção de label no veredito |
 
 ---
 
@@ -25,7 +26,7 @@ e o estado de cada fase.
 | 1 | Labels `integrado-epico` e `qa-develop-aprovado` na matriz oficial | ✅ ver §5 |
 | 2 | `jira-integration-executor` — modos A/B/C, smoke test, subtarefas | ✅ ver §6 |
 | 3 | `jira-issue-executor` — branch de épico, Execution State | ✅ ver §7 |
-| 4 | `jira-qa-executor` — aplica `qa-develop-aprovado`, remove `integrado-epico` | ⬜ |
+| 4 | `jira-qa-executor` — aplica `qa-develop-aprovado`, remove `integrado-epico` | ✅ ver §8 |
 | 5 | `jira-release-executor` — `release/current`, manifest, bump | ⬜ |
 | 6 | `jira-review-executor` — auditoria de destino e labels | ⬜ |
 | 7 | `workflow-development-flow` — consolidação | ⬜ |
@@ -132,6 +133,62 @@ integrada mas a label falhou" — têm consequências opostas, e a skill não te
 como distinguir. Assumir a primeira faz a skill reportar um épico incompleto
 que está completo; assumir a segunda faz promover um épico furado. É o mesmo
 princípio do gate "proibido fallback silencioso" do Pacote 1.
+
+### D4 — `integrado-epico` sai no veredito, não só na aprovação
+
+**Decidida em 2026-09-22, durante a fase 4.**
+
+A página do Notion fecha o momento de remoção da label na lista de
+"Pendências encerradas nesta rodada" (item 7), mas o texto só descreve **um**
+caminho:
+
+> Quando a issue for aprovada no QA sobre a `develop` e receber
+> `qa-develop-aprovado`, a label `integrado-epico` deve ser removida.
+
+**A reprovação ficou sem regra.** Seguir a página ao pé da letra deixaria a
+label numa issue reprovada.
+
+**Decisão:** a label sai no **veredito**, qualquer que seja ele.
+
+| Veredito | `qa-develop-aprovado` | `integrado-epico` |
+| --- | --- | --- |
+| Aprovado | aplica | remove |
+| Reprovado | não aplica | remove |
+| Inconclusivo por infraestrutura | não aplica | **não mexe** |
+
+**Motivo:** a label significa *"o código desta issue está na branch do épico
+e ainda não foi validado na `develop`"*. Quando a issue chega ao QA, o épico
+já foi promovido — esse estado acabou, independente do veredito.
+
+**O risco concreto de não remover:** numa promoção parcial posterior do mesmo
+épico, uma issue reprovada carregando `integrado-epico` satisfaria o critério
+de aptidão nº 3 sem ter sido reintegrada. A skill de integração leria uma
+label verdadeira sobre um estado que não existe mais, e promoveria código não
+corrigido.
+
+**Inconclusivo não mexe em nada** porque não houve veredito. A issue nem muda
+de coluna; alterar label registraria um julgamento que não aconteceu.
+
+Esta decisão **estende** a página, não a contradiz: o caminho que ela
+especifica continua valendo exatamente como está.
+
+### D5 — Correção de issue reprovada que veio de épico integra direto
+
+**Decidida em 2026-09-22, durante a fase 4.**
+
+A página não trata do que acontece quando uma issue reprova no QA **depois**
+de o épico já ter sido promovido.
+
+**Decisão:** a correção nasce da `develop` e integra direto, pelo Modo C.
+Não volta para a branch do épico.
+
+**Motivo:** quando o épico foi promovido, o código da issue passou a residir
+na `develop`. A branch do épico cumpriu o papel. Reabri-la para uma correção
+criaria uma segunda promoção do mesmo épico, com escopo de uma issue só — que
+é exatamente a promoção parcial que a página trata como exceção.
+
+A skill não decide isso sozinha se Rafinha pedir outro caminho, mas também
+não sugere reabrir a branch do épico como se fosse o padrão.
 
 ---
 
@@ -367,3 +424,54 @@ corrigida agora.
 | Quem cria branch de épico | "é a **única** que cria" | "esta skill **nunca cria**" |
 | Destino do PR | acompanha a base da branch | validado na R1 |
 | Execution State | commita só na branch da issue | nunca commita |
+
+---
+
+## 8. Registro — Fase 4
+
+**Concluída em 2026-09-22.**
+
+`jira-qa-executor/SKILL.md`: 760 → 866 linhas.
+
+### A fase mais curta em código e a mais densa em decisão
+
+A skill já testava contra a `develop` — o pré-requisito 5 sempre exigiu
+`git checkout develop` e `git pull`. Isso é exatamente o que
+`qa-develop-aprovado` certifica, então a label não pediu mudança nenhuma de
+comportamento de teste. Foi só dar nome ao que já acontecia.
+
+O trabalho real da fase foi achar os dois buracos que a página deixou.
+
+### O que mudou
+
+| Onde | Mudança |
+| --- | --- |
+| Nova seção **Labels operacionais de integração** | Tabela dos três vereditos, justificativa da remoção na reprovação, caso da issue sem `integrado-epico`, caminho da correção |
+| Nova seção **QA de lote por épico** | Veredito por issue, evidência por issue, conjunto registrado no épico, reprovação não contagia o lote |
+| **Comentário obrigatório** | Passa a citar labels aplicadas/removidas e o conjunto do épico |
+| **Movimentação da issue** | Cada veredito diz o que acontece com as labels |
+
+### Alinhamento retroativo
+
+D4 tornou falso o que a fase 1 escreveu em dois lugares. Corrigidos no mesmo
+commit:
+
+- Confluence 68222978, categoria 11 — tabela "quem remove" e item 4 do ciclo
+  de vida. Acrescentado painel explicando a remoção na reprovação e a subseção
+  de QA de lote. **v5.**
+- `jira-integration-executor/SKILL.md`, tabela de labels operacionais.
+
+Vale registrar que o erro foi meu na fase 1: eu copiei o ciclo de vida da
+página do Notion sem notar que ele só cobria o caminho feliz.
+
+### Divisão de responsabilidade sobre as duas labels
+
+| Skill | `integrado-epico` | `qa-develop-aprovado` |
+| --- | --- | --- |
+| `jira-integration-executor` | **aplica** (Modo A), **lê** (Modo B) | — |
+| `jira-qa-executor` | **remove** (veredito) | **aplica** (só aprovação) |
+| `jira-release-executor` | — | **lê** (elegibilidade) |
+
+Nenhuma skill aplica e remove a mesma label. Isso não foi planejado, mas é
+uma propriedade boa: quem cria um estado nunca é quem o encerra, e as duas
+pontas ficam auditáveis pela `jira-review-executor` na fase 6.

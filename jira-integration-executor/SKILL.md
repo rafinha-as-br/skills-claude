@@ -461,7 +461,7 @@ conjunto promovido, e — em promoção parcial — quais ficaram fora e por qu�
 
 | Label | Quando esta skill a aplica | Quando esta skill a remove |
 |---|---|---|
-| `integrado-epico` | Modo A, depois do merge issue → branch do épico | Nunca. Quem remove é a `jira-qa-executor`, ao aprovar sobre a `develop` |
+| `integrado-epico` | Modo A, depois do merge issue → branch do épico | Nunca. Quem remove é a `jira-qa-executor`, ao dar veredito sobre a `develop` — aprovando **ou** reprovando |
 | `qa-develop-aprovado` | Nunca — é da `jira-qa-executor` | Nunca |
 
 Ver a matriz oficial no Confluence (**Vocabulário operacional de labels**,
