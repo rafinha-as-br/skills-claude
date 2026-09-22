@@ -16,6 +16,7 @@ e o estado de cada fase.
 | 2026-09-22 | Fase 2 concluída. D3 aplicada na `jira-integration-executor` |
 | 2026-09-22 | Fase 3 concluída. Branch de épico e base da branch da issue |
 | 2026-09-22 | Fase 4 concluída. D4 e D5 decididas — remoção de label no veredito |
+| 2026-09-22 | Fase 5 concluída. D2 implementada como gate G10; D6 decidida |
 
 ---
 
@@ -27,7 +28,7 @@ e o estado de cada fase.
 | 2 | `jira-integration-executor` — modos A/B/C, smoke test, subtarefas | ✅ ver §6 |
 | 3 | `jira-issue-executor` — branch de épico, Execution State | ✅ ver §7 |
 | 4 | `jira-qa-executor` — aplica `qa-develop-aprovado`, remove `integrado-epico` | ✅ ver §8 |
-| 5 | `jira-release-executor` — `release/current`, manifest, bump | ⬜ |
+| 5 | `jira-release-executor` — `release/current`, manifest, bump | ✅ ver §9 |
 | 6 | `jira-review-executor` — auditoria de destino e labels | ⬜ |
 | 7 | `workflow-development-flow` — consolidação | ⬜ |
 | 8 | CI e branch protection (`epic/**`, `release/current`) | ⬜ manual, Rafinha |
@@ -189,6 +190,46 @@ criaria uma segunda promoção do mesmo épico, com escopo de uma issue só — 
 
 A skill não decide isso sozinha se Rafinha pedir outro caminho, mas também
 não sugere reabrir a branch do épico como se fosse o padrão.
+
+### D6 — O bump é dividido: versão semântica na `release/current`, build number na Action
+
+**Decidida em 2026-09-22, durante a fase 5.**
+
+A página do Notion diz que *"o commit de bump de versão deve ser feito
+diretamente na branch `release/current`"*, e que a branch efêmera nasce dela
+já preparada. Mas a Action de cada repositório **também** tem um step de bump,
+e a página não diz o que acontece com ele.
+
+Ler a página ao pé da letra levaria a uma de duas conclusões erradas: que o
+step da Action virou redundante e deve ser removido, ou que o bump acontece
+duas vezes.
+
+**Decisão:** o bump tem duas partes, em lugares diferentes, sem duplicação.
+
+| Parte | Onde | Quem aplica | Por quê |
+| --- | --- | --- | --- |
+| Versão semântica (`1.2.0`) | commit na `release/current` | a skill | É decisão de produto e pertence à linha persistente |
+| Metadado de build (`+<run_number>`) | branch efêmera | a Action | Só existe no contexto daquela execução |
+
+**Por que isso funciona sem mexer no `release.yml`:** o template já é
+idempotente. O step de bump roda `versions:set` com a mesma versão que já está
+no arquivo, não gera diff semântico, e o `git diff --quiet` existente resolve:
+
+```yaml
+- name: Commit e push da release branch
+  run: |
+    if git diff --quiet; then
+      echo "Nenhum bump de versao nesta rodada."
+    else
+      git commit -am "release: bump de versao (run ${{ github.run_number }})"
+    fi
+```
+
+Em stacks com build number (Flutter, Android), o `+${{ github.run_number }}`
+ainda gera diff — e é exatamente o que deve ser commitado na branch efêmera.
+
+**Consequência registrada nas duas skills e na referência:** ninguém deve
+"consertar" o step de bump da Action achando que ele virou redundante.
 
 ---
 
@@ -475,3 +516,66 @@ página do Notion sem notar que ele só cobria o caminho feliz.
 Nenhuma skill aplica e remove a mesma label. Isso não foi planejado, mas é
 uma propriedade boa: quem cria um estado nunca é quem o encerra, e as duas
 pontas ficam auditáveis pela `jira-review-executor` na fase 6.
+
+---
+
+## 9. Registro — Fase 5
+
+**Concluída em 2026-09-22.** A fase de maior superfície, como previsto — e a
+primeira que tocou código executável, não só contrato.
+
+### Arquivos tocados
+
+| Arquivo | Mudança |
+| --- | --- |
+| `references/release-lifecycle.md` | §1 ganha as três branches; §8 ganha `eligibility`; §21 ganha G10; **nova §22** com o mecanismo da D2 |
+| `jira-release-executor/SKILL.md` | Fase 5 ganha os passos 5.0 (promoção) e 5.1 (bump); 5.1→5.2 e 5.2→5.3 |
+| `templates/orchestrator/release-request.example.yml` | `ref: release/current`, bloco `eligibility` |
+| `templates/orchestrator/orchestrate.ps1` | **Validação do gate G10** |
+| `templates/release.yml` | **nenhuma** — ver D6 |
+
+### D2 virou o gate G10
+
+O mecanismo que você aprovou está implementado em três camadas:
+
+1. **Contrato** — §22 da referência descreve o algoritmo.
+2. **Skill** — passo 5.0 executa e monta o bloco `eligibility`.
+3. **Orchestrator** — recusa o request se o bloco faltar, se `checked_range`
+   faltar, se `exceptions` estiver ausente (e não apenas vazia), ou se `ref`
+   for diferente de `release/current` sem exceção registrada.
+
+A terceira camada não estava no plano. Acrescentei porque o Orchestrator já
+tem o idioma — a validação de `runtime_package.required` usa exatamente a
+frase *"Ausência silenciosa não é permitida"*. Um gate que depende da skill
+lembrar de rodá-lo não é um gate.
+
+### A exceção ganhou schema
+
+A página fala em registrar quatro coisas na exceção autorizada. Em prosa, isso
+vira "alguém escreve um parágrafo". Virou quatro campos obrigatórios —
+`item`, `risco`, `autorizacao`, `impacto` — validados pelo Orchestrator um a
+um.
+
+`exceptions: []` é obrigatório mesmo vazio. A lista vazia afirma "verifiquei e
+não houve exceção"; o campo ausente não afirma nada.
+
+### Duas contradições internas corrigidas
+
+Mover o bump para a skill quebrou duas frases que já existiam no arquivo:
+
+| Onde | Dizia | Passou a dizer |
+| --- | --- | --- |
+| *O princípio que organiza esta skill* | "Criar branch, bump, build, artefato, tag e Release é da Action. Você **não** faz nada disso na mão" | A branch efêmera, build, artefato, tag e Release continuam da Action; o bump semântico é da skill |
+| *O que NÃO fazer* | "❌ Nunca criar branch de release, bump, build… na mão" | Mesma proibição, com exceção única e explícita para o bump semântico na `release/current` |
+
+Se eu tivesse só acrescentado o passo 5.1, a skill teria uma instrução no meio
+do arquivo e duas proibições dela no começo e no fim.
+
+### Drift do Pacote 1 encontrado de passagem
+
+A §1 da referência ainda descrevia o issue workflow como **"as 8 etapas"**, com
+o diagrama na ordem antiga — `Documentar` antes de `Análise Final - Rafinha`.
+O Pacote 1 inverteu essas duas colunas e essa página não foi atualizada.
+
+Corrigido: 10 colunas, ordem vigente, e a coluna da direita agora mostra os
+dois passos novos do ciclo de release.
