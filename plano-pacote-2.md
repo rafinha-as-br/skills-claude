@@ -17,6 +17,7 @@ e o estado de cada fase.
 | 2026-09-22 | Fase 3 concluída. Branch de épico e base da branch da issue |
 | 2026-09-22 | Fase 4 concluída. D4 e D5 decididas — remoção de label no veredito |
 | 2026-09-22 | Fase 5 concluída. D2 implementada como gate G10; D6 decidida |
+| 2026-09-22 | Fase 6 concluída. Auditoria fecha o ciclo das duas labels |
 
 ---
 
@@ -29,7 +30,7 @@ e o estado de cada fase.
 | 3 | `jira-issue-executor` — branch de épico, Execution State | ✅ ver §7 |
 | 4 | `jira-qa-executor` — aplica `qa-develop-aprovado`, remove `integrado-epico` | ✅ ver §8 |
 | 5 | `jira-release-executor` — `release/current`, manifest, bump | ✅ ver §9 |
-| 6 | `jira-review-executor` — auditoria de destino e labels | ⬜ |
+| 6 | `jira-review-executor` — auditoria de destino e labels | ✅ ver §10 |
 | 7 | `workflow-development-flow` — consolidação | ⬜ |
 | 8 | CI e branch protection (`epic/**`, `release/current`) | ⬜ manual, Rafinha |
 | 9 | Confluence — fichas das skills tocadas | ⬜ |
@@ -579,3 +580,63 @@ O Pacote 1 inverteu essas duas colunas e essa página não foi atualizada.
 
 Corrigido: 10 colunas, ordem vigente, e a coluna da direita agora mostra os
 dois passos novos do ciclo de release.
+
+---
+
+## 10. Registro — Fase 6
+
+**Concluída em 2026-09-22.**
+
+`jira-review-executor/SKILL.md`: 321 → 379 linhas. A auditoria do §2.1 passou
+de **sete para dez pontos**.
+
+### Os três pontos novos
+
+| # | Audita |
+| --- | --- |
+| 8 | A integração aconteceu no destino correto para o modo declarado |
+| 9 | As labels operacionais foram aplicadas **e removidas** na hora certa |
+| 10 | O QA rodou sobre a `develop` integrada |
+
+O ponto 8 traz uma tabela por modo: no Modo A o PR tem que apontar para a
+branch do épico e a issue **não** pode ter mudado de coluna; no Modo C o PR
+aponta para a `develop`. Modo declarado que não bate com o destino do PR é
+achado — e é o tipo que só aparece aqui, porque tudo passou.
+
+Resumo operacional ausente virou achado por si só.
+
+### O ponto 9 fecha o desenho que apareceu na fase 4
+
+Na fase 4 notei que nenhuma skill aplica e remove a mesma label. Isso não foi
+planejado, mas deixou as duas pontas auditáveis — e a fase 6 é onde isso
+vira verificação de verdade:
+
+| Estado na issue que chega aqui | Veredito |
+| --- | --- |
+| `integrado-epico` ausente | esperado — o QA a remove no veredito |
+| `integrado-epico` presente | achado: o QA não removeu, ou alguém reaplicou |
+| `qa-develop-aprovado` presente | esperado |
+| `qa-develop-aprovado` ausente | achado consequente |
+
+### O achado mais caro do pacote inteiro
+
+`qa-develop-aprovado` ausente **não quebra nada no momento**. Ele quebra a
+release, semanas depois, quando o gate G10 bloquear a promoção
+`develop → release/current` por causa de um commit que não rastreia para
+issue aprovada — e aí ninguém vai lembrar desta issue.
+
+Essa coluna é a última chance de pegar isso enquanto ainda é barato. Está
+registrado como painel na skill e como proibição explícita.
+
+### A skill audita, não conserta
+
+Acrescentada proibição explícita de aplicar ou remover as duas labels aqui.
+A tentação é óbvia — a skill vê a label errada e "corrige". Mas corrigir
+apagaria a evidência do próprio achado, e a issue voltaria a parecer
+saudável sem que a causa tivesse sido tratada.
+
+### Vigência
+
+Os pontos 8, 9 e 10 dependem do contrato do Pacote 2. Issue trabalhada antes
+da vigência não tem como cumpri-los: registra observação, **não reprova**. É
+o mesmo critério que o ponto 2 já usava para a label de revisão.
