@@ -11,6 +11,7 @@ documentação"*, lida em 2026-09-23.
 | Data | O que mudou |
 | --- | --- |
 | 2026-09-23 | Versão inicial. D1 decidida por Rafinha. Onda 1 concluída |
+| 2026-09-23 | **D3 decidida por Rafinha — Pendência 4 fechada.** Onda 2 concluída |
 
 ---
 
@@ -19,9 +20,9 @@ documentação"*, lida em 2026-09-23.
 | Onda | O quê | Status |
 | --- | --- | --- |
 | 1 | Higiene das skills atuais + rename | ✅ ver §3 |
-| 2 | Taxonomia e templates em `references/` | ⬜ |
+| 2 | Taxonomia e templates em `references/` | ✅ ver §6 (mapa pendente) |
 | 3 | Ampliação dos writers (product, tech, screen com modos) | ⬜ |
-| 4 | Novas skills: `user-doc-writer`, `workflow-doc-writer` | 🔒 **bloqueada** |
+| 4 | Novas skills: `user-doc-writer`, `workflow-doc-writer` | ⬜ destravada por D3 |
 | 5 | Integração com o fluxo Jira (`jira-doc-executor`) | ⬜ |
 | 6 | Componentes reutilizáveis e piloto | ⬜ |
 
@@ -39,15 +40,9 @@ Duas delas bloqueiam trabalho de verdade.
 
 Ver §2.
 
-### Pendência 4 — fronteira módulo × tela × usuário → **bloqueia a Onda 4**
+### Pendência 4 — fronteira módulo × tela × usuário → **FECHADA**
 
-Sem regras objetivas separando documentação de módulo, de tela para dev, de
-tela para usuário e guia de usuário que atravessa telas, a `user-doc-writer`
-e o modo `screen-doc:user` se sobrepõem.
-
-Implementar a `user-doc-writer` sem essa fronteira significaria **inventar
-exatamente o recorte que esta atualização existe para definir** — e o
-recorte inventado viraria precedente antes de Rafinha decidir.
+Ver D3 em §2. Era o único bloqueio real do pacote.
 
 ### Pendência 2 — destino de `qa-doc`
 
@@ -110,6 +105,62 @@ E a regra que fecha o buraco:
 mais difícil de corrigir do que uma lacuna declarada. É o mesmo princípio do
 gate "proibido fallback silencioso" do Pacote 1, aplicado a template em vez
 de label.
+
+### D3 — Documentar é job composto, não escolha de página
+
+**Decidida em 2026-09-23 por Rafinha.** Fecha a Pendência 4.
+
+Eu tinha formulado a pendência como *"qual das quatro páginas este pedido
+vira?"* — uma escolha excludente. **A formulação estava errada.**
+
+> Quando se pede para documentar uma tela, o agente aciona **o conjunto** de
+> skills. Documentar uma tela é um trabalho composto, e cada skill faz a
+> sua parte.
+
+**O que isso resolve.** O roteamento deixa de ser uma decisão: não existe
+"qual writer", existe "quais writers, e o que cabe a cada um".
+
+**O que eu tinha calculado errado.** Eu temia uma explosão de páginas — 30
+telas × 4 páginas. Não acontece, porque **as granularidades são
+diferentes**:
+
+| Skill | Uma página por... |
+| --- | --- |
+| `tech-doc-writer` | **módulo** |
+| `screen-doc-writer` | **tela** (modo dev, user ou híbrido) |
+| `user-doc-writer` | **tarefa de usuário**, que atravessa telas |
+
+Documentar uma tela nova **atualiza** a página do módulo que já existe e
+**entra** no guia que já existe, enquanto cria ou atualiza a página dela
+própria. O fan-out real é pequeno.
+
+Isso também responde à dúvida de fronteira que restava: tarefa que atravessa
+telas → guia; tarefa que mora numa tela só → a própria página de tela em
+modo `user`.
+
+**A regra anti-duplicação**, derivada do princípio que a própria página do
+Notion declara (*"uma skill por fonte da verdade"*):
+
+| Skill | Fonte da verdade | Escreve |
+| --- | --- | --- |
+| `tech-doc-writer` | o código | arquitetura do módulo, camadas, como as telas se encaixam nele |
+| `screen-doc:dev` | a tela rodando + o código dela | rota, cubit, chamadas de API **daquela tela** |
+| `screen-doc:user` | a tela rodando | campos, botões, mensagens, erros visíveis |
+| `user-doc-writer` | o produto funcionando | a tarefa ponta a ponta |
+
+```text
+Cada writer escreve só o que a sua fonte da verdade entrega,
+e linka em vez de repetir.
+```
+
+Exemplo do desempate: *"qual cubit gerencia esta tela"* é `screen-doc:dev`.
+A página de módulo diz quais cubits existem no módulo; não detalha cada tela.
+
+**Consequência de peso.** Isso desloca trabalho para a
+`jira-doc-executor`: ela deixa de ser "label → writer" e passa a montar um
+**conjunto de delegações por job**, decidindo quais das skills se aplicam e
+declarando quais pulou e por quê — mesmo princípio do proibido fallback
+silencioso. **A Onda 5 fica maior do que a página do Notion previa.**
 
 ---
 
@@ -196,3 +247,82 @@ passada dedicada de Confluence.
 - Renomear "Rafael" nas skills pessoais (`task-creator-trabalho`,
   `weekly-organizer`).
 - Definir destino de `qa-doc` (Pendência 2 da página de origem).
+
+---
+
+## 6. Registro — Onda 2
+
+**Concluída em 2026-09-23**, exceto o mapa de taxonomia (ver §7).
+
+### 12 templates, não 16
+
+Os quatro restantes — `user-guide.md`, `workflow-page.md`, `skill-page.md` e
+`release-doc.md` — pertencem a skills que **ainda não existem**. Criá-los
+agora deixaria arquivo órfão em `references/` de skill nenhuma.
+
+Eles nascem na Onda 4, junto com a `user-doc-writer` e a
+`workflow-doc-writer`.
+
+| Writer | Templates |
+| --- | --- |
+| `product-doc-writer` | `rn.md`, `requisito.md`, `caso-de-uso.md`, `fluxo-produto.md`, `criterios-aceitacao.md` |
+| `tech-doc-writer` | `modulo.md`, `api.md`, `arquitetura-dev.md`, `componente-reutilizavel.md` |
+| `screen-doc-writer` | `screen-dev.md`, `screen-user.md`, `screen-hybrid.md` |
+
+### A seção que faz o modelo composto funcionar
+
+Todo template termina com uma tabela **"O que NÃO vai nesta página"**,
+apontando conteúdo por conteúdo para a skill dona.
+
+Sem ela, o modelo da D3 não fecha: se as quatro skills rodam juntas no mesmo
+job, e nenhuma sabe o que não é dela, todas escrevem tudo. A tabela é a
+aplicação prática de *"uma skill por fonte da verdade"*.
+
+Exemplo, do `modulo.md`:
+
+> A página de módulo diz **quais cubits existem no módulo**; ela não detalha
+> qual cubit gerencia cada tela. Isso é doc de tela.
+
+### Modos da `screen-doc-writer`
+
+Os três modos entraram nesta onda junto com os templates — separar "criar o
+template" de "ligar a skill ao template" deixaria a skill num meio-termo
+inútil.
+
+Regra de desempate registrada:
+
+> **Na dúvida, `hybrid`.** Duas páginas que ninguém mantém são piores que uma
+> que serve a dois leitores. Separar depois é barato; reconciliar duas páginas
+> que divergiram não é.
+
+E o modo **nunca é inferido do nome da tela** — mesmo princípio do modo de
+integração do Pacote 2.
+
+### Uma lacuna da página de origem, declarada e não preenchida
+
+As labels **`readme` e `adr`** existem na matriz oficial de labels, mas
+**ficaram de fora da lista de 16 templates** da atualização. Não são
+esquecimento meu.
+
+Registrei as duas na tabela de escopo da `tech-doc-writer` marcadas como
+**sem template**, com a instrução de declarar a lacuna e perguntar. Preencher
+por conta própria seria inventar estrutura — exatamente o que a D2 proíbe.
+
+---
+
+## 7. O que falta
+
+| Item | Onda | Bloqueio |
+| --- | --- | --- |
+| Mapa tipo de página → página-mãe → convenção de título | 2 | nenhum — é trabalho de Confluence |
+| Ampliar os writers para as trilhas novas | 3 | nenhum |
+| `user-doc-writer` + `user-guide.md` | 4 | nenhum (D3 destravou) |
+| `workflow-doc-writer` + 3 templates | 4 | Pendência 3 é só *quando*, não *se* |
+| `jira-doc-executor` como orquestradora de conjuntos | 5 | depende de 3 e 4 |
+| Componentes reutilizáveis e piloto | 6 | depende do template, que já existe |
+| 11 páginas do Confluence com nome antigo | — | nenhum |
+| Fichas novas no Confluence para as skills novas | — | depende da Onda 4 |
+| Corte de vigência (merge) | — | tudo acima |
+
+A convenção de título de cada tipo de página **já está dentro do template**
+— o mapa do Confluence passa a ser o índice disso, não a fonte.

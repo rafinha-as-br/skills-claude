@@ -1,6 +1,6 @@
 ---
 name: "tech-doc-writer"
-description: "Escritor da documentação TÉCNICA no Confluence de Rafinha — a fonte da verdade dela é o código, o repositório, a API e a arquitetura real, nunca a decisão de produto. Serve QUALQUER produto de Rafinha (Compass System, GeoPrag, ou outro), nunca é específica de um só. Hoje a trilha implementada é a de MÓDULO (`module-doc`): documentação técnica/arquitetural de uma feature ou área, com estrutura livre (objetivo/escopo, estrutura de código, fluxos, tabelas de status, comparações) — diferente da estrutura fixa de 4 seções da product-doc-writer. Usar sempre que Rafinha disser \"documenta esse módulo\", \"cria a página do módulo X\", \"atualiza a doc do módulo Y\", enviar um link de página de módulo do Confluence, ou pedir para descrever a arquitetura/estrutura/estado atual de uma feature. Quando roda com acesso real ao repositório, também sincroniza a pasta `docs/` do módulo no código. As demais trilhas técnicas — API (`api-doc`), componente reutilizável (`component-doc`), README (`readme`) e ADR (`adr`) — pertencem a esta skill por contrato, mas os templates delas ainda não existem: se Rafinha pedir uma dessas, DIGA que o template ainda não está pronto e pergunte se ele quer a estrutura de módulo adaptada ou prefere esperar. Não usar para regra de negócio, requisito ou caso de uso — isso é `product-doc-writer`; nem para campos, componentes e estados de uma tela específica — isso é `screen-doc-writer`."
+description: "Escritor da documentação TÉCNICA no Confluence de Rafinha — a fonte da verdade dela é o código, o repositório, a API e a arquitetura real, nunca a decisão de produto. Serve QUALQUER produto de Rafinha (Compass System, GeoPrag, ou outro), nunca é específica de um só. A trilha principal é a de MÓDULO (`module-doc`): documentação técnica/arquitetural de uma feature ou área, com estrutura livre (objetivo/escopo, estrutura de código, fluxos, tabelas de status, comparações) — diferente da estrutura fixa de 4 seções da product-doc-writer. Usar sempre que Rafinha disser \"documenta esse módulo\", \"cria a página do módulo X\", \"atualiza a doc do módulo Y\", enviar um link de página de módulo do Confluence, ou pedir para descrever a arquitetura/estrutura/estado atual de uma feature. Quando roda com acesso real ao repositório, também sincroniza a pasta `docs/` do módulo no código. Cada trilha tem o seu TEMPLATE em `references/`: `modulo.md`, `api.md` (api-doc), `arquitetura-dev.md` (architecture-doc) e `componente-reutilizavel.md` (component-doc). SEMPRE leia o template antes de escrever — ele traz a estrutura, a convenção de título e a tabela do que NÃO vai naquela página. As labels `readme` e `adr` NÃO TÊM template: elas existem na matriz oficial mas ficaram de fora da lista de templates da atualização de origem — nesses casos declare a lacuna e pergunte, nunca improvise estrutura. Não usar para regra de negócio, requisito ou caso de uso — isso é `product-doc-writer`; nem para campos, componentes e estados de uma tela específica — isso é `screen-doc-writer`."
 ---
 
 # Escritor de Documentação Técnica — Confluence de Rafinha
@@ -79,23 +79,36 @@ Isso importa porque muda o tom de escrita:
 
 ## Escopo: o que já existe e o que ainda não
 
-Esta skill é a dona da **família de documentação técnica**. Nem toda a
-família tem template pronto.
+Esta skill é a dona da **família de documentação técnica**. Quase toda
+trilha tem template em `references/` — as exceções estão marcadas.
 
-| Trilha | Label | Estado |
+| Trilha | Label | Template |
 |---|---|---|
-| Módulo | `module-doc` | ✅ **implementada** — estrutura livre, mais a pasta `docs/` |
-| API | `api-doc` | ⬜ template pendente |
-| Componente reutilizável | `component-doc` | ⬜ template pendente |
-| README versionado | `readme` | ⬜ template pendente |
-| ADR | `adr` | ⬜ template pendente, e sem uso real ainda |
+| Módulo | `module-doc` | `references/modulo.md` |
+| API | `api-doc` | `references/api.md` |
+| Arquitetura para devs | `architecture-doc` | `references/arquitetura-dev.md` |
+| Componente reutilizável | `component-doc` | `references/componente-reutilizavel.md` |
+| README versionado | `readme` | ⬜ **sem template** |
+| ADR | `adr` | ⬜ **sem template**, e sem uso real ainda |
 
-> ❗ **Se Rafinha pedir uma trilha sem template**, diga que o template ainda
-> não existe e pergunte se ele quer a estrutura de módulo adaptada para
-> aquele caso, ou prefere esperar. **Não improvise uma estrutura nova e não
-> finja que ela é oficial** — estrutura inventada vira precedente, e
-> precedente inventado é mais difícil de corrigir do que uma lacuna
-> declarada.
+### Carregue o template antes de escrever
+
+📄 **Leia `references/<template>.md` antes de escrever a página.** Os
+templates não são carregados por padrão. Cada um traz a estrutura de seções,
+a convenção de título e — o mais importante — a tabela do **que NÃO vai
+naquela página**, que é o que impede duas skills de escreverem o mesmo
+parágrafo em lugares diferentes.
+
+> ❗ **Se Rafinha pedir algo que nenhum template cobre**, diga isso e pergunte
+> se ele quer o template mais próximo adaptado, ou prefere que um template
+> novo seja criado antes. **Não improvise uma estrutura nova nem finja que
+> ela é oficial** — estrutura inventada vira precedente, e precedente
+> inventado é mais difícil de corrigir do que uma lacuna declarada.
+
+> ⚠️ **`readme` e `adr` não têm template e isso não é esquecimento meu** — as
+> duas labels existem na matriz oficial, mas ficaram de fora da lista de
+> templates previstos da atualização de origem. Enquanto isso não for
+> resolvido, trate as duas pela regra acima: declare a lacuna e pergunte.
 
 `architecture-doc` pode cair aqui **ou** na `product-doc-writer`, conforme a
 fonte da verdade: estrutura de código e contrato entre camadas → aqui;

@@ -1,6 +1,6 @@
 ---
 name: screen-doc-writer
-description: "Elaborar ou reescrever páginas de documentação de tela/UI no Confluence de Rafinha (ex.: \"Tela - Cadastro de Viagem\", \"Tela - Login\") — campos, componentes, interações, estados e regras de exibição de uma tela de um app Flutter, em tom de estado atual (sem histórico, sem citar issues), sucinta o bastante pra ser entendida por programadores e por usuários finais do sistema. Usar sempre que Rafinha disser \"documenta essa tela\", \"atualiza a doc da tela X\", \"o texto dessa página ficou fraco/desatualizado, revisa\", enviar um link de página de tela do Confluence, apontar uma issue na coluna \"Documentar\" que ele confirme ser de alteração de tela/UI, ou pedir pra tirar print de uma tela e anexar na documentação. Navega a tela de verdade via Claude in Chrome (Chrome real, mesma extensão que a jira-qa-executor usa — não o navegador embutido do Claude Code) pra tirar prints reais e embuti-los na página. Não usar para regra de negócio isolada (product-doc-writer) nem para documentação de módulo/arquitetura/código (tech-doc-writer)."
+description: "Elaborar ou reescrever páginas de documentação de tela/UI no Confluence de Rafinha (ex.: \"Tela - Cadastro de Viagem\", \"Tela - Login\") — campos, componentes, interações, estados e regras de exibição de uma tela de um app Flutter, em tom de estado atual (sem histórico, sem citar issues), sucinta o bastante pra ser entendida por programadores e por usuários finais do sistema. Usar sempre que Rafinha disser \"documenta essa tela\", \"atualiza a doc da tela X\", \"o texto dessa página ficou fraco/desatualizado, revisa\", enviar um link de página de tela do Confluence, apontar uma issue na coluna \"Documentar\" que ele confirme ser de alteração de tela/UI, ou pedir pra tirar print de uma tela e anexar na documentação. Navega a tela de verdade via Claude in Chrome (Chrome real, mesma extensão que a jira-qa-executor usa — não o navegador embutido do Claude Code) pra tirar prints reais e embuti-los na página. Opera em TRÊS MODOS, cada um com template próprio em `references/`: `screen-doc:dev` (rota, cubit, permissões, chamadas de API, validações — para quem mexe na tela), `screen-doc:user` (para que serve, campos, botões, mensagens — para quem usa) e `screen-doc:hybrid` (os dois numa página só). SEMPRE leia o template do modo antes de escrever. NA DÚVIDA ENTRE MODOS, use hybrid: duas páginas que ninguém mantém são piores que uma que serve a dois leitores. O modo nunca é inferido do nome da tela — Rafinha informa, ou a skill pergunta; se a página já existe, o modo dela é o que está escrito lá. Documentar uma tela é TRABALHO COMPOSTO: esta skill é a peça de granularidade tela, enquanto a tech-doc-writer cuida do módulo e a user-doc-writer do guia de tarefa — cada uma escreve só o que a sua fonte da verdade entrega e linka em vez de repetir. Não usar para regra de negócio isolada (product-doc-writer) nem para documentação de módulo/arquitetura/código (tech-doc-writer)."
 ---
 
 # Escritor de Documentação de Tela/UI — Confluence de Rafinha
@@ -48,6 +48,54 @@ Consulte a skill `workflow-development-flow` para dúvidas sobre como a
 etapa "Documentar" se encaixa no fluxo geral do pipeline.
 
 ---
+
+---
+
+## Os três modos
+
+A fonte da verdade desta skill é **a UI rodando**, mas o público muda o que
+entra na página. Por isso a skill tem três modos, cada um com seu template:
+
+| Modo | Template | Público | Título |
+|---|---|---|---|
+| `screen-doc:dev` | `references/screen-dev.md` | quem vai mexer na tela | `Tela - <nome> (dev)` |
+| `screen-doc:user` | `references/screen-user.md` | quem usa o sistema | `Tela - <nome>` |
+| `screen-doc:hybrid` | `references/screen-hybrid.md` | os dois | `Tela - <nome>` |
+
+📄 **Leia o template do modo antes de escrever.** Ele traz as seções, a
+convenção de título e a tabela do **que NÃO vai na página** — que é o que
+impede esta skill de escrever o que pertence à `tech-doc-writer` ou à
+`user-doc-writer`.
+
+### Qual modo usar
+
+> **Na dúvida, `hybrid`.** Duas páginas que ninguém mantém são piores que uma
+> página que serve a dois leitores. Separar depois é barato; reconciliar duas
+> páginas que divergiram não é.
+
+Use `dev` e `user` separados quando a tela tem **os dois públicos de
+verdade** e o conteúdo de um atrapalha a leitura do outro — tela operacional
+do produto, usada por quem não conhece o código.
+
+Use `hybrid` em tela interna, simples, ou de público único que é ao mesmo
+tempo quem opera e quem mantém.
+
+**O modo nunca é inferido do nome da tela.** Rafinha informa, ou a skill
+pergunta. Se a página já existe, o modo dela é o que está escrito lá — não
+mude de modo sem confirmar.
+
+### Esta skill é uma peça de um trabalho composto
+
+Documentar uma tela não é trabalho de uma skill só. O conjunto completo é:
+
+| Skill | Granularidade | O que faz na mesma tarefa |
+|---|---|---|
+| `tech-doc-writer` | por **módulo** | atualiza a página do módulo onde a tela vive |
+| `screen-doc-writer` | por **tela** | esta página |
+| `user-doc-writer` | por **tarefa** | entra no guia, se a tarefa atravessa telas |
+
+Cada uma escreve só o que a **sua** fonte da verdade entrega, e linka em vez
+de repetir. Quem monta o conjunto é a `jira-doc-executor`.
 
 ## Model Policy
 

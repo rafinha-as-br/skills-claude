@@ -1,6 +1,6 @@
 ---
 name: "product-doc-writer"
-description: "Escritor da documentação de PRODUTO no Confluence de Rafinha — a fonte da verdade dela são as decisões de produto, os requisitos, as regras funcionais e as explicações do próprio Rafinha, nunca o código. Hoje a trilha implementada é a de REGRA DE NEGÓCIO (`rn-doc`), com estrutura fixa de quatro seções (Visão Geral, Pré-condições, Passo a Passo, Regras Específicas do Negócio) e tom estritamente imperativo/descritivo do estado atual. Usar sempre que Rafinha disser \"cria uma regra de negócio\", \"documenta essa regra\", \"escreve essa RN no Confluence\", enviar um link de página do Confluence junto com uma descrição de regra, ou pedir para revisar/reescrever uma regra de negócio já existente. Também usar quando ele mencionar \"pendência\" ou \"a verificar\" dentro do contexto de uma regra de negócio que está sendo escrita. As demais trilhas de produto — requisito, caso de uso, fluxo de produto e critérios de aceitação — pertencem a esta skill por contrato, mas os templates delas ainda não existem: se Rafinha pedir uma dessas, DIGA que o template ainda não está pronto e pergunte se ele quer a estrutura de RN adaptada ou prefere esperar. Não usar para documentação de módulo, API, arquitetura técnica, estrutura de código ou componente reutilizável — isso é `tech-doc-writer`; nem para campos, componentes e estados de uma tela específica — isso é `screen-doc-writer`."
+description: "Escritor da documentação de PRODUTO no Confluence de Rafinha — a fonte da verdade dela são as decisões de produto, os requisitos, as regras funcionais e as explicações do próprio Rafinha, nunca o código. A trilha mais usada é a de REGRA DE NEGÓCIO (`rn-doc`), com estrutura fixa de quatro seções (Visão Geral, Pré-condições, Passo a Passo, Regras Específicas do Negócio) e tom estritamente imperativo/descritivo do estado atual. Usar sempre que Rafinha disser \"cria uma regra de negócio\", \"documenta essa regra\", \"escreve essa RN no Confluence\", enviar um link de página do Confluence junto com uma descrição de regra, ou pedir para revisar/reescrever uma regra de negócio já existente. Também usar quando ele mencionar \"pendência\" ou \"a verificar\" dentro do contexto de uma regra de negócio que está sendo escrita. Cobre cinco trilhas, cada uma com o seu TEMPLATE em `references/`: regra de negócio (`rn.md`), requisito (`requisito.md`), caso de uso (`caso-de-uso.md`), fluxo de produto (`fluxo-produto.md`) e critérios de aceitação (`criterios-aceitacao.md`). SEMPRE leia o template antes de escrever a página — ele traz a estrutura de seções, a convenção de título e a tabela do que NÃO vai naquela página. Se o pedido não couber em nenhum template, diga isso e pergunte, em vez de improvisar estrutura. Não usar para documentação de módulo, API, arquitetura técnica, estrutura de código ou componente reutilizável — isso é `tech-doc-writer`; nem para campos, componentes e estados de uma tela específica — isso é `screen-doc-writer`."
 ---
 
 # Escritor de Documentação de Produto — Confluence de Rafinha
@@ -28,23 +28,30 @@ etapas, classificação código/documentação).
 
 ## Escopo: o que já existe e o que ainda não
 
-Esta skill é a dona da **família de documentação de produto**. Nem toda a
-família tem template pronto.
+Esta skill é a dona da **família de documentação de produto**. Cada trilha
+tem o seu template em `references/`.
 
-| Trilha | Label | Estado |
+| Trilha | Label | Template |
 |---|---|---|
-| Regra de negócio | `rn-doc` | ✅ **implementada** — estrutura fixa de 4 seções, abaixo |
-| Requisito | — | ⬜ template pendente |
-| Caso de uso | — | ⬜ template pendente |
-| Fluxo de produto | — | ⬜ template pendente |
-| Critérios de aceitação | — | ⬜ template pendente |
+| Regra de negócio | `rn-doc` | `references/rn.md` |
+| Requisito | — | `references/requisito.md` |
+| Caso de uso | — | `references/caso-de-uso.md` |
+| Fluxo de produto | — | `references/fluxo-produto.md` |
+| Critérios de aceitação | — | `references/criterios-aceitacao.md` |
 
-> ❗ **Se Rafinha pedir uma trilha sem template**, diga que o template ainda
-> não existe e pergunte se ele quer a estrutura de RN adaptada para aquele
-> caso, ou prefere esperar o template. **Não improvise uma estrutura nova e
-> não finja que ela é oficial** — uma estrutura inventada vira precedente, e
-> precedente inventado é mais difícil de corrigir do que uma lacuna
-> declarada.
+### Carregue o template antes de escrever
+
+📄 **Leia `references/<template>.md` antes de escrever a página.** Os
+templates não são carregados por padrão. Cada um traz a estrutura de seções,
+a convenção de título e — o mais importante — a tabela do **que NÃO vai
+naquela página**, que é o que impede duas skills de escreverem o mesmo
+parágrafo em lugares diferentes.
+
+> ❗ **Se Rafinha pedir algo que nenhum template cobre**, diga isso e pergunte
+> se ele quer o template mais próximo adaptado, ou prefere que um template
+> novo seja criado antes. **Não improvise uma estrutura nova nem finja que
+> ela é oficial** — estrutura inventada vira precedente, e precedente
+> inventado é mais difícil de corrigir do que uma lacuna declarada.
 
 `architecture-doc` pode cair aqui **ou** na `tech-doc-writer`, conforme a
 fonte da verdade: decisão de produto e motivação → aqui; estrutura de código
