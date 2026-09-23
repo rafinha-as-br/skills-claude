@@ -1,28 +1,33 @@
 ---
-name: "module-doc-writer"
-description: "Elaborar ou atualizar páginas de documentação de módulo no Confluence do Rafael (ex.: \"Módulo - Gerenciamento de Administradores\", \"Módulo - Autenticação\") — documentação técnica/arquitetural detalhada de uma feature ou área do Geoprag, com estrutura livre (objetivo/escopo, estrutura de código, fluxos, tabelas de status, comparações), diferente da estrutura fixa de 4 seções da business-rule-writer. Usar sempre que Rafinha disser \"documenta esse módulo\", \"cria a página do módulo X\", \"atualiza a doc do módulo Y\", enviar um link de página de módulo do Confluence, ou pedir para descrever a arquitetura/estrutura/estado atual de uma feature do Geoprag. Não usar para páginas de regra de negócio (RN) — essas são sempre business-rule-writer."
+name: "tech-doc-writer"
+description: "Escritor da documentação TÉCNICA no Confluence de Rafinha — a fonte da verdade dela é o código, o repositório, a API e a arquitetura real, nunca a decisão de produto. Serve QUALQUER produto de Rafinha (Compass System, GeoPrag, ou outro), nunca é específica de um só. Hoje a trilha implementada é a de MÓDULO (`module-doc`): documentação técnica/arquitetural de uma feature ou área, com estrutura livre (objetivo/escopo, estrutura de código, fluxos, tabelas de status, comparações) — diferente da estrutura fixa de 4 seções da product-doc-writer. Usar sempre que Rafinha disser \"documenta esse módulo\", \"cria a página do módulo X\", \"atualiza a doc do módulo Y\", enviar um link de página de módulo do Confluence, ou pedir para descrever a arquitetura/estrutura/estado atual de uma feature. Quando roda com acesso real ao repositório, também sincroniza a pasta `docs/` do módulo no código. As demais trilhas técnicas — API (`api-doc`), componente reutilizável (`component-doc`), README (`readme`) e ADR (`adr`) — pertencem a esta skill por contrato, mas os templates delas ainda não existem: se Rafinha pedir uma dessas, DIGA que o template ainda não está pronto e pergunte se ele quer a estrutura de módulo adaptada ou prefere esperar. Não usar para regra de negócio, requisito ou caso de uso — isso é `product-doc-writer`; nem para campos, componentes e estados de uma tela específica — isso é `screen-doc-writer`."
 ---
 
----
-name: module-doc-writer
-description: "Elaborar ou atualizar páginas de documentação de módulo no Confluence do Rafael (ex.: \"Módulo - Gerenciamento de Administradores\", \"Módulo - Autenticação\") — documentação técnica/arquitetural detalhada de uma feature ou área do Geoprag, com estrutura livre (objetivo/escopo, estrutura de código, fluxos, tabelas de status, comparações), diferente da estrutura fixa de 4 seções da business-rule-writer. Usar sempre que Rafinha disser \"documenta esse módulo\", \"cria a página do módulo X\", \"atualiza a doc do módulo Y\", enviar um link de página de módulo do Confluence, ou pedir para descrever a arquitetura/estrutura/estado atual de uma feature do Geoprag. Não usar para páginas de regra de negócio (RN) — essas são sempre business-rule-writer."
----
-
-# Escritor de Documentação de Módulo — Confluence do Rafael
+# Escritor de Documentação Técnica — Confluence de Rafinha
 
 ## Identidade do papel
 
 Ao executar esta skill, você transforma o conhecimento que Rafinha tem sobre
-um módulo do Geoprag (Portal Administrador, App Aplicador, ou qualquer outra
-área) em uma **página de documentação técnica** no Confluence — escrevendo ou
-atualizando diretamente a página cujo link ele fornecer.
+um módulo — de **qualquer produto dele** — em uma **página de documentação
+técnica** no Confluence, escrevendo ou atualizando diretamente a página cujo
+link ele fornecer.
 
-Diferente da `business-rule-writer`, esta skill não segue uma estrutura fixa
+**A fonte da verdade desta skill é o código**, não a decisão de produto.
+Caminho de arquivo, contrato de API, camada e estrutura entram aqui; a
+motivação de negócio por trás da feature não.
+
+> ⚠️ **Esta skill não é de nenhum produto específico.** Ela serve o Compass
+> System, o GeoPrag e qualquer produto futuro. Os nomes de módulo, a sigla,
+> a árvore de páginas e a topologia vêm da página de **Controle de workflow**
+> daquele produto — nunca de um exemplo hardcoded aqui. Se você não souber
+> em qual produto está, **pergunte**.
+
+Diferente da `product-doc-writer`, esta skill não segue uma estrutura fixa
 de 4 seções. Documentação de módulo cobre arquitetura, estrutura de código,
 fluxos de tela em conjunto, modelo de segurança, estado de implementação —
 o formato se adapta ao que o módulo realmente precisa documentar. Se a
 página é sobre **uma regra de negócio isolada**, a skill certa é
-`business-rule-writer`; se é sobre **os campos, componentes e estados de
+`product-doc-writer`; se é sobre **os campos, componentes e estados de
 uma única tela específica** (em vez do módulo como um todo), a skill certa
 é `screen-doc-writer`. Se ficar em dúvida sobre qual das três se aplica,
 pergunte a Rafinha antes de começar a escrever.
@@ -58,7 +63,7 @@ Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
 
 Isso importa porque muda o tom de escrita:
 
-- **Página de RN** (`business-rule-writer`): descreve o estado atual de uma
+- **Página de RN** (`product-doc-writer`): descreve o estado atual de uma
   regra, sem nunca narrar histórico ("antes era assim, agora é assado").
 - **Página de módulo** (esta skill): é documentação viva de algo que está
   sendo construído. Aqui **é esperado e correto** narrar o estado de
@@ -69,6 +74,35 @@ Isso importa porque muda o tom de escrita:
   páginas ao longo do desenvolvimento do módulo — elas precisam refletir o
   estado real do código, não um instantâneo congelado do dia em que foram
   escritas.
+
+---
+
+## Escopo: o que já existe e o que ainda não
+
+Esta skill é a dona da **família de documentação técnica**. Nem toda a
+família tem template pronto.
+
+| Trilha | Label | Estado |
+|---|---|---|
+| Módulo | `module-doc` | ✅ **implementada** — estrutura livre, mais a pasta `docs/` |
+| API | `api-doc` | ⬜ template pendente |
+| Componente reutilizável | `component-doc` | ⬜ template pendente |
+| README versionado | `readme` | ⬜ template pendente |
+| ADR | `adr` | ⬜ template pendente, e sem uso real ainda |
+
+> ❗ **Se Rafinha pedir uma trilha sem template**, diga que o template ainda
+> não existe e pergunte se ele quer a estrutura de módulo adaptada para
+> aquele caso, ou prefere esperar. **Não improvise uma estrutura nova e não
+> finja que ela é oficial** — estrutura inventada vira precedente, e
+> precedente inventado é mais difícil de corrigir do que uma lacuna
+> declarada.
+
+`architecture-doc` pode cair aqui **ou** na `product-doc-writer`, conforme a
+fonte da verdade: estrutura de código e contrato entre camadas → aqui;
+decisão de produto e motivação → `product-doc-writer`. Na dúvida, pergunte.
+
+**Documentação não gera branch por padrão.** A pasta `docs/` (passo 9) só
+entra quando a documentação for de fato versionada no repositório Git.
 
 ## Passo a passo
 
@@ -81,9 +115,10 @@ enviado, pergunte por ele antes de prosseguir — esta skill sempre escreve
 diretamente na página, nunca devolve texto solto no chat como entrega final.
 
 Antes de escrever, vale a pena olhar 1-2 páginas de módulo já existentes no
-espaço Geoprag (via `getPagesInConfluenceSpace` ou pelas referências da
-página-mãe) para manter consistência de tom e estrutura com o que Rafinha já
-tem publicado.
+espaço **daquele produto** (via `getPagesInConfluenceSpace` ou pelas
+referências da página-mãe) para manter consistência de tom e estrutura com o
+que Rafinha já tem publicado. Cada produto tem o seu espaço e as suas
+convenções — não importe o padrão de um produto para outro sem confirmar.
 
 ### 2. Levantar as seções relevantes
 
@@ -93,9 +128,8 @@ páginas de módulo do Rafinha e servem de repertório, não de checklist
 obrigatório:
 
 - **Objetivo e escopo** (praticamente sempre a seção 1) — o que o módulo
-  cobre, o que fica fora, onde ele vive na árvore do Geoprag (Portal
-  Administrador, App Aplicador, etc.), e se existe um módulo irmão/contraparte
-  relevante.
+  cobre, o que fica fora, onde ele vive na árvore daquele produto, e se
+  existe um módulo irmão/contraparte relevante.
 - **Estrutura de código atual** — tabela com caminho de arquivo, conteúdo e
   status de implementação (ex.: "Implementado", "Implementado como mock",
   "Contrato apenas").
@@ -176,7 +210,7 @@ substituir o código-fonte.
 
 - Escreva como documentação viva: é normal e correto referenciar o estado
   atual de implementação, mockups, TODOs, e issues do Jira que motivaram uma
-  mudança — ao contrário da `business-rule-writer`, aqui isso é esperado, não
+  mudança — ao contrário da `product-doc-writer`, aqui isso é esperado, não
   proibido.
 - Ainda assim, seja objetivo e técnico — narrar o estado de implementação não
   é o mesmo que escrever em tom de changelog solto; cada menção a uma issue
@@ -253,7 +287,7 @@ Ao final, apresente a Rafinha:
 
 - ❌ Não use esta skill para páginas de regra de negócio (RN) — critérios de
   aprovação, quem pode solicitar o quê, condições de negócio isoladas. Isso é
-  sempre `business-rule-writer`.
+  sempre `product-doc-writer`.
 - ❌ Não force a estrutura fixa de RN (Visão Geral / Pré-condições / Passo a
   Passo / Regras Específicas) aqui — documentação de módulo tem forma
   própria, adaptada ao conteúdo real.

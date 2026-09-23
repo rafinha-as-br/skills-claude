@@ -1,6 +1,6 @@
 ---
 name: screen-doc-writer
-description: "Elaborar ou reescrever páginas de documentação de tela/UI no Confluence de Rafinha (ex.: \"Tela - Cadastro de Viagem\", \"Tela - Login\") — campos, componentes, interações, estados e regras de exibição de uma tela de um app Flutter, em tom de estado atual (sem histórico, sem citar issues), sucinta o bastante pra ser entendida por programadores e por usuários finais do sistema. Usar sempre que Rafinha disser \"documenta essa tela\", \"atualiza a doc da tela X\", \"o texto dessa página ficou fraco/desatualizado, revisa\", enviar um link de página de tela do Confluence, apontar uma issue na coluna \"Documentar\" que ele confirme ser de alteração de tela/UI, ou pedir pra tirar print de uma tela e anexar na documentação. Navega a tela de verdade via Claude in Chrome (Chrome real, mesma extensão que a jira-qa-executor usa — não o navegador embutido do Claude Code) pra tirar prints reais e embuti-los na página. Não usar para regra de negócio isolada (business-rule-writer) nem para documentação de módulo/arquitetura/código (module-doc-writer)."
+description: "Elaborar ou reescrever páginas de documentação de tela/UI no Confluence de Rafinha (ex.: \"Tela - Cadastro de Viagem\", \"Tela - Login\") — campos, componentes, interações, estados e regras de exibição de uma tela de um app Flutter, em tom de estado atual (sem histórico, sem citar issues), sucinta o bastante pra ser entendida por programadores e por usuários finais do sistema. Usar sempre que Rafinha disser \"documenta essa tela\", \"atualiza a doc da tela X\", \"o texto dessa página ficou fraco/desatualizado, revisa\", enviar um link de página de tela do Confluence, apontar uma issue na coluna \"Documentar\" que ele confirme ser de alteração de tela/UI, ou pedir pra tirar print de uma tela e anexar na documentação. Navega a tela de verdade via Claude in Chrome (Chrome real, mesma extensão que a jira-qa-executor usa — não o navegador embutido do Claude Code) pra tirar prints reais e embuti-los na página. Não usar para regra de negócio isolada (product-doc-writer) nem para documentação de módulo/arquitetura/código (tech-doc-writer)."
 ---
 
 # Escritor de Documentação de Tela/UI — Confluence de Rafinha
@@ -10,9 +10,9 @@ description: "Elaborar ou reescrever páginas de documentação de tela/UI no Co
 > **Nota de origem:** a estrutura de página abaixo (7 seções) é a mesma
 > desenhada com Rafinha quando esta skill foi planejada pela primeira vez,
 > junto com o pipeline de QA automatizado (`jira-qa-executor` → coluna
-> "Documentar" → esta skill / `business-rule-writer` / `module-doc-writer`).
+> "Documentar" → esta skill / `product-doc-writer` / `tech-doc-writer`).
 > Ele confirmou o **tom de redação** (estado atual, sem histórico — igual à
-> `business-rule-writer`) e a **forma dos prints** (embutidos inline, dentro
+> `product-doc-writer`) e a **forma dos prints** (embutidos inline, dentro
 > da seção a que se referem). A lista de 7 seções em si segue sendo tratada
 > como estrutura de trabalho a validar na primeira execução real — se
 > alguma seção não fizer sentido pra uma tela específica, confirme com ele
@@ -34,14 +34,14 @@ O que torna esta skill diferente das outras duas de documentação:
   texto fraco ou rastros de uma versão antiga da tela, porque foi escrita
   de memória em vez de a partir do que está de fato implementado.
 - **O tom é de estado atual, sem histórico.** Diferente da
-  `module-doc-writer` (que narra mudanças e cita issues como documentação
-  viva), esta skill escreve como a `business-rule-writer`: frases
+  `tech-doc-writer` (que narra mudanças e cita issues como documentação
+  viva), esta skill escreve como a `product-doc-writer`: frases
   afirmativas sobre como a tela funciona **hoje**, nunca "antes fazia X,
   agora faz Y", e nunca uma referência a número de issue no corpo do
   texto. Isso é proposital — a página precisa ser compreensível por um
   usuário final do sistema, que não tem contexto nenhum sobre Jira.
 - **Escopo é comportamento visível da tela, não código.** Nomes de classe,
-  arquivo, provider, endpoint — isso é `module-doc-writer`. Aqui você
+  arquivo, provider, endpoint — isso é `tech-doc-writer`. Aqui você
   descreve o que qualquer pessoa vê e faz ao usar a tela.
 
 Consulte a skill `workflow-development-flow` para dúvidas sobre como a
@@ -83,9 +83,9 @@ porque o texto ficou fraco/desatualizado. Isso inclui:
 
 **Não use** esta skill para:
 - Regra de negócio isolada (quem pode fazer o quê, sob quais condições) →
-  `business-rule-writer`.
+  `product-doc-writer`.
 - Documentação de arquitetura, estrutura de código, ou de um módulo
-  inteiro → `module-doc-writer`.
+  inteiro → `tech-doc-writer`.
 - Se uma issue mexeu em tela **e também** em regra de negócio ou
   arquitetura, isso pode significar mais de uma página a atualizar —
   confirme com Rafinha se é o caso antes de assumir que só a tela precisa
@@ -255,8 +255,8 @@ Nunca pendência do Claude sem ter passado pelo `doc-pendency-resolver`
 antes.
 
 #### Referências
-Sempre a última seção. Links para a RN (`business-rule-writer`) ou
-documentação de módulo (`module-doc-writer`) relacionadas a esta tela, se
+Sempre a última seção. Links para a RN (`product-doc-writer`) ou
+documentação de módulo (`tech-doc-writer`) relacionadas a esta tela, se
 existirem — com 1–2 frases de contexto para cada link, nunca lista solta
 sem explicação.
 
@@ -313,14 +313,14 @@ Rafinha:
 
 ## Regras de redação (tom e estilo)
 
-- Tom **imperativo e descritivo do estado atual** — como a `business-rule-writer`.
+- Tom **imperativo e descritivo do estado atual** — como a `product-doc-writer`.
   Proibido "passou a", "agora a tela faz", "diferente de antes", ou
   qualquer referência a número/chave de issue no corpo do texto.
 - Escreva pensando em dois leitores ao mesmo tempo: um programador que
   precisa saber exatamente o que a tela faz, e um usuário final do sistema
   que só quer entender como usá-la. Isso significa: linguagem direta, sem
   jargão técnico desnecessário (nada de nome de classe, provider, rota de
-  código, endpoint — isso é `module-doc-writer`), mas sem eliminar detalhe
+  código, endpoint — isso é `tech-doc-writer`), mas sem eliminar detalhe
   que muda o comportamento percebido pelo usuário.
 - **Sucinto de verdade**: prefira listas curtas e frases diretas a
   parágrafos longos. Se uma seção está ficando densa, é sinal de que ela
@@ -347,9 +347,9 @@ Rafinha:
   Claude Code como alternativa; pare e avise Rafinha se a extensão não
   estiver disponível.
 - ❌ Nunca escrever em tom narrativo/histórico ou citar número de issue no
-  corpo da página — isso é exclusivo da `module-doc-writer`.
+  corpo da página — isso é exclusivo da `tech-doc-writer`.
 - ❌ Nunca incluir detalhe de código (classe, arquivo, provider, endpoint,
-  rota interna) — isso é sempre `module-doc-writer`; aqui é só
+  rota interna) — isso é sempre `tech-doc-writer`; aqui é só
   comportamento visível.
 - ❌ Nunca marcar algo como pendência sem passar pelo `doc-pendency-resolver`
   primeiro — a única exceção são gaps que Rafinha já confirmou como fato.
@@ -361,7 +361,7 @@ Rafinha:
   conteúdo novo — ao revisar uma página com texto fraco, reescreva o
   trecho afetado por completo em vez de só complementar.
 - ❌ Nunca use esta skill para regra de negócio isolada
-  (`business-rule-writer`) ou documentação de módulo/arquitetura
-  (`module-doc-writer`).
+  (`product-doc-writer`) ou documentação de módulo/arquitetura
+  (`tech-doc-writer`).
 - ❌ Nunca classifique sozinha se uma issue da coluna "Documentar" é sobre
   tela — isso é sempre confirmado por Rafinha antes de você agir.

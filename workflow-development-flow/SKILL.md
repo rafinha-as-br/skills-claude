@@ -12,7 +12,7 @@ QA e documentação de Rafinha e Claude. Ela guarda o vocabulário e o mapa do
 processo que todas as demais skills do pipeline (`jira-issue-creator`,
 `jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`,
 `jira-doc-executor`, `jira-human-validation-executor`,
-`jira-review-executor`, `business-rule-writer`, `module-doc-writer`,
+`jira-review-executor`, `product-doc-writer`, `tech-doc-writer`,
 `screen-doc-writer`, `jira-release-executor`)
 referenciam quando precisam entender em qual etapa uma issue está, o que
 vem antes ou depois, o que uma etapa deve produzir, qual gate se aplica, ou

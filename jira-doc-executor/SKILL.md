@@ -1,6 +1,6 @@
 ---
 name: jira-doc-executor
-description: "Processar, uma a uma, as issues que estão na coluna \"Documentar\" da sprint atual de qualquer projeto Jira que Rafinha indicar. Usar quando ele disser \"roda a coluna Documentar do projeto X\", \"atualiza a documentação das issues aceitas\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. A coluna Documentar fica DEPOIS de \"Análise Final - Rafinha\" e ANTES de \"Análise Final - Claude\": a issue que chega aqui já foi testada no QA e já foi ACEITA por Rafinha, então a documentação descreve o estado aceito, não apenas o testado. IGNORA obrigatoriamente issues com a label `validacao-humana` — a issue do tipo Validação Humana vai direto de \"Análise Final - Rafinha\" para \"Concluído\" e não passa por esta coluna. Em issue do tipo Documentação, a trilha é declarada por label: `rn-doc` vai para business-rule-writer, `module-doc` para module-doc-writer, `screen-doc` para screen-doc-writer — sem label de trilha, pergunta a Rafinha antes de prosseguir e nunca infere pelo conteúdo. Em issue de código (Implementação, Correção, Bug, Refatoração Técnica), mantém a análise de impacto, que pode gerar várias delegações. Esta skill NUNCA escreve conteúdo de página do Confluence diretamente. Qual página é a afetada nunca é adivinhado — sempre confirmado com Rafinha quando não houver um único candidato claro. Depois de delegar, move a issue para \"Análise Final - Claude\"."
+description: "Processar, uma a uma, as issues que estão na coluna \"Documentar\" da sprint atual de qualquer projeto Jira que Rafinha indicar. Usar quando ele disser \"roda a coluna Documentar do projeto X\", \"atualiza a documentação das issues aceitas\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. A coluna Documentar fica DEPOIS de \"Análise Final - Rafinha\" e ANTES de \"Análise Final - Claude\": a issue que chega aqui já foi testada no QA e já foi ACEITA por Rafinha, então a documentação descreve o estado aceito, não apenas o testado. IGNORA obrigatoriamente issues com a label `validacao-humana` — a issue do tipo Validação Humana vai direto de \"Análise Final - Rafinha\" para \"Concluído\" e não passa por esta coluna. Em issue do tipo Documentação, a trilha é declarada por label: `rn-doc` vai para product-doc-writer, `module-doc` para tech-doc-writer, `screen-doc` para screen-doc-writer — sem label de trilha, pergunta a Rafinha antes de prosseguir e nunca infere pelo conteúdo. Em issue de código (Implementação, Correção, Bug, Refatoração Técnica), mantém a análise de impacto, que pode gerar várias delegações. Esta skill NUNCA escreve conteúdo de página do Confluence diretamente. Qual página é a afetada nunca é adivinhado — sempre confirmado com Rafinha quando não houver um único candidato claro. Depois de delegar, move a issue para \"Análise Final - Claude\"."
 ---
 
 # Executor de Documentação — Coluna "Documentar" (Jira genérico)
@@ -21,8 +21,8 @@ dessa mudança, e acionar a skill de escrita certa para atualizar.
 > o QA e a aceitação, é o resultado aceito que vale.
 
 Você **nunca** escreve conteúdo de página do Confluence por conta própria
-dentro desta skill — isso é sempre `business-rule-writer`,
-`module-doc-writer` ou `screen-doc-writer`. Você também nunca implementa
+dentro desta skill — isso é sempre `product-doc-writer`,
+`tech-doc-writer` ou `screen-doc-writer`. Você também nunca implementa
 ou corrige código.
 
 Esta skill recebe issues de código e também issues do tipo Documentação (essas
@@ -97,8 +97,8 @@ análise de impacto:
 
 | Label | Writer |
 |---|---|
-| `rn-doc` | `business-rule-writer` |
-| `module-doc` | `module-doc-writer` |
+| `rn-doc` | `product-doc-writer` |
+| `module-doc` | `tech-doc-writer` |
 | `screen-doc` | `screen-doc-writer` |
 
 Se for do tipo Documentação **sem** label de trilha, **pergunte a Rafinha**
@@ -147,13 +147,13 @@ referências da página-mãe do projeto) relacionados ao que a issue tocou.
 ### 4. Delegar para a skill de escrita correspondente
 
 Para cada página confirmada no passo 3, invoque a skill certa
-(`business-rule-writer`, `module-doc-writer` ou `screen-doc-writer`),
+(`product-doc-writer`, `tech-doc-writer` ou `screen-doc-writer`),
 passando o link da página e o contexto extraído da issue (o que mudou, a
 issue de origem, e o que foi testado). Essas skills conduzem toda a
 escrita, incluindo suas próprias perguntas de esclarecimento via
 `doc-pendency-resolver` — não antecipe nem reescreva essa lógica aqui.
 
-**Delegação para `module-doc-writer`.** Além do contexto padrão acima,
+**Delegação para `tech-doc-writer`.** Além do contexto padrão acima,
 inclua quais arquivos/módulos de código foram tocados pela issue (a partir
 do comentário "Implementação Claude") — isso permite que ela avalie se a
 mudança também exige atualização da pasta `docs/` dentro do código
@@ -201,7 +201,7 @@ validação para cada uma.
 ## O que NÃO fazer
 
 - ❌ Nunca escrever conteúdo de página do Confluence diretamente nesta
-  skill — sempre delegar para `business-rule-writer`, `module-doc-writer`
+  skill — sempre delegar para `product-doc-writer`, `tech-doc-writer`
   ou `screen-doc-writer`.
 - ❌ Nunca escolher ou adivinhar qual página é a afetada quando houver mais
   de um candidato plausível, ou nenhum candidato claro — sempre parar e

@@ -97,7 +97,7 @@ Rafinha" — sua auditoria é a última camada, não a única. O passo 2 desta
 skill — checar se a documentação foi devidamente atualizada — vale para os
 dois casos: no primeiro, é a `jira-doc-executor` quem já deveria ter
 atualizado a página certa; no segundo, é a própria página criada pela
-`business-rule-writer`/`module-doc-writer`/`screen-doc-writer` lá atrás. Se
+`product-doc-writer`/`tech-doc-writer`/`screen-doc-writer` lá atrás. Se
 algo estiver faltando ou divergente em qualquer um dos dois casos, trate
 como qualquer outra pendência (passo 3b) — o caminho de origem não muda o
 critério de revisão.

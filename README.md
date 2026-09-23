@@ -123,8 +123,8 @@ GitHub Release só em versão **final** — nenhum RC polui a aba Releases, e ne
 
 | Skill | O que faz |
 |---|---|
-| [`business-rule-writer`](business-rule-writer/SKILL.md) | Páginas de regra de negócio, estrutura fixa. |
-| [`module-doc-writer`](module-doc-writer/SKILL.md) | Documentação técnica/arquitetural de um módulo. |
+| [`product-doc-writer`](product-doc-writer/SKILL.md) | Páginas de regra de negócio, estrutura fixa. |
+| [`tech-doc-writer`](tech-doc-writer/SKILL.md) | Documentação técnica/arquitetural de um módulo. |
 | [`screen-doc-writer`](screen-doc-writer/SKILL.md) | Documentação de tela/UI, com prints reais via navegação ao vivo. |
 | [`doc-pendency-resolver`](doc-pendency-resolver/SKILL.md) | Resolve pendências e ambiguidades perguntando antes de escrever, nunca assumindo. |
 
