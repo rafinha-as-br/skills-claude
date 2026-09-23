@@ -160,15 +160,30 @@ for para valer em todo lugar, é uma decisão à parte.
 
 ## 4. Pendência imediata criada por esta onda
 
-O rename tornou **duas fichas do Confluence obsoletas no título**:
+O rename deixou **onze páginas do Confluence** com os nomes antigos.
+Levantado por CQL em 2026-09-23 — a estimativa inicial deste documento dizia
+"duas fichas mais o índice", e estava errada.
 
-| Página | ID | Estado |
-| --- | --- | --- |
-| `business-rule-writer` | 44433409 | título e conteúdo com o nome antigo |
-| `module-doc-writer` | 44302341 | título e conteúdo com o nome antigo |
+**Fichas que precisam mudar de título e de conteúdo:**
 
-Mais a página índice **Skills** (44105730), que lista as duas pelos nomes
-antigos.
+| Página | ID |
+| --- | --- |
+| `business-rule-writer` | 44433409 |
+| `module-doc-writer` | 44302341 |
+
+**Páginas que só citam os nomes:**
+
+| Página | ID |
+| --- | --- |
+| Skills (índice) | 44105730 |
+| Claude Skills (home do espaço) | 44204199 |
+| jira-doc-executor | 44204245 |
+| screen-doc-writer | 44204265 |
+| doc-pendency-resolver | 44138502 |
+| jira-issue-executor | 44072962 |
+| Visão geral do fluxo | 44302381 |
+| Vocabulário operacional de labels | 68222978 |
+| Gates operacionais | 68223007 |
 
 Isso é drift criado por mim nesta onda, não drift herdado. Precisa ser
 resolvido antes do corte de vigência do Pacote 3 — ou na Onda 2, ou numa
