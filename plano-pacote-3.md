@@ -12,6 +12,7 @@ documentação"*, lida em 2026-09-23.
 | --- | --- |
 | 2026-09-23 | Versão inicial. D1 decidida por Rafinha. Onda 1 concluída |
 | 2026-09-23 | **D3 decidida por Rafinha — Pendência 4 fechada.** Onda 2 concluída |
+| 2026-09-24 | Onda 3 concluída |
 
 ---
 
@@ -21,7 +22,7 @@ documentação"*, lida em 2026-09-23.
 | --- | --- | --- |
 | 1 | Higiene das skills atuais + rename | ✅ ver §3 |
 | 2 | Taxonomia e templates em `references/` | ✅ ver §6 (mapa pendente) |
-| 3 | Ampliação dos writers (product, tech, screen com modos) | ⬜ |
+| 3 | Ampliação dos writers (product, tech, screen com modos) | ✅ ver §6.1 |
 | 4 | Novas skills: `user-doc-writer`, `workflow-doc-writer` | ⬜ destravada por D3 |
 | 5 | Integração com o fluxo Jira (`jira-doc-executor`) | ⬜ |
 | 6 | Componentes reutilizáveis e piloto | ⬜ |
@@ -310,12 +311,83 @@ por conta própria seria inventar estrutura — exatamente o que a D2 proíbe.
 
 ---
 
+## 6.1. Registro — Onda 3
+
+**Concluída em 2026-09-24.**
+
+### O problema que esta onda resolveu
+
+Onda 2 criou os 12 templates e declarou os três modos da `screen-doc-writer`,
+mas **não conectou nenhum dos dois às skills que de fato escrevem**. O
+`SKILL.md` de cada writer continuava com o "Passo a passo" apontando para a
+trilha original (RN / módulo / a estrutura única de 7 seções de tela),
+porque foi escrito antes de a Onda 2 existir. Templates prontos sem skill
+que os carregue são documentação morta — a ampliação real é ligar os dois.
+
+### `product-doc-writer`
+
+O passo "Escrever a página" estava hardcoded nas quatro seções da RN. Agora
+o passo 1 exige identificar a trilha (RN, requisito, caso de uso, fluxo de
+produto, critérios de aceitação) e carregar o template correspondente antes
+de escrever; o passo 3 segue a estrutura do template, não mais uma lista
+fixa embutida no `SKILL.md`. A estrutura da RN foi **removida** do
+`SKILL.md` e passou a viver só em `references/rn.md` — evita duas versões da
+mesma verdade, mesmo princípio da tabela "o que NÃO vai nesta página".
+
+### `tech-doc-writer`
+
+Mesmo problema, ao contrário: o passo 2 ("Levantar as seções relevantes") é
+o texto certo para módulo, mas **não existia ramificação** para API,
+arquitetura-dev e componente — três trilhas com template fixo que a skill
+ganhou na Onda 2 e nunca aprendeu a rotear. Passo 1 agora
+identifica a trilha e, para as três com template, manda pular o passo 2
+inteiro. O passo 9 (sincronizar `docs/` no código) também não deixava claro
+que é exclusivo de módulo — README, ADR, API, arquitetura e componente não
+têm pasta `docs/` correspondente.
+
+### `screen-doc-writer` — a contradição mais séria da onda
+
+Esta não era uma lacuna, era uma **contradição ativa**. A seção "Os três
+modos" (Onda 2) mandava carregar o template do modo antes de escrever. O
+"Passo a passo" (herdado da primeira versão da skill, anterior aos modos)
+mandava escrever "estas 7 seções" incondicionalmente — sem perguntar o
+modo, sem citar o template. Rodar a skill como estava no `master` teria
+produzido a estrutura antiga de sempre, nunca uma das três novas.
+
+Mais grave: a regra de tom antiga proibia "jargão técnico... nome de classe,
+provider, rota de código, endpoint" **em qualquer página de tela**. Isso
+contradiz o próprio `screen-dev.md`, cujas seções são exatamente rota,
+estado (cubit/provider), chamadas de API e IDs de componente — é o conteúdo
+que o modo `dev` existe para registrar.
+
+Corrigido:
+- Pré-requisito novo (1): confirmar o modo e carregar o template, antes de
+  qualquer outra coisa — inclusive antes de abrir o Chrome.
+- Passo "Escrever a página" reescrito para apontar ao template do modo, sem
+  reproduzir seção nenhuma no `SKILL.md`.
+- Regra de tom dividida por modo: `user` (e a metade de usuário do
+  `hybrid`) proíbe jargão técnico; `dev` (e o bloco técnico do `hybrid`) o
+  exige — é o oposto do que o texto antigo dizia.
+- "Nota de origem" atualizada para deixar explícito que a estrutura de 7
+  seções foi **substituída**, não que ainda é a estrutura de trabalho.
+
+### O que isso ensina sobre a sequência do pacote
+
+A Onda 2 pareceu completa porque os templates existiam e as descrições dos
+três `SKILL.md` já citavam as trilhas novas. Mas descrição (frontmatter) e
+comportamento (Passo a passo) são coisas diferentes, e só a segunda executa.
+Nenhuma trilha nova esteve de fato utilizável até esta onda — vale registrar
+para não repetir o padrão nas Ondas 4/5 (`user-doc-writer`,
+`workflow-doc-writer`, `jira-doc-executor`): criar o template e citá-lo na
+descrição não é o mesmo que ligá-lo ao passo a passo.
+
+---
+
 ## 7. O que falta
 
 | Item | Onda | Bloqueio |
 | --- | --- | --- |
 | Mapa tipo de página → página-mãe → convenção de título | 2 | nenhum — é trabalho de Confluence |
-| Ampliar os writers para as trilhas novas | 3 | nenhum |
 | `user-doc-writer` + `user-guide.md` | 4 | nenhum (D3 destravou) |
 | `workflow-doc-writer` + 3 templates | 4 | Pendência 3 é só *quando*, não *se* |
 | `jira-doc-executor` como orquestradora de conjuntos | 5 | depende de 3 e 4 |

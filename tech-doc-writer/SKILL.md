@@ -119,7 +119,19 @@ entra quando a documentação for de fato versionada no repositório Git.
 
 ## Passo a passo
 
-### 1. Obter o conteúdo bruto e o link da página
+### 1. Identificar a trilha, obter o link da página e carregar o template
+
+Identifique qual das seis trilhas o pedido é (ver seção Escopo): módulo,
+API, arquitetura para devs, componente reutilizável, README ou ADR. Se não
+estiver claro, pergunte — não assuma módulo só por ser a mais comum.
+
+Para **API, arquitetura e componente**, leia o template correspondente em
+`references/` antes de prosseguir — ele traz a estrutura de seções exata, a
+convenção de título e o que não vai na página; a partir daqui, pule o passo
+2 (que é exclusivo de módulo) e vá direto ao passo 3. **Módulo** não tem
+template porque não tem estrutura fixa — siga o passo 2. **README** e
+**ADR** não têm template — declare a lacuna e pergunte (ver Escopo), em vez
+de escrever com uma estrutura inventada.
 
 Se Rafinha enviou um link do Confluence, use o Atlassian Rovo para buscar a
 página (`getConfluencePage` ou equivalente) e verificar se já existe conteúdo
@@ -127,18 +139,22 @@ página (`getConfluencePage` ou equivalente) e verificar se já existe conteúdo
 enviado, pergunte por ele antes de prosseguir — esta skill sempre escreve
 diretamente na página, nunca devolve texto solto no chat como entrega final.
 
-Antes de escrever, vale a pena olhar 1-2 páginas de módulo já existentes no
-espaço **daquele produto** (via `getPagesInConfluenceSpace` ou pelas
-referências da página-mãe) para manter consistência de tom e estrutura com o
-que Rafinha já tem publicado. Cada produto tem o seu espaço e as suas
+Antes de escrever, vale a pena olhar 1-2 páginas já existentes da mesma
+trilha no espaço **daquele produto** (via `getPagesInConfluenceSpace` ou
+pelas referências da página-mãe) para manter consistência de tom e estrutura
+com o que Rafinha já tem publicado. Cada produto tem o seu espaço e as suas
 convenções — não importe o padrão de um produto para outro sem confirmar.
 
-### 2. Levantar as seções relevantes
+### 2. Levantar as seções relevantes (só para a trilha módulo)
 
-Não existe uma lista fixa de seções — decida com base no que o módulo
-realmente precisa comunicar. Os padrões abaixo aparecem com frequência nas
-páginas de módulo do Rafinha e servem de repertório, não de checklist
-obrigatório:
+Esta etapa vale só para **módulo** — a única trilha sem template fixo. Para
+API, arquitetura-dev e componente, a estrutura já veio do template carregado
+no passo 1; pule esta lista.
+
+Para módulo, não existe uma lista fixa de seções — decida com base no que o
+módulo realmente precisa comunicar. Os padrões abaixo aparecem com
+frequência nas páginas de módulo do Rafinha e servem de repertório, não de
+checklist obrigatório:
 
 - **Objetivo e escopo** (praticamente sempre a seção 1) — o que o módulo
   cobre, o que fica fora, onde ele vive na árvore daquele produto, e se
@@ -236,7 +252,11 @@ substituir o código-fonte.
 Crie ou atualize a página no Confluence com o conteúdo formatado (usando
 `createConfluencePage` ou `updateConfluencePage` conforme o caso).
 
-### 9. Sincronizar a documentação em `docs/` no código (quando aplicável)
+### 9. Sincronizar a documentação em `docs/` no código (só na trilha módulo)
+
+Esta etapa é exclusiva da trilha **módulo**. API, arquitetura, componente,
+README e ADR não têm pasta `docs/` correspondente no código — pule esta
+etapa inteira para elas e vá direto ao passo 10.
 
 Além da página do Confluence, cada módulo pode possuir uma pasta `docs/`
 própria dentro do código:
@@ -287,7 +307,8 @@ Ao final, apresente a Rafinha:
 
 ```
 ✅ Página [criada/atualizada]: [link da página]
-📋 Seções escritas: [lista das seções, já que aqui não são fixas]
+📋 Trilha: [módulo / API / arquitetura para devs / componente reutilizável]
+📋 Seções escritas: [lista das seções — livres para módulo, do template para as demais]
 ⚠️ Pendências sinalizadas (via doc-pendency-resolver): [quantidade e resumo, ou "nenhuma"]
 📝 Gaps/observações documentados (já confirmados por Rafinha, sem pergunta): [lista ou "nenhum"]
 🔗 Links para outras páginas: [lista ou "nenhum"]

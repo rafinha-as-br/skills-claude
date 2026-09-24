@@ -65,9 +65,11 @@ Modelo padrão: Sonnet
 Effort padrão: Medium
 
 Escalonar effort quando:
-- a regra tem muitas exceções ou condições interdependentes difíceis de
+- a RN tem muitas exceções ou condições interdependentes difíceis de
   organizar com clareza na estrutura fixa (Visão Geral, Pré-condições,
-  Passo a Passo, Regras Específicas).
+  Passo a Passo, Regras Específicas);
+- o fluxo de produto tem muitos atores ou pontos de decisão para o diagrama
+  ficar claro em texto/Mermaid.
 
 Escalonar para Opus quando:
 - não se aplica normalmente — documentação de produto é síntese de conteúdo
@@ -93,8 +95,8 @@ Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
   pendências").
 - ❌ **Não improvisar estrutura para uma trilha sem template.** Declare a
   lacuna e pergunte.
-- ❌ Não resumir demais as Regras Específicas — cada uma deve ser enumerada
-  e detalhada individualmente.
+- ❌ Na trilha RN, não resumir demais as Regras Específicas do Negócio —
+  cada uma deve ser enumerada e detalhada individualmente.
 - ❌ Não centralizar avisos de pendência em um bloco único no fim da página —
   cada pendência fica posicionada exatamente na seção a que se refere.
 - ❌ Não presumir conhecimento implícito do leitor sobre o negócio.
@@ -107,7 +109,15 @@ Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
 
 ## Passo a passo
 
-### 1. Obter o conteúdo bruto e o link da página
+### 1. Identificar a trilha, obter o link da página e carregar o template
+
+Identifique qual das cinco trilhas o pedido é (ver seção Escopo): RN,
+requisito, caso de uso, fluxo de produto ou critérios de aceitação. Se não
+estiver claro pelo pedido, pergunte — não assuma RN só por ser a mais comum.
+
+Com a trilha confirmada, **leia o template correspondente em `references/`**
+antes de prosseguir — ele traz a estrutura de seções exata, a convenção de
+título, e o que não vai naquela página.
 
 Se Rafinha enviou um link do Confluence, use o Atlassian Rovo para buscar a
 página (`getConfluencePage` ou equivalente) e verificar se já existe conteúdo
@@ -120,8 +130,7 @@ devolve texto solto no chat como entrega final.
 ### 2. Extrair e organizar as informações
 
 A partir da descrição de Rafinha, identifique o conteúdo correspondente a
-cada uma das quatro seções obrigatórias (ver estrutura abaixo). Separe
-mentalmente:
+cada seção do template carregado no passo 1. Separe mentalmente:
 - O que foi dito com clareza → vai direto para a seção correspondente.
 - O que Rafinha marcou como incerto, "a verificar", ou que ficou ambíguo →
   precisa passar pela skill `doc-pendency-resolver` antes de virar conteúdo
@@ -129,32 +138,22 @@ mentalmente:
 - Regras específicas que remetem a outra regra de negócio já documentada →
   precisam de link + contextualização breve (ver seção 4).
 
-### 3. Escrever a página seguindo a estrutura fixa
+### 3. Escrever a página seguindo a estrutura do template
 
-A página de **regra de negócio** sempre segue esta ordem e estas quatro
-seções:
+A ordem e os títulos das seções são os do template carregado no passo 1 —
+nunca improvise uma ordem que pareça mais natural. Preencha cada seção com o
+conteúdo correspondente; uma seção do template sem conteúdo correspondente
+na descrição de Rafinha é candidata a pendência (passo 4), não algo para
+omitir em silêncio.
 
-#### Visão Geral
-Resumo objetivo do que é a regra e para que serve. 2–4 frases, sem
-detalhamento de passos ou exceções — isso vem nas seções seguintes.
-
-#### Pré-condições
-Lista de todas as condições que devem existir para que a regra seja
-aplicável/executável. Uma condição por item, redigida de forma verificável
-(ex.: "O cliente deve possuir cadastro ativo no sistema").
-
-#### Passo a Passo da Regra de Negócio
-Sequência numerada e detalhada de como a regra se processa do início ao
-fim. Cada passo deve ser uma ação ou verificação clara — evite passos vagos
-como "processar solicitação" sem explicar o que isso envolve.
-
-#### Regras Específicas do Negócio
-Lista **enumerada** de regras específicas que compõem ou detalham a regra
-principal. Para cada item:
-- Se for autocontido → descreva a regra específica por completo.
-- Se depender de/relacionar-se com outra regra de negócio já documentada →
-  insira o link da página relacionada e acrescente 1–2 frases de
-  contextualização (nunca repita o conteúdo da outra página).
+A trilha **RN** é a mais usada desta skill: suas quatro seções (Visão Geral,
+Pré-condições, Passo a Passo da Regra de Negócio, Regras Específicas do
+Negócio) e o tom imperativo/estado-atual vivem em `references/rn.md` — a
+estrutura não é repetida aqui, para não existirem duas versões da mesma
+verdade. Na seção "Regras Específicas do Negócio", cada item que depender
+de/relacionar-se com outra regra já documentada leva o link da página
+relacionada mais 1–2 frases de contextualização — nunca repetindo o
+conteúdo da outra página.
 
 ### 4. Tratamento de pendências
 
@@ -195,10 +194,10 @@ apresente a Rafinha:
 
 ```
 ✅ Página [criada/atualizada]: [link da página]
-📋 Trilha: regra de negócio (rn-doc)
-📋 Seções preenchidas: Visão Geral, Pré-condições, Passo a Passo, Regras Específicas
+📋 Trilha: [RN / requisito / caso de uso / fluxo de produto / critérios de aceitação]
+📋 Seções preenchidas: [lista, conforme o template usado]
 ⚠️ Pendências sinalizadas: [quantidade e resumo breve de cada uma, ou "nenhuma"]
-🔗 Links para outras regras: [lista ou "nenhum"]
+🔗 Links para outras páginas: [lista ou "nenhum"]
 ```
 
 ---
