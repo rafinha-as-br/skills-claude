@@ -1,6 +1,6 @@
 ---
 name: "doc-pendency-resolver"
-description: "Define como lidar com qualquer ponto de informação incerto, ambíguo, incompleto, ou marcado como \"a verificar\" ao escrever ou editar documentação do Confluence do Rafinha (páginas de regra de negócio, documentação de módulo, ou qualquer outra doc formal). Use esta skill SEMPRE que, executando qualquer skill de documentação (product-doc-writer, tech-doc-writer, screen-doc-writer, ou outra que venha a existir) ou qualquer tarefa de escrita de doc, você estiver prestes a marcar algo como \"pendência\" sem antes ter perguntado a Rafinha — isso nunca deve acontecer sem passar por aqui primeiro. Também use quando Rafinha pedir para criar/atualizar uma página e a descrição dele deixar lacunas, contradições, ou decisões não especificadas. Esta skill não escreve a página em si — ela resolve, via perguntas objetivas no chat, o que vai para dentro dela quando há incerteza."
+description: "Define como lidar com qualquer ponto de informação incerto, ambíguo, incompleto, ou marcado como \"a verificar\" ao escrever ou editar documentação do Confluence do Rafinha (páginas de regra de negócio, documentação de módulo, ou qualquer outra doc formal). Use esta skill SEMPRE que, executando qualquer skill de documentação (product-doc-writer, tech-doc-writer, screen-doc-writer, user-doc-writer, workflow-doc-writer, ou outra que venha a existir) ou qualquer tarefa de escrita de doc, você estiver prestes a marcar algo como \"pendência\" sem antes ter perguntado a Rafinha — isso nunca deve acontecer sem passar por aqui primeiro. Também use quando Rafinha pedir para criar/atualizar uma página e a descrição dele deixar lacunas, contradições, ou decisões não especificadas. Esta skill não escreve a página em si — ela resolve, via perguntas objetivas no chat, o que vai para dentro dela quando há incerteza."
 ---
 
 # Resolvedor de Pendências de Documentação
@@ -16,9 +16,11 @@ Skills anfitriãs hoje:
 
 | Skill | Família |
 |---|---|
-| `product-doc-writer` | Documentação de produto — regra de negócio, requisito, caso de uso |
-| `tech-doc-writer` | Documentação técnica — módulo, API, componente, README, ADR |
-| `screen-doc-writer` | Documentação de tela — campos, componentes, estados |
+| `product-doc-writer` | Documentação de produto — regra de negócio, requisito, caso de uso, fluxo de produto, critérios de aceitação |
+| `tech-doc-writer` | Documentação técnica — módulo, API, arquitetura, componente, README, ADR |
+| `screen-doc-writer` | Documentação de tela — campos, componentes, estados, nos três modos (`dev`/`user`/`hybrid`) |
+| `user-doc-writer` | Documentação de usuário final — guia de tarefa que atravessa telas |
+| `workflow-doc-writer` | Documentação do próprio workflow — ficha de skill, página de pipeline, registro de release |
 
 Qualquer skill futura que escreva páginas formais no Confluence de Rafinha
 também passa por aqui. **Esta camada é transversal** — ela não pertence a

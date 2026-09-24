@@ -13,6 +13,7 @@ documentação"*, lida em 2026-09-23.
 | 2026-09-23 | Versão inicial. D1 decidida por Rafinha. Onda 1 concluída |
 | 2026-09-23 | **D3 decidida por Rafinha — Pendência 4 fechada.** Onda 2 concluída |
 | 2026-09-24 | Onda 3 concluída |
+| 2026-09-24 | **D5 e D6 decididas durante a implementação.** Onda 4 concluída |
 
 ---
 
@@ -23,7 +24,7 @@ documentação"*, lida em 2026-09-23.
 | 1 | Higiene das skills atuais + rename | ✅ ver §3 |
 | 2 | Taxonomia e templates em `references/` | ✅ ver §6 (mapa pendente) |
 | 3 | Ampliação dos writers (product, tech, screen com modos) | ✅ ver §6.1 |
-| 4 | Novas skills: `user-doc-writer`, `workflow-doc-writer` | ⬜ destravada por D3 |
+| 4 | Novas skills: `user-doc-writer`, `workflow-doc-writer` | ✅ ver §6.2 |
 | 5 | Integração com o fluxo Jira (`jira-doc-executor`) | ⬜ |
 | 6 | Componentes reutilizáveis e piloto | ⬜ |
 
@@ -162,6 +163,70 @@ A página de módulo diz quais cubits existem no módulo; não detalha cada tela
 **conjunto de delegações por job**, decidindo quais das skills se aplicam e
 declarando quais pulou e por quê — mesmo princípio do proibido fallback
 silencioso. **A Onda 5 fica maior do que a página do Notion previa.**
+
+### D5 — `user-doc-writer` não navega a UI; lê o que a `screen-doc-writer` já publicou
+
+**Decidida em 2026-09-24, durante a Onda 4.**
+
+A página do Notion declara a fonte da verdade do `user-doc-writer` como "o
+produto funcionando" — o mesmo termo usado para a `screen-doc-writer`, que
+navega a UI ao vivo via Claude in Chrome. Ela não diz, no entanto, **como**
+o `user-doc-writer` deveria confirmar esse "produto funcionando": navegando
+ele mesmo, ou se apoiando no que outra skill já observou.
+
+**Decisão:** o `user-doc-writer` não replica a navegação ao vivo. Ele lê as
+páginas `screen-doc:user` já publicadas (a fonte primária de campo/botão/
+mensagem) e linka em vez de repetir; quando uma tela envolvida não tem
+página publicada, isso é uma **dependência a declarar**, não algo para
+observar por conta própria.
+
+**Motivo:** navegar de novo seria duplicar um trabalho que a
+`screen-doc-writer` já faz — a UI já foi observada por quem tem esse
+trabalho. É a mesma regra "linka em vez de repetir" da D3, aplicada à fonte
+primária em vez de ao conteúdo final. Duplicar a máquina de pré-requisitos
+inteira da `screen-doc-writer` (Chrome, ambiente local, estado limpo) numa
+segunda skill também violaria a lógica de "uma skill por fonte da verdade" —
+a fonte primária de UI é uma só.
+
+**Consequência prática:** se Rafinha pedir um guia para uma tarefa cujas
+telas ainda não têm doc de tela publicada, a ordem natural do trabalho
+composto é a `screen-doc-writer` rodar primeiro. O `user-doc-writer` declara
+essa dependência em vez de decidir sozinho qual vem primeiro.
+
+### D6 — mapeamento dos três templates da `workflow-doc-writer`, e quem vence no drift
+
+**Decidida em 2026-09-24, durante a Onda 4.**
+
+A página do Notion prevê só três templates (`workflow-page.md`,
+`skill-page.md`, `release-doc.md`) para uma lista maior de páginas a cobrir:
+ficha de skill, página de fluxo, página de labels, página de tipos de
+ticket, controle por produto, CI/CD, release. Coube à implementação decidir
+o mapeamento — sem inventar um quarto template.
+
+**Decisão:**
+| O que a página documenta | Template |
+| --- | --- |
+| Uma skill específica | `skill-page.md` |
+| Uma distribuição específica (release) | `release-doc.md` |
+| Tudo o mais sobre o pipeline em si (branches, gates, hierarquia, labels, tipos de ticket, controle por produto, CI/CD) | `workflow-page.md` |
+
+`workflow-page.md` é deliberadamente um template guarda-chuva com seções
+livres (mesma lógica do `modulo.md` da `tech-doc-writer`) — os assuntos que
+ele cobre são estruturalmente diferentes entre si (uma tabela de labels e
+uma lista de gates não têm a mesma forma), e forçar uma estrutura fixa
+comum produziria seções vazias com mais frequência do que conteúdo real.
+
+**Segunda decisão, sobre a checagem de drift** (papel que o Notion atribuiu
+à `workflow-doc-writer`, mas não detalhou): quando o `SKILL.md` real e a
+ficha do Confluence divergem, **o `SKILL.md` vence sempre**, e a correção da
+ficha não passa por `doc-pendency-resolver` — não é uma incerteza da skill,
+é um fato verificável por leitura direta do arquivo. `doc-pendency-resolver`
+só entra quando o próprio `SKILL.md` for ambíguo o bastante para não dar
+para determinar o comportamento real. **Motivo:** o `SKILL.md` é o que
+executa; a ficha só documenta. Perguntar "qual dos dois está certo" toda vez
+que os dois divergem tornaria a checagem de drift inútil na prática — o
+propósito dela é justamente parar de depender de alguém notar a divergência
+manualmente.
 
 ---
 
@@ -383,17 +448,74 @@ descrição não é o mesmo que ligá-lo ao passo a passo.
 
 ---
 
+## 6.2. Registro — Onda 4
+
+**Concluída em 2026-09-24.**
+
+### `user-doc-writer`, skill nova
+
+Uma trilha, um template (`references/user-guide.md`), granularidade tarefa
+(D3). Ver D5 para a decisão de não navegar a UI diretamente. "Manual" e
+"FAQ solta" — dois dos sete itens que o Notion listou como cobertura desta
+skill — não viraram templates próprios; ficaram declarados em Escopo como
+casos sem estrutura própria (manual é página-índice nativa do Confluence,
+FAQ solta é candidata a pergunta via `doc-pendency-resolver`), seguindo D2.
+
+### `workflow-doc-writer`, skill nova
+
+Três templates (`skill-page.md`, `workflow-page.md`, `release-doc.md`) — ver
+D6 para o mapeamento e para a regra de autoridade no drift. Esta é a única
+skill de documentação cuja fonte da verdade primária é outro artefato do
+próprio workflow (o `SKILL.md` de outra skill), não o produto sendo
+construído — por isso ela ganhou uma etapa que nenhuma outra tem: checagem
+de drift antes de escrever a ficha.
+
+### `doc-pendency-resolver` e `README.md` atualizados
+
+A tabela de skills anfitriãs do `doc-pendency-resolver` agora lista as
+cinco — item que o Notion já previa em "Pontos de implementação já
+identificados", mas que só podia ser feito depois que as duas skills
+existissem. O `README.md` ganhou as duas linhas novas na tabela de
+Documentação, e as descrições de `product-doc-writer`/`tech-doc-writer`/
+`screen-doc-writer` ali foram corrigidas — ainda diziam "regra de negócio,
+estrutura fixa" e "de um módulo", desatualizadas desde a Onda 2.
+
+### Um drift que não é desta onda, mas foi corrigido de passagem
+
+O banner "Estado do contrato" no topo do `README.md` ainda dizia que o
+Pacote 2 estava `preparado` (não mergeado) e que "o merge desta branch é o
+corte de vigência" — mas o Pacote 2 **já foi mergeado em `master`** antes
+desta branch existir (commit `75c4a69`). Corrigido para refletir os dois
+pacotes em vigência, sem afirmar que a configuração de CI/branch protection
+manual (Fase 8 do Pacote 2) já rodou — isso continua sendo confirmado por
+Rafinha, não assumido.
+
+### O que a Onda 4 deliberadamente não fez
+
+- Não tocou em `jira-doc-executor` — ela continua sem saber que as duas
+  skills novas existem. É Onda 5, e a lição da Onda 3 vale de novo: criar a
+  skill e citá-la em outro lugar não é o mesmo que ligá-la ao fluxo que a
+  aciona.
+- Não fechou a Pendência 3 do Notion (prioridade da `workflow-doc-writer`
+  em relação à janela de migração) — a skill foi criada nesta onda porque é
+  a ordem que o próprio Notion sugere ("Onda 4 — novas skills"), não porque
+  a pendência foi resolvida.
+- Não escreveu nenhuma página de Confluence com os templates novos — isso é
+  trabalho de execução real (ex.: rodar `workflow-doc-writer` numa skill de
+  verdade), não parte da implementação do pacote.
+
+---
+
 ## 7. O que falta
 
 | Item | Onda | Bloqueio |
 | --- | --- | --- |
 | Mapa tipo de página → página-mãe → convenção de título | 2 | nenhum — é trabalho de Confluence |
-| `user-doc-writer` + `user-guide.md` | 4 | nenhum (D3 destravou) |
-| `workflow-doc-writer` + 3 templates | 4 | Pendência 3 é só *quando*, não *se* |
-| `jira-doc-executor` como orquestradora de conjuntos | 5 | depende de 3 e 4 |
-| Componentes reutilizáveis e piloto | 6 | depende do template, que já existe |
-| 11 páginas do Confluence com nome antigo | — | nenhum |
-| Fichas novas no Confluence para as skills novas | — | depende da Onda 4 |
+| `jira-doc-executor` como orquestradora de conjuntos (Trilhas A e B) | 5 | nenhum |
+| Ligar `jira-release-executor` ao `release-doc.md` da `workflow-doc-writer` | 5 (ou avulso) | nenhum — descoberto na Onda 4, não estava no `plano-pacote-2.md` nem no Notion |
+| Componentes reutilizáveis e piloto | 6 | nenhum — o template já existe |
+| 11 páginas do Confluence com nome antigo (drift da Onda 1) | — | nenhum |
+| Fichas novas no Confluence para `user-doc-writer` e `workflow-doc-writer` | — | nenhum |
 | Corte de vigência (merge) | — | tudo acima |
 
 A convenção de título de cada tipo de página **já está dentro do template**
