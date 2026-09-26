@@ -148,7 +148,8 @@ Para cada issue, revise:
   pendência (passo 3b): é fallback silencioso na documentação. Confira
   também se o motivo se sustenta — ex.: issue que mudou uma tela com
   `user-doc-writer` marcado "não aplica" enquanto existe um guia que passa
-  por aquela tela.
+  por aquela tela. Issue documentada antes do Pacote 3 não tem como cumprir
+  isso — registre a observação, mas não reprove por isso.
 - **O estado da Validação Humana vinculada**, quando existir. Localize-a
   pelos links `Relates` da issue (ela é a issue relacionada com a label/
   categoria `validacao-humana` — nunca a identifique pelo tipo de issue) e

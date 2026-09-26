@@ -14,6 +14,7 @@ documentação"*, lida em 2026-09-23.
 | 2026-09-23 | **D3 decidida por Rafinha — Pendência 4 fechada.** Onda 2 concluída |
 | 2026-09-24 | Onda 3 concluída |
 | 2026-09-24 | **D5 e D6 decididas durante a implementação.** Onda 4 concluída |
+| 2026-09-26 | Ondas 5 e 6 (exceto o piloto, bloqueado por sigla), correção da D6, Confluence. **Corte de vigência** |
 
 ---
 
@@ -22,11 +23,11 @@ documentação"*, lida em 2026-09-23.
 | Onda | O quê | Status |
 | --- | --- | --- |
 | 1 | Higiene das skills atuais + rename | ✅ ver §3 |
-| 2 | Taxonomia e templates em `references/` | ✅ ver §6 (mapa pendente) |
+| 2 | Taxonomia e templates em `references/` | ✅ ver §6 e §6.3 (mapa) |
 | 3 | Ampliação dos writers (product, tech, screen com modos) | ✅ ver §6.1 |
 | 4 | Novas skills: `user-doc-writer`, `workflow-doc-writer` | ✅ ver §6.2 |
-| 5 | Integração com o fluxo Jira (`jira-doc-executor`) | ⬜ |
-| 6 | Componentes reutilizáveis e piloto | ⬜ |
+| 5 | Integração com o fluxo Jira (`jira-doc-executor`) | ✅ ver §6.3 |
+| 6 | Componentes reutilizáveis e piloto | ✅ exceto o piloto — ⛔ bloqueado por sigla, ver §6.3 |
 
 ---
 
@@ -207,7 +208,7 @@ o mapeamento — sem inventar um quarto template.
 | O que a página documenta | Template |
 | --- | --- |
 | Uma skill específica | `skill-page.md` |
-| Uma distribuição específica (release) | `release-doc.md` |
+| A documentação de release de um projeto — a árvore `CI/CD - Workflow Rafinha-Claude` (corrigido em 2026-09-26, ver §6.3) | `release-doc.md` |
 | Tudo o mais sobre o pipeline em si (branches, gates, hierarquia, labels, tipos de ticket, controle por produto, CI/CD) | `workflow-page.md` |
 
 `workflow-page.md` é deliberadamente um template guarda-chuva com seções
@@ -506,17 +507,124 @@ Rafinha, não assumido.
 
 ---
 
-## 7. O que falta
+## 6.3. Registro — Ondas 5 e 6, Confluence e corte
 
-| Item | Onda | Bloqueio |
+**Concluído em 2026-09-26**, exceto o piloto do catálogo (ver "Bloqueado").
+
+### Onda 5 — `jira-doc-executor` orquestra conjuntos
+
+A skill foi reescrita em cima da D3. Trilha A: a label documental declara o
+writer. Trilha B: análise de impacto **writer por writer**, com um plano
+impresso antes de delegar, em que cada um dos cinco sai como "aplica" ou
+"não aplica" **com motivo** — writer pulado sem motivo é fallback
+silencioso. A delegação tem ordem (produto → técnico → tela → usuário →
+workflow), porque o guia de usuário linka páginas de tela que precisam
+existir antes (D5). `qa-doc` não tem writer: a skill para e reporta, nunca
+delega por aproximação.
+
+A tabela label → writer passou a morar **num lugar só**, a
+`workflow-development-flow` §3.3. Antes, `jira-issue-executor` e
+`jira-doc-executor` tinham cópias próprias com três labels — duas versões da
+mesma verdade, exatamente o que o pacote inteiro tenta evitar. A
+`jira-review-executor` ganhou o ponto que fecha o ciclo: audita se o
+comentário "Documentação Claude" declara os cinco writers.
+
+### Correção da D6 — um erro meu na Onda 4
+
+A Onda 4 desenhou o `release-doc.md` como "página por release", com notas
+de release escritas em texto corrido e tabela de componentes. Isso
+contradiz o contrato de release que já estava em vigor
+(`release-lifecycle.md` §13: o Confluence **copia** o Manifest, nunca
+reescreve; §19: a documentação de release do projeto é a árvore
+`CI/CD - Workflow Rafinha-Claude`). Um writer que produzisse aquele
+template quebraria o contrato na primeira distribuição.
+
+Corrigido: `release-doc.md` cobre a árvore exigida pelo G0, e a entrada de
+cada distribuição final é cópia literal do `release-manifest.yml`. A
+`jira-release-executor` passou a delegar à `workflow-doc-writer` nos dois
+pontos — G0 (árvore ausente) e G9 (registro) — e nenhum dos dois gates fecha
+pela delegação em si: o G0 é relido, e o G9 espera o resumo do writer.
+
+### Utilitário compartilhado de prints
+
+O Notion listava "criar ou revisar utilitário compartilhado para anexo de
+prints" em *Pontos de implementação*, e eu tinha deixado esse item fora da
+lista de pendências. Virou `screen-doc-writer/scripts/anexar-print.sh`,
+usado também pela `tech-doc-writer` no catálogo. Usa `PUT` em vez do `POST`
+que a skill documentava: `POST` falha quando o anexo já existe, o que
+quebrava toda revisão de página de tela no primeiro print repetido. As
+validações de argumento foram testadas; o upload em si não, porque as
+credenciais não estavam no ambiente da sessão.
+
+### Onda 2, remanescente — mapa de documentação, e templates que eu inventei
+
+O mapa tipo de página → página-mãe → título foi montado na página
+*Controle de workflow por produto* a partir das **árvores reais** do Geoprag
+e do Compass. Ler as árvores revelou três convenções de template que eu
+tinha inventado na Onda 2 sem olhar as páginas existentes:
+
+| Template | Eu tinha escrito | As páginas reais usam | Corrigido para |
+| --- | --- | --- | --- |
+| `rn.md` | `RN - <nome>` | `Regra de Negócio - <nome>` | a forma real |
+| `modulo.md` | `Módulo - <nome>` | `Módulo - <nome> (<app>)` | a forma real |
+| `componente-reutilizavel.md` | uma página por componente | uma seção por componente, num catálogo por produto (definido pela página oficial do CS1) | seção do catálogo |
+
+É a mesma lição da D2, aplicada a mim: convenção inventada vira precedente.
+Tela e guia de usuário ficaram **"a definir"** no mapa — não existe nenhuma
+página desses tipos nos produtos, e escolher a página-mãe seria inventar
+estrutura. O writer pergunta até Rafinha definir. O título do catálogo,
+`Componentes reutilizáveis - <produto>`, é proposta minha, já que a página
+oficial diz onde o catálogo vive mas não como ele se chama.
+
+### Onda 6 — o que foi feito
+
+- `flutter-development-standards` §14: a entrada do catálogo é escrita pela
+  `tech-doc-writer`; quem cria o componente registra o ID no docstring e
+  sinaliza. (O resto da §14 já tinha vindo no Pacote 1.)
+- `componente-reutilizavel.md`: para quando a sigla do produto está
+  pendente.
+- Página *Componentes reutilizáveis por produto*: a pendência "criar a
+  `tech-doc-writer` com o template de catálogo" foi fechada.
+
+### Confluence
+
+- As **11 páginas** com nome antigo, levantadas na Onda 1, atualizadas. As
+  fichas de `product-doc-writer` e `tech-doc-writer` mudaram de título
+  (mesmo ID de página, histórico preservado).
+- Fichas novas: `user-doc-writer` (73302017) e `workflow-doc-writer`
+  (73105447).
+- As sete fichas de documentação foram reescritas no template
+  `skill-page.md`, com a seção "Última verificação de drift".
+- Fichas afetadas pela Onda 5: `jira-review-executor`,
+  `jira-release-executor`, `workflow-development-flow`,
+  `flutter-development-standards`, e a página *Release & Versionamento*.
+- Três drifts de outros pacotes corrigidos de passagem: a home dizia "oito
+  gates" (são onze desde o Pacote 2); o vocabulário de labels dizia que o
+  Pacote 2 ainda não estava em vigência; e, ao escrever a ficha do
+  `jira-review-executor`, acrescentei a tolerância para issues documentadas
+  antes do Pacote 3 — e levei a mesma regra para o `SKILL.md`, para a ficha
+  não dizer mais que o código.
+
+---
+
+## 7. O que ficou de fora
+
+### Bloqueado
+
+| Item | Por quê | Quem destrava |
 | --- | --- | --- |
-| Mapa tipo de página → página-mãe → convenção de título | 2 | nenhum — é trabalho de Confluence |
-| `jira-doc-executor` como orquestradora de conjuntos (Trilhas A e B) | 5 | nenhum |
-| Ligar `jira-release-executor` ao `release-doc.md` da `workflow-doc-writer` | 5 (ou avulso) | nenhum — descoberto na Onda 4, não estava no `plano-pacote-2.md` nem no Notion |
-| Componentes reutilizáveis e piloto | 6 | nenhum — o template já existe |
-| 11 páginas do Confluence com nome antigo (drift da Onda 1) | — | nenhum |
-| Fichas novas no Confluence para `user-doc-writer` e `workflow-doc-writer` | — | nenhum |
-| Corte de vigência (merge) | — | tudo acima |
+| **Piloto do catálogo de componentes** (Onda 6) | As siglas oficiais dos quatro produtos estão pendentes, e o produto piloto não foi escolhido. Sigla é decisão manual — nunca inferida | Rafinha: definir a sigla do produto piloto na página *Controle de workflow por produto* |
+| Validar se `component-doc` dentro da `tech-doc-writer` basta | Só dá para avaliar rodando o piloto | depende do piloto |
 
-A convenção de título de cada tipo de página **já está dentro do template**
-— o mapa do Confluence passa a ser o índice disso, não a fonte.
+### Pendências de decisão (não bloqueiam o uso)
+
+| Item | Onde está registrado |
+| --- | --- |
+| Página-mãe de Tela e de Guia de usuário no Geoprag e no Compass | *Controle de workflow por produto*, pendência 6 |
+| Mapa de documentação do Encryption Playground e do Cluster Playground | idem, pendência 7 |
+| Destino de `qa-doc` (Pendência 2 do Notion) | matriz de labels; a skill para |
+| Labels próprias para requisito, caso de uso, fluxo e critérios — hoje roteiam por `rn-doc` | `workflow-development-flow` §3.3 |
+| Arquivar a página duplicada de Versionamento na árvore de CI/CD do Compass | *Controle de workflow por produto*, nota do Compass |
+
+A Pendência 3 do Notion (quando criar a `workflow-doc-writer`) perdeu o
+objeto: ela foi criada na Onda 4 e já está em uso.

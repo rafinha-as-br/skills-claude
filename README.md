@@ -20,15 +20,22 @@ flowchart LR
     G --> H["Concluído"]
 ```
 
-> **Pacotes 1 e 2 em vigência em `master`.** Design, labels e gates
-> (Pacote 1) e o modelo de branches por épico com release controlada
-> (Pacote 2) já valem — o Jira já foi configurado para os dois. A
+> **Pacotes 1, 2 e 3 em vigência em `master`.** Design, labels e gates
+> (Pacote 1), o modelo de branches por épico com release controlada
+> (Pacote 2) e as skills de documentação (Pacote 3) já valem. A
 > configuração de CI e branch protection para `epic/**` e `release/current`
 > nos repositórios de produto é manual, feita por Rafinha em sessão
-> separada — confirme com ele antes de assumir que já rodou.
->
-> O **Pacote 3** (skills de documentação) está em implementação nesta
-> branch: ver `plano-pacote-3.md` para o estado de cada onda.
+> separada — confirme com ele antes de assumir que já rodou. O piloto do
+> catálogo de componentes espera a sigla oficial do produto (ver
+> `plano-pacote-3.md` §7).
+
+**Documentar é trabalho composto.** São cinco writers, um por fonte da
+verdade — produto, código, tela, usuário final e o próprio workflow. Numa
+issue de código, a `jira-doc-executor` não escolhe **um** writer: monta o
+conjunto dos que se aplicam, imprime o plano, e declara com motivo os que
+pulou. Documentar uma tela atualiza a página do módulo, escreve a da tela e
+entra no guia de usuário que passa por ela — cada writer escreve só o que a
+sua fonte entrega, e linka em vez de repetir.
 
 **Design de Produto entra como coluna.** `Design de produto - Rafinha` é
 etapa **manual** — nenhuma skill a varre. A issue só passa por ela quando tem
