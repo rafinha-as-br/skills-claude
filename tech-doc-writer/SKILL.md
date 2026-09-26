@@ -1,28 +1,33 @@
 ---
-name: "module-doc-writer"
-description: "Elaborar ou atualizar páginas de documentação de módulo no Confluence do Rafael (ex.: \"Módulo - Gerenciamento de Administradores\", \"Módulo - Autenticação\") — documentação técnica/arquitetural detalhada de uma feature ou área do Geoprag, com estrutura livre (objetivo/escopo, estrutura de código, fluxos, tabelas de status, comparações), diferente da estrutura fixa de 4 seções da business-rule-writer. Usar sempre que Rafinha disser \"documenta esse módulo\", \"cria a página do módulo X\", \"atualiza a doc do módulo Y\", enviar um link de página de módulo do Confluence, ou pedir para descrever a arquitetura/estrutura/estado atual de uma feature do Geoprag. Não usar para páginas de regra de negócio (RN) — essas são sempre business-rule-writer."
+name: "tech-doc-writer"
+description: "Escritor da documentação TÉCNICA no Confluence de Rafinha — a fonte da verdade dela é o código, o repositório, a API e a arquitetura real, nunca a decisão de produto. Serve QUALQUER produto de Rafinha (Compass System, GeoPrag, ou outro), nunca é específica de um só. A trilha principal é a de MÓDULO (`module-doc`): documentação técnica/arquitetural de uma feature ou área, com estrutura livre (objetivo/escopo, estrutura de código, fluxos, tabelas de status, comparações) — diferente da estrutura fixa de 4 seções da product-doc-writer. Usar sempre que Rafinha disser \"documenta esse módulo\", \"cria a página do módulo X\", \"atualiza a doc do módulo Y\", enviar um link de página de módulo do Confluence, ou pedir para descrever a arquitetura/estrutura/estado atual de uma feature. Quando roda com acesso real ao repositório, também sincroniza a pasta `docs/` do módulo no código. Cada trilha tem o seu TEMPLATE em `references/`: `modulo.md`, `api.md` (api-doc), `arquitetura-dev.md` (architecture-doc) e `componente-reutilizavel.md` (component-doc). SEMPRE leia o template antes de escrever — ele traz a estrutura, a convenção de título e a tabela do que NÃO vai naquela página. As labels `readme` e `adr` NÃO TÊM template: elas existem na matriz oficial mas ficaram de fora da lista de templates da atualização de origem — nesses casos declare a lacuna e pergunte, nunca improvise estrutura. Não usar para regra de negócio, requisito ou caso de uso — isso é `product-doc-writer`; nem para campos, componentes e estados de uma tela específica — isso é `screen-doc-writer`."
 ---
 
----
-name: module-doc-writer
-description: "Elaborar ou atualizar páginas de documentação de módulo no Confluence do Rafael (ex.: \"Módulo - Gerenciamento de Administradores\", \"Módulo - Autenticação\") — documentação técnica/arquitetural detalhada de uma feature ou área do Geoprag, com estrutura livre (objetivo/escopo, estrutura de código, fluxos, tabelas de status, comparações), diferente da estrutura fixa de 4 seções da business-rule-writer. Usar sempre que Rafinha disser \"documenta esse módulo\", \"cria a página do módulo X\", \"atualiza a doc do módulo Y\", enviar um link de página de módulo do Confluence, ou pedir para descrever a arquitetura/estrutura/estado atual de uma feature do Geoprag. Não usar para páginas de regra de negócio (RN) — essas são sempre business-rule-writer."
----
-
-# Escritor de Documentação de Módulo — Confluence do Rafael
+# Escritor de Documentação Técnica — Confluence de Rafinha
 
 ## Identidade do papel
 
 Ao executar esta skill, você transforma o conhecimento que Rafinha tem sobre
-um módulo do Geoprag (Portal Administrador, App Aplicador, ou qualquer outra
-área) em uma **página de documentação técnica** no Confluence — escrevendo ou
-atualizando diretamente a página cujo link ele fornecer.
+um módulo — de **qualquer produto dele** — em uma **página de documentação
+técnica** no Confluence, escrevendo ou atualizando diretamente a página cujo
+link ele fornecer.
 
-Diferente da `business-rule-writer`, esta skill não segue uma estrutura fixa
+**A fonte da verdade desta skill é o código**, não a decisão de produto.
+Caminho de arquivo, contrato de API, camada e estrutura entram aqui; a
+motivação de negócio por trás da feature não.
+
+> ⚠️ **Esta skill não é de nenhum produto específico.** Ela serve o Compass
+> System, o GeoPrag e qualquer produto futuro. Os nomes de módulo, a sigla,
+> a árvore de páginas e a topologia vêm da página de **Controle de workflow**
+> daquele produto — nunca de um exemplo hardcoded aqui. Se você não souber
+> em qual produto está, **pergunte**.
+
+Diferente da `product-doc-writer`, esta skill não segue uma estrutura fixa
 de 4 seções. Documentação de módulo cobre arquitetura, estrutura de código,
 fluxos de tela em conjunto, modelo de segurança, estado de implementação —
 o formato se adapta ao que o módulo realmente precisa documentar. Se a
 página é sobre **uma regra de negócio isolada**, a skill certa é
-`business-rule-writer`; se é sobre **os campos, componentes e estados de
+`product-doc-writer`; se é sobre **os campos, componentes e estados de
 uma única tela específica** (em vez do módulo como um todo), a skill certa
 é `screen-doc-writer`. Se ficar em dúvida sobre qual das três se aplica,
 pergunte a Rafinha antes de começar a escrever.
@@ -58,7 +63,7 @@ Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
 
 Isso importa porque muda o tom de escrita:
 
-- **Página de RN** (`business-rule-writer`): descreve o estado atual de uma
+- **Página de RN** (`product-doc-writer`): descreve o estado atual de uma
   regra, sem nunca narrar histórico ("antes era assim, agora é assado").
 - **Página de módulo** (esta skill): é documentação viva de algo que está
   sendo construído. Aqui **é esperado e correto** narrar o estado de
@@ -70,9 +75,63 @@ Isso importa porque muda o tom de escrita:
   estado real do código, não um instantâneo congelado do dia em que foram
   escritas.
 
+---
+
+## Escopo: o que já existe e o que ainda não
+
+Esta skill é a dona da **família de documentação técnica**. Quase toda
+trilha tem template em `references/` — as exceções estão marcadas.
+
+| Trilha | Label | Template |
+|---|---|---|
+| Módulo | `module-doc` | `references/modulo.md` |
+| API | `api-doc` | `references/api.md` |
+| Arquitetura para devs | `architecture-doc` | `references/arquitetura-dev.md` |
+| Componente reutilizável | `component-doc` | `references/componente-reutilizavel.md` |
+| README versionado | `readme` | ⬜ **sem template** |
+| ADR | `adr` | ⬜ **sem template**, e sem uso real ainda |
+
+### Carregue o template antes de escrever
+
+📄 **Leia `references/<template>.md` antes de escrever a página.** Os
+templates não são carregados por padrão. Cada um traz a estrutura de seções,
+a convenção de título e — o mais importante — a tabela do **que NÃO vai
+naquela página**, que é o que impede duas skills de escreverem o mesmo
+parágrafo em lugares diferentes.
+
+> ❗ **Se Rafinha pedir algo que nenhum template cobre**, diga isso e pergunte
+> se ele quer o template mais próximo adaptado, ou prefere que um template
+> novo seja criado antes. **Não improvise uma estrutura nova nem finja que
+> ela é oficial** — estrutura inventada vira precedente, e precedente
+> inventado é mais difícil de corrigir do que uma lacuna declarada.
+
+> ⚠️ **`readme` e `adr` não têm template e isso não é esquecimento meu** — as
+> duas labels existem na matriz oficial, mas ficaram de fora da lista de
+> templates previstos da atualização de origem. Enquanto isso não for
+> resolvido, trate as duas pela regra acima: declare a lacuna e pergunte.
+
+`architecture-doc` pode cair aqui **ou** na `product-doc-writer`, conforme a
+fonte da verdade: estrutura de código e contrato entre camadas → aqui;
+decisão de produto e motivação → `product-doc-writer`. Na dúvida, pergunte.
+
+**Documentação não gera branch por padrão.** A pasta `docs/` (passo 9) só
+entra quando a documentação for de fato versionada no repositório Git.
+
 ## Passo a passo
 
-### 1. Obter o conteúdo bruto e o link da página
+### 1. Identificar a trilha, obter o link da página e carregar o template
+
+Identifique qual das seis trilhas o pedido é (ver seção Escopo): módulo,
+API, arquitetura para devs, componente reutilizável, README ou ADR. Se não
+estiver claro, pergunte — não assuma módulo só por ser a mais comum.
+
+Para **API, arquitetura e componente**, leia o template correspondente em
+`references/` antes de prosseguir — ele traz a estrutura de seções exata, a
+convenção de título e o que não vai na página; a partir daqui, pule o passo
+2 (que é exclusivo de módulo) e vá direto ao passo 3. **Módulo** não tem
+template porque não tem estrutura fixa — siga o passo 2. **README** e
+**ADR** não têm template — declare a lacuna e pergunte (ver Escopo), em vez
+de escrever com uma estrutura inventada.
 
 Se Rafinha enviou um link do Confluence, use o Atlassian Rovo para buscar a
 página (`getConfluencePage` ou equivalente) e verificar se já existe conteúdo
@@ -80,22 +139,26 @@ página (`getConfluencePage` ou equivalente) e verificar se já existe conteúdo
 enviado, pergunte por ele antes de prosseguir — esta skill sempre escreve
 diretamente na página, nunca devolve texto solto no chat como entrega final.
 
-Antes de escrever, vale a pena olhar 1-2 páginas de módulo já existentes no
-espaço Geoprag (via `getPagesInConfluenceSpace` ou pelas referências da
-página-mãe) para manter consistência de tom e estrutura com o que Rafinha já
-tem publicado.
+Antes de escrever, vale a pena olhar 1-2 páginas já existentes da mesma
+trilha no espaço **daquele produto** (via `getPagesInConfluenceSpace` ou
+pelas referências da página-mãe) para manter consistência de tom e estrutura
+com o que Rafinha já tem publicado. Cada produto tem o seu espaço e as suas
+convenções — não importe o padrão de um produto para outro sem confirmar.
 
-### 2. Levantar as seções relevantes
+### 2. Levantar as seções relevantes (só para a trilha módulo)
 
-Não existe uma lista fixa de seções — decida com base no que o módulo
-realmente precisa comunicar. Os padrões abaixo aparecem com frequência nas
-páginas de módulo do Rafinha e servem de repertório, não de checklist
-obrigatório:
+Esta etapa vale só para **módulo** — a única trilha sem template fixo. Para
+API, arquitetura-dev e componente, a estrutura já veio do template carregado
+no passo 1; pule esta lista.
+
+Para módulo, não existe uma lista fixa de seções — decida com base no que o
+módulo realmente precisa comunicar. Os padrões abaixo aparecem com
+frequência nas páginas de módulo do Rafinha e servem de repertório, não de
+checklist obrigatório:
 
 - **Objetivo e escopo** (praticamente sempre a seção 1) — o que o módulo
-  cobre, o que fica fora, onde ele vive na árvore do Geoprag (Portal
-  Administrador, App Aplicador, etc.), e se existe um módulo irmão/contraparte
-  relevante.
+  cobre, o que fica fora, onde ele vive na árvore daquele produto, e se
+  existe um módulo irmão/contraparte relevante.
 - **Estrutura de código atual** — tabela com caminho de arquivo, conteúdo e
   status de implementação (ex.: "Implementado", "Implementado como mock",
   "Contrato apenas").
@@ -176,7 +239,7 @@ substituir o código-fonte.
 
 - Escreva como documentação viva: é normal e correto referenciar o estado
   atual de implementação, mockups, TODOs, e issues do Jira que motivaram uma
-  mudança — ao contrário da `business-rule-writer`, aqui isso é esperado, não
+  mudança — ao contrário da `product-doc-writer`, aqui isso é esperado, não
   proibido.
 - Ainda assim, seja objetivo e técnico — narrar o estado de implementação não
   é o mesmo que escrever em tom de changelog solto; cada menção a uma issue
@@ -189,7 +252,11 @@ substituir o código-fonte.
 Crie ou atualize a página no Confluence com o conteúdo formatado (usando
 `createConfluencePage` ou `updateConfluencePage` conforme o caso).
 
-### 9. Sincronizar a documentação em `docs/` no código (quando aplicável)
+### 9. Sincronizar a documentação em `docs/` no código (só na trilha módulo)
+
+Esta etapa é exclusiva da trilha **módulo**. API, arquitetura, componente,
+README e ADR não têm pasta `docs/` correspondente no código — pule esta
+etapa inteira para elas e vá direto ao passo 10.
 
 Além da página do Confluence, cada módulo pode possuir uma pasta `docs/`
 própria dentro do código:
@@ -240,7 +307,8 @@ Ao final, apresente a Rafinha:
 
 ```
 ✅ Página [criada/atualizada]: [link da página]
-📋 Seções escritas: [lista das seções, já que aqui não são fixas]
+📋 Trilha: [módulo / API / arquitetura para devs / componente reutilizável]
+📋 Seções escritas: [lista das seções — livres para módulo, do template para as demais]
 ⚠️ Pendências sinalizadas (via doc-pendency-resolver): [quantidade e resumo, ou "nenhuma"]
 📝 Gaps/observações documentados (já confirmados por Rafinha, sem pergunta): [lista ou "nenhum"]
 🔗 Links para outras páginas: [lista ou "nenhum"]
@@ -253,7 +321,7 @@ Ao final, apresente a Rafinha:
 
 - ❌ Não use esta skill para páginas de regra de negócio (RN) — critérios de
   aprovação, quem pode solicitar o quê, condições de negócio isoladas. Isso é
-  sempre `business-rule-writer`.
+  sempre `product-doc-writer`.
 - ❌ Não force a estrutura fixa de RN (Visão Geral / Pré-condições / Passo a
   Passo / Regras Específicas) aqui — documentação de módulo tem forma
   própria, adaptada ao conteúdo real.

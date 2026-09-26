@@ -20,13 +20,22 @@ flowchart LR
     G --> H["Concluído"]
 ```
 
-> **Estado do contrato: `preparado`.** Esta branch descreve o contrato de
-> destino do Pacote 2 (Branches por épico e release controlada). O Pacote 1
-> (Design, labels e gates) já está em vigência em `master`, e o Jira já foi
-> configurado para ele. **O merge desta branch em `master` é o corte de
-> vigência do Pacote 2.** Até lá, o pipeline opera com o contrato do Pacote 1.
-> A configuração de CI e branch protection para `epic/**` e `release/current`
-> é manual e feita por Rafinha, em sessão separada.
+> **Pacotes 1, 2 e 3 em vigência em `master`.** Design, labels e gates
+> (Pacote 1), o modelo de branches por épico com release controlada
+> (Pacote 2) e as skills de documentação (Pacote 3) já valem. A
+> configuração de CI e branch protection para `epic/**` e `release/current`
+> nos repositórios de produto é manual, feita por Rafinha em sessão
+> separada — confirme com ele antes de assumir que já rodou. O piloto do
+> catálogo de componentes espera a sigla oficial do produto (ver
+> `plano-pacote-3.md` §7).
+
+**Documentar é trabalho composto.** São cinco writers, um por fonte da
+verdade — produto, código, tela, usuário final e o próprio workflow. Numa
+issue de código, a `jira-doc-executor` não escolhe **um** writer: monta o
+conjunto dos que se aplicam, imprime o plano, e declara com motivo os que
+pulou. Documentar uma tela atualiza a página do módulo, escreve a da tela e
+entra no guia de usuário que passa por ela — cada writer escreve só o que a
+sua fonte entrega, e linka em vez de repetir.
 
 **Design de Produto entra como coluna.** `Design de produto - Rafinha` é
 etapa **manual** — nenhuma skill a varre. A issue só passa por ela quando tem
@@ -123,9 +132,11 @@ GitHub Release só em versão **final** — nenhum RC polui a aba Releases, e ne
 
 | Skill | O que faz |
 |---|---|
-| [`business-rule-writer`](business-rule-writer/SKILL.md) | Páginas de regra de negócio, estrutura fixa. |
-| [`module-doc-writer`](module-doc-writer/SKILL.md) | Documentação técnica/arquitetural de um módulo. |
-| [`screen-doc-writer`](screen-doc-writer/SKILL.md) | Documentação de tela/UI, com prints reais via navegação ao vivo. |
+| [`product-doc-writer`](product-doc-writer/SKILL.md) | Documentação de produto: regra de negócio, requisito, caso de uso, fluxo de produto, critérios de aceitação. |
+| [`tech-doc-writer`](tech-doc-writer/SKILL.md) | Documentação técnica: módulo, API, arquitetura para devs, componente reutilizável. |
+| [`screen-doc-writer`](screen-doc-writer/SKILL.md) | Documentação de tela/UI, com prints reais via navegação ao vivo — modos `dev`/`user`/`hybrid`. |
+| [`user-doc-writer`](user-doc-writer/SKILL.md) | Guias de usuário final — a tarefa que atravessa telas, ponta a ponta. |
+| [`workflow-doc-writer`](workflow-doc-writer/SKILL.md) | Documentação do próprio workflow: fichas de skill (com checagem de drift contra o `SKILL.md` real), páginas de pipeline, documentação de release de cada projeto (o Manifest copiado, nunca reescrito). |
 | [`doc-pendency-resolver`](doc-pendency-resolver/SKILL.md) | Resolve pendências e ambiguidades perguntando antes de escrever, nunca assumindo. |
 
 ### Qualidade & produtividade

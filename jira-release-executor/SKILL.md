@@ -113,6 +113,11 @@ Quais artefatos são produzidos?    Existe Runtime Package? Como é executado?
 > pendência de setup, e você trata como tal: apresenta o que falta e ajuda a
 > montar. **Nunca invente** informação ausente dessa documentação.
 
+**Quem monta a árvore é a `workflow-doc-writer`**, trilha `release-doc`
+(template `references/release-doc.md` dela). Você lista o que falta para o G0
+e delega; você não escreve as páginas. Depois que a árvore existir, releia o
+G0 antes de seguir — a delegação não é aprovação automática do gate.
+
 ### 0.3 Gate G1 — manifesto
 
 Leia `.release/project.yml`. Valide: schema; `topology` declarada; todo
@@ -473,11 +478,18 @@ geoprag_api 2.1.0
 
 ### 7.2 Confluence
 
-- Página **Release** do projeto: acrescente a distribuição, copiando o
+Delegue à **`workflow-doc-writer`**, trilha `release-doc`, passando o
+`release-manifest.yml`, o link do pacote no Drive, o veredito da fase 6 e,
+se houver, as exceções autorizadas do G10. Ela atualiza:
+
+- Página **Release** do projeto: acrescenta a distribuição, copiando o
   **conteúdo do `release-manifest.yml`** — nunca uma segunda versão escrita à
   mão.
-- Página **Versionamento**: atualize as versões dos componentes e a do produto.
+- Página **Versionamento**: as versões dos componentes e a do produto.
 - Página **Validação da Release**: o veredito da fase 6.
+
+O G9 só fecha quando as três estão atualizadas — confira pelo resumo que a
+`workflow-doc-writer` devolve, não pela delegação em si.
 
 ### 7.3 Armazenamento
 

@@ -882,6 +882,11 @@ CI/CD - Workflow Rafinha-Claude
 └── Release Multi-Repository          (obrigatória se topology = multi_repo)
 ```
 
+Quem escreve essa árvore é a `workflow-doc-writer`, trilha `release-doc`
+(template `workflow-doc-writer/references/release-doc.md`) — tanto a montagem
+inicial pedida pelo G0 quanto a entrada de cada distribuição no registro G9.
+A `jira-release-executor` delega; não escreve as páginas.
+
 **Para as informações operacionais do Release, a fonte de verdade do projeto é o
 Confluence.** Antes da primeira release, precisa ser possível responder:
 

@@ -1,6 +1,6 @@
 ---
 name: jira-issue-executor
-description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar. Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Lê o TIPO NATIVO DO TICKET (Implementação, Correção, Bug, Refatoração Técnica, Documentação) como natureza da issue — o campo customizado `Tipo` saiu do contrato e nunca deve ser lido. Aplica o GATE DE DESIGN antes de qualquer linha de código: se a issue tem `requires-design` e não existe `.claude/design-packages/<ISSUE-KEY>/` na máquina, bloqueia e reporta, sem nunca implementar no escuro nem concluir que o design não foi feito. Respeita as labels de risco e controle (do-not-expand-scope, needs-manual-decision, needs-evidence, high-risk, breaking-change, legacy, needs-human-review) e só usa labels da matriz oficial do Confluence — nunca inventa label, nunca aplica `requires-design`, e não aplica mais a label genérica de revisão, que saiu do contrato. Issues de código são implementadas de verdade: branch com prefixo derivado do tipo do ticket (feat/, fix/, refactor/), commit, code review automatizado via `/code-review` e `/ponytail:ponytail-review`, testes obrigatórios e proporcionais ao risco, push e abertura automática de Pull Request referenciando a Issue do Jira e fechando a GitHub Issue de origem via Closes #N quando houver. A BRANCH DA ISSUE NEM SEMPRE NASCE DA DEVELOP: se a issue pertence a um épico com branch `epic/<EPIC-KEY>-<nome>` ativa, ela nasce da branch do épico, e o Pull Request aponta para a branch do épico, não para a develop — a jira-integration-executor valida esse destino no Modo A. Issue de épico sem branch usa a develop normalmente. Havendo mais de uma branch do mesmo épico, para e pergunta qual é a ativa. Registra a branch base escolhida no Execution State e no comentário da issue. Reaproveita componentes reutilizáveis por ID canônico e reporta divergência em vez de recriar componente existente. Confirma ou corrige a label de plataforma (web/mobile) conforme os arquivos realmente alterados — a jira-qa-executor depende dela e não tem mais fallback. Registra no comentário \"Implementação Claude\" o uso do Design Package e os IDs canônicos aplicados. Mantém um Execution State (`.claude/execution-state/<CHAVE>.md`, ver workflow-development-flow seção 13). Issues do tipo Documentação são delegadas por label de trilha: rn-doc para business-rule-writer, module-doc para module-doc-writer, screen-doc para screen-doc-writer — sem label de trilha, pergunta antes de prosseguir. Roda via Claude Code no repositório real dele. É TAMBÉM A ÚNICA SKILL QUE CRIA BRANCH DE ÉPICO, numa operação à parte do fluxo de issues: só sob comando explícito de Rafinha (\"cria a branch do épico X\"), nascida da develop atualizada, nomeada `epic/<EPIC-KEY>-<nome-do-epico>`, com a origem registrada em comentário no épico. Pertencer a um épico NÃO autoriza a criação automática da branch — rodar a coluna Fazer - Claude nunca cria branch de épico. Execution State é commitado apenas na branch da issue; nunca em epic/**, develop, release/current ou branches efêmeras de release. Mergear continua fora do escopo desta skill."
+description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar. Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Lê o TIPO NATIVO DO TICKET (Implementação, Correção, Bug, Refatoração Técnica, Documentação) como natureza da issue — o campo customizado `Tipo` saiu do contrato e nunca deve ser lido. Aplica o GATE DE DESIGN antes de qualquer linha de código: se a issue tem `requires-design` e não existe `.claude/design-packages/<ISSUE-KEY>/` na máquina, bloqueia e reporta, sem nunca implementar no escuro nem concluir que o design não foi feito. Respeita as labels de risco e controle (do-not-expand-scope, needs-manual-decision, needs-evidence, high-risk, breaking-change, legacy, needs-human-review) e só usa labels da matriz oficial do Confluence — nunca inventa label, nunca aplica `requires-design`, e não aplica mais a label genérica de revisão, que saiu do contrato. Issues de código são implementadas de verdade: branch com prefixo derivado do tipo do ticket (feat/, fix/, refactor/), commit, code review automatizado via `/code-review` e `/ponytail:ponytail-review`, testes obrigatórios e proporcionais ao risco, push e abertura automática de Pull Request referenciando a Issue do Jira e fechando a GitHub Issue de origem via Closes #N quando houver. A BRANCH DA ISSUE NEM SEMPRE NASCE DA DEVELOP: se a issue pertence a um épico com branch `epic/<EPIC-KEY>-<nome>` ativa, ela nasce da branch do épico, e o Pull Request aponta para a branch do épico, não para a develop — a jira-integration-executor valida esse destino no Modo A. Issue de épico sem branch usa a develop normalmente. Havendo mais de uma branch do mesmo épico, para e pergunta qual é a ativa. Registra a branch base escolhida no Execution State e no comentário da issue. Reaproveita componentes reutilizáveis por ID canônico e reporta divergência em vez de recriar componente existente. Confirma ou corrige a label de plataforma (web/mobile) conforme os arquivos realmente alterados — a jira-qa-executor depende dela e não tem mais fallback. Registra no comentário \"Implementação Claude\" o uso do Design Package e os IDs canônicos aplicados. Mantém um Execution State (`.claude/execution-state/<CHAVE>.md`, ver workflow-development-flow seção 13). Issues do tipo Documentação são delegadas por label de trilha, segundo a tabela de roteamento da workflow-development-flow §3.3, a um dos cinco writers (product-doc-writer, tech-doc-writer, screen-doc-writer, user-doc-writer, workflow-doc-writer) — sem label de trilha, pergunta antes de prosseguir; qa-doc não tem writer e para. Roda via Claude Code no repositório real dele. É TAMBÉM A ÚNICA SKILL QUE CRIA BRANCH DE ÉPICO, numa operação à parte do fluxo de issues: só sob comando explícito de Rafinha (\"cria a branch do épico X\"), nascida da develop atualizada, nomeada `epic/<EPIC-KEY>-<nome-do-epico>`, com a origem registrada em comentário no épico. Pertencer a um épico NÃO autoriza a criação automática da branch — rodar a coluna Fazer - Claude nunca cria branch de épico. Execution State é commitado apenas na branch da issue; nunca em epic/**, develop, release/current ou branches efêmeras de release. Mergear continua fora do escopo desta skill."
 ---
 
 # Executor de Issues — Coluna "Fazer - Claude" (Jira genérico)
@@ -18,10 +18,11 @@ de Rafinha (não um ambiente que reseta a cada execução), as branches que
 você cria ou atualiza continuam existindo normalmente entre uma execução e
 outra, do jeito que qualquer branch git local funciona.
 
-Quando a issue é de documentação (RN ou documentação de módulo, sem código
-envolvido), a implementação de verdade acontece delegando para a skill
-correspondente (`business-rule-writer` ou `module-doc-writer`), que escreve
-ou atualiza a página do Confluence diretamente. Você nunca escreve conteúdo
+Quando a issue é do tipo Documentação (sem código envolvido), a
+implementação de verdade acontece delegando para o writer que a label de
+trilha declara — um dos cinco: `product-doc-writer`, `tech-doc-writer`,
+`screen-doc-writer`, `user-doc-writer` ou `workflow-doc-writer` —, que
+escreve ou atualiza a página do Confluence diretamente. Você nunca escreve conteúdo
 de página do Confluence por conta própria dentro desta skill — isso inclui
 qualquer estrutura, tom, ou tratamento de pendência: essas regras vivem nas
 skills de documentação, não aqui, para não haver duas versões da mesma
@@ -228,22 +229,15 @@ Para cada issue, leia todos os comentários antes de decidir o que fazer:
 mudar, ele comenta o que falta e move a issue de volta para "Fazer -
 Claude" — é assim que ela reaparece na sua fila.)*
 
-### 3. Classificar a issue: código, RN, documentação de módulo, ou tela
+### 3. Classificar a issue: código ou documentação
 
-Antes de tratar qualquer issue (nova ou em correção), classifique-a em uma
-das quatro trilhas:
+Antes de tratar qualquer issue (nova ou em correção), classifique-a:
 
 - **Código** — a issue pede implementação, correção de bug, ou qualquer
   mudança em código-fonte.
-- **RN (regra de negócio)** — a issue pede para documentar ou atualizar uma
-  regra de negócio isolada no Confluence (quem pode fazer o quê, sob quais
-  condições, critério de aprovação). Vai para a skill `business-rule-writer`.
-- **Documentação de módulo** — a issue pede para documentar ou atualizar a
-  documentação técnica/arquitetural de um módulo (estrutura de código,
-  fluxos, estado de implementação). Vai para a skill `module-doc-writer`.
-- **Tela/UI** — a issue pede para documentar ou atualizar campos,
-  componentes, interações, estados ou regras de exibição de uma tela. Vai
-  para a skill `screen-doc-writer`.
+- **Documentação** — a issue pede para criar ou atualizar uma página do
+  Confluence. O writer é escolhido pela label de trilha (ver "Trilha
+  documental" abaixo).
 
 **A natureza da issue é o tipo nativo do ticket no Jira**, definido por
 `jira-issue-creator` na criação:
@@ -263,13 +257,11 @@ incompatível com o que a descrição pede, **pare e pergunte a Rafinha**. Não
 infira a natureza pelo conteúdo quando o tipo diz outra coisa.
 
 **Trilha documental.** Numa issue do tipo **Documentação**, o writer é
-escolhido pela **label de trilha**, não pelo conteúdo:
-
-| Label | Writer |
-|---|---|
-| `rn-doc` | `business-rule-writer` |
-| `module-doc` | `module-doc-writer` |
-| `screen-doc` | `screen-doc-writer` |
+escolhido pela **label de trilha**, não pelo conteúdo, segundo a **tabela de
+roteamento** da `workflow-development-flow`, seção 3.3 — a única fonte dessa
+tabela; não mantenha cópia aqui. Uma issue com mais de uma label documental
+gera uma delegação por label. `qa-doc` não tem writer: pare e reporte, não
+delegue por aproximação.
 
 Se a issue do tipo Documentação **não tiver** label de trilha, **pergunte a
 Rafinha antes de prosseguir** — não infira pelo conteúdo. A label
@@ -388,7 +380,7 @@ mudanças não solicitadas na review.
 - Para issues de **código**: a branch dessa issue provavelmente já existe no
   repositório local (de uma execução anterior) — vá para o passo 5.2 para
   retomá-la normalmente.
-- Para issues de **RN ou documentação de módulo**: a página do Confluence já
+- Para issues de **documentação**: a página do Confluence já
   existe — invoque a skill correspondente (seção 6) normalmente, ela mesma
   trata a leitura do conteúdo já publicado e a atualização a partir do
   review.
@@ -622,20 +614,20 @@ branch do épico.
 > local de execução, e a rastreabilidade vive nos comentários, nos PRs e nas
 > evidências. É por isso que o arquivo é apagado aqui, e não depois.
 
-### 6. Issues de documentação: delegar para business-rule-writer, module-doc-writer ou screen-doc-writer
+### 6. Issues de documentação: delegar para o writer da label
 
-Quando a issue foi classificada como RN, documentação de módulo, ou tela
-(passo 3), não escreva nenhum conteúdo de página por conta própria. Em vez
-disso:
+Quando a issue foi classificada como documentação (passo 3), não escreva
+nenhum conteúdo de página por conta própria. Em vez disso:
 
 **6.1 Confirmar a página do Confluence alvo.** Procure, na descrição ou nos
 comentários da issue, o link da página a criar ou atualizar (ou da página-mãe,
 se for uma página nova). Se a issue não trouxer um link claro, pergunte a
 Rafinha antes de prosseguir — nunca escolha ou adivinhe qual página é.
 
-**6.2 Invocar a skill correspondente.** Chame `business-rule-writer` (RN),
-`module-doc-writer` (documentação de módulo) ou `screen-doc-writer`
-(tela/UI), passando o link da página e o conteúdo/descrição extraído da
+**6.2 Invocar a skill correspondente.** Chame o writer que a tabela de
+roteamento indica para cada label de trilha (se forem várias, em ordem:
+produto → técnico → tela → usuário → workflow, porque o guia de usuário
+linka páginas de tela que precisam existir antes), passando o link da página e o conteúdo/descrição extraído da
 issue (título, descrição, comentários relevantes). Essas skills conduzem
 toda a escrita — incluindo perguntas de
 esclarecimento e o tratamento de pontos incertos via `doc-pendency-resolver`.
@@ -685,7 +677,7 @@ O comentário deve:
   `high-risk`, `breaking-change`, `do-not-expand-scope`, …): registre
   explicitamente como cada uma foi respeitada. É isso que o review audita.
 - Para issues de documentação: link da página do Confluence criada/atualizada,
-  qual skill foi usada (`business-rule-writer` ou `module-doc-writer`), e um
+  qual writer foi usado, e um
   resumo de quantos pontos foram deixados como pendência (via
   `doc-pendency-resolver`), se houver.
 
@@ -823,8 +815,8 @@ mais fallback** — se a label faltar, o QA bloqueia. Aplicar corretamente aqui
   qualidade sem rodá-lo — achados de alta confiança devem gerar correção real
   no código antes do commit, do mesmo jeito que a autorevisão do passo 5.3b.
 - ❌ Nunca escreva conteúdo de página do Confluence diretamente nesta skill
-  — issues de documentação são sempre delegadas para `business-rule-writer`,
-  `module-doc-writer` ou `screen-doc-writer` (passo 6).
+  — issues de documentação são sempre delegadas para o writer da label de
+  trilha (passo 6).
 - ❌ Nunca deixar de comentar o resumo de autoria ou de aplicar a label de
   revisão — esses dois passos são obrigatórios em toda issue processada
   (exceto as puladas por pedido explícito).
@@ -857,8 +849,8 @@ Rafinha um resumo consolidado, por exemplo:
 ✅ Projeto processado: [nome/chave do projeto]
 📋 Issues processadas: [quantidade]
   - [ISSUE-1]: [código, feita] → branch feat/ISSUE-1-claude (nova), code review (/code-review + ponytail-review) sem achados, analyze + testes OK, PR #12 aberto → movida para Análise - Rafinha
-  - [ISSUE-2]: [RN, business-rule-writer] → página Confluence atualizada (link), 1 pendência deixada → movida para Análise - Rafinha
-  - [ISSUE-3]: [documentação de módulo, module-doc-writer] → página Confluence criada (link), sem pendências → movida para Análise - Rafinha
+  - [ISSUE-2]: [RN, product-doc-writer] → página Confluence atualizada (link), 1 pendência deixada → movida para Análise - Rafinha
+  - [ISSUE-3]: [documentação de módulo, tech-doc-writer] → página Confluence criada (link), sem pendências → movida para Análise - Rafinha
   - [ISSUE-4]: [tela, screen-doc-writer] → página Confluence atualizada com prints (link), sem pendências → movida para Análise - Rafinha
   - [ISSUE-5]: [código, correção aplicada] → branch fix/ISSUE-5-claude (retomada), depende de ISSUE-2 ainda não mergeada — aviso deixado no comentário, PR #13 aberto → movida para Análise - Rafinha
 ⏸️ Issues seguradas por pedido explícito: [lista ou "nenhuma"]

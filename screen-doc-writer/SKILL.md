@@ -1,22 +1,22 @@
 ---
 name: screen-doc-writer
-description: "Elaborar ou reescrever páginas de documentação de tela/UI no Confluence de Rafinha (ex.: \"Tela - Cadastro de Viagem\", \"Tela - Login\") — campos, componentes, interações, estados e regras de exibição de uma tela de um app Flutter, em tom de estado atual (sem histórico, sem citar issues), sucinta o bastante pra ser entendida por programadores e por usuários finais do sistema. Usar sempre que Rafinha disser \"documenta essa tela\", \"atualiza a doc da tela X\", \"o texto dessa página ficou fraco/desatualizado, revisa\", enviar um link de página de tela do Confluence, apontar uma issue na coluna \"Documentar\" que ele confirme ser de alteração de tela/UI, ou pedir pra tirar print de uma tela e anexar na documentação. Navega a tela de verdade via Claude in Chrome (Chrome real, mesma extensão que a jira-qa-executor usa — não o navegador embutido do Claude Code) pra tirar prints reais e embuti-los na página. Não usar para regra de negócio isolada (business-rule-writer) nem para documentação de módulo/arquitetura/código (module-doc-writer)."
+description: "Elaborar ou reescrever páginas de documentação de tela/UI no Confluence de Rafinha (ex.: \"Tela - Cadastro de Viagem\", \"Tela - Login\") — campos, componentes, interações, estados e regras de exibição de uma tela de um app Flutter, em tom de estado atual (sem histórico, sem citar issues), sucinta o bastante pra ser entendida por programadores e por usuários finais do sistema. Usar sempre que Rafinha disser \"documenta essa tela\", \"atualiza a doc da tela X\", \"o texto dessa página ficou fraco/desatualizado, revisa\", enviar um link de página de tela do Confluence, apontar uma issue na coluna \"Documentar\" que ele confirme ser de alteração de tela/UI, ou pedir pra tirar print de uma tela e anexar na documentação. Navega a tela de verdade via Claude in Chrome (Chrome real, mesma extensão que a jira-qa-executor usa — não o navegador embutido do Claude Code) pra tirar prints reais e embuti-los na página. Opera em TRÊS MODOS, cada um com template próprio em `references/`: `screen-doc:dev` (rota, cubit, permissões, chamadas de API, validações — para quem mexe na tela), `screen-doc:user` (para que serve, campos, botões, mensagens — para quem usa) e `screen-doc:hybrid` (os dois numa página só). SEMPRE leia o template do modo antes de escrever. NA DÚVIDA ENTRE MODOS, use hybrid: duas páginas que ninguém mantém são piores que uma que serve a dois leitores. O modo nunca é inferido do nome da tela — Rafinha informa, ou a skill pergunta; se a página já existe, o modo dela é o que está escrito lá. Documentar uma tela é TRABALHO COMPOSTO: esta skill é a peça de granularidade tela, enquanto a tech-doc-writer cuida do módulo e a user-doc-writer do guia de tarefa — cada uma escreve só o que a sua fonte da verdade entrega e linka em vez de repetir. Não usar para regra de negócio isolada (product-doc-writer) nem para documentação de módulo/arquitetura/código (tech-doc-writer)."
 ---
 
 # Escritor de Documentação de Tela/UI — Confluence de Rafinha
 
 ## Identidade do papel
 
-> **Nota de origem:** a estrutura de página abaixo (7 seções) é a mesma
-> desenhada com Rafinha quando esta skill foi planejada pela primeira vez,
+> **Nota de origem:** quando esta skill foi planejada pela primeira vez,
 > junto com o pipeline de QA automatizado (`jira-qa-executor` → coluna
-> "Documentar" → esta skill / `business-rule-writer` / `module-doc-writer`).
-> Ele confirmou o **tom de redação** (estado atual, sem histórico — igual à
-> `business-rule-writer`) e a **forma dos prints** (embutidos inline, dentro
-> da seção a que se referem). A lista de 7 seções em si segue sendo tratada
-> como estrutura de trabalho a validar na primeira execução real — se
-> alguma seção não fizer sentido pra uma tela específica, confirme com ele
-> antes de forçar.
+> "Documentar" → esta skill / `product-doc-writer` / `tech-doc-writer`),
+> Rafinha confirmou o **tom de redação** (estado atual, sem histórico — igual
+> à `product-doc-writer`) e a **forma dos prints** (embutidos inline, dentro
+> da seção a que se referem) — os dois continuam valendo. A estrutura de
+> página única de 7 seções daquela primeira versão foi **substituída pelos
+> três modos** (`dev`/`user`/`hybrid`) quando a Pendência 4 do Pacote 3 foi
+> fechada — ver "Os três modos" logo abaixo. As seções de cada modo vivem
+> nos templates em `references/`, não mais aqui.
 
 Ao executar esta skill, você transforma o estado real de uma tela de um
 app Flutter (campos, comportamento, estados visuais, regras de exibição)
@@ -34,20 +34,68 @@ O que torna esta skill diferente das outras duas de documentação:
   texto fraco ou rastros de uma versão antiga da tela, porque foi escrita
   de memória em vez de a partir do que está de fato implementado.
 - **O tom é de estado atual, sem histórico.** Diferente da
-  `module-doc-writer` (que narra mudanças e cita issues como documentação
-  viva), esta skill escreve como a `business-rule-writer`: frases
+  `tech-doc-writer` (que narra mudanças e cita issues como documentação
+  viva), esta skill escreve como a `product-doc-writer`: frases
   afirmativas sobre como a tela funciona **hoje**, nunca "antes fazia X,
   agora faz Y", e nunca uma referência a número de issue no corpo do
   texto. Isso é proposital — a página precisa ser compreensível por um
   usuário final do sistema, que não tem contexto nenhum sobre Jira.
 - **Escopo é comportamento visível da tela, não código.** Nomes de classe,
-  arquivo, provider, endpoint — isso é `module-doc-writer`. Aqui você
+  arquivo, provider, endpoint — isso é `tech-doc-writer`. Aqui você
   descreve o que qualquer pessoa vê e faz ao usar a tela.
 
 Consulte a skill `workflow-development-flow` para dúvidas sobre como a
 etapa "Documentar" se encaixa no fluxo geral do pipeline.
 
 ---
+
+---
+
+## Os três modos
+
+A fonte da verdade desta skill é **a UI rodando**, mas o público muda o que
+entra na página. Por isso a skill tem três modos, cada um com seu template:
+
+| Modo | Template | Público | Título |
+|---|---|---|---|
+| `screen-doc:dev` | `references/screen-dev.md` | quem vai mexer na tela | `Tela - <nome> (dev)` |
+| `screen-doc:user` | `references/screen-user.md` | quem usa o sistema | `Tela - <nome>` |
+| `screen-doc:hybrid` | `references/screen-hybrid.md` | os dois | `Tela - <nome>` |
+
+📄 **Leia o template do modo antes de escrever.** Ele traz as seções, a
+convenção de título e a tabela do **que NÃO vai na página** — que é o que
+impede esta skill de escrever o que pertence à `tech-doc-writer` ou à
+`user-doc-writer`.
+
+### Qual modo usar
+
+> **Na dúvida, `hybrid`.** Duas páginas que ninguém mantém são piores que uma
+> página que serve a dois leitores. Separar depois é barato; reconciliar duas
+> páginas que divergiram não é.
+
+Use `dev` e `user` separados quando a tela tem **os dois públicos de
+verdade** e o conteúdo de um atrapalha a leitura do outro — tela operacional
+do produto, usada por quem não conhece o código.
+
+Use `hybrid` em tela interna, simples, ou de público único que é ao mesmo
+tempo quem opera e quem mantém.
+
+**O modo nunca é inferido do nome da tela.** Rafinha informa, ou a skill
+pergunta. Se a página já existe, o modo dela é o que está escrito lá — não
+mude de modo sem confirmar.
+
+### Esta skill é uma peça de um trabalho composto
+
+Documentar uma tela não é trabalho de uma skill só. O conjunto completo é:
+
+| Skill | Granularidade | O que faz na mesma tarefa |
+|---|---|---|
+| `tech-doc-writer` | por **módulo** | atualiza a página do módulo onde a tela vive |
+| `screen-doc-writer` | por **tela** | esta página |
+| `user-doc-writer` | por **tarefa** | entra no guia, se a tarefa atravessa telas |
+
+Cada uma escreve só o que a **sua** fonte da verdade entrega, e linka em vez
+de repetir. Quem monta o conjunto é a `jira-doc-executor`.
 
 ## Model Policy
 
@@ -83,9 +131,9 @@ porque o texto ficou fraco/desatualizado. Isso inclui:
 
 **Não use** esta skill para:
 - Regra de negócio isolada (quem pode fazer o quê, sob quais condições) →
-  `business-rule-writer`.
+  `product-doc-writer`.
 - Documentação de arquitetura, estrutura de código, ou de um módulo
-  inteiro → `module-doc-writer`.
+  inteiro → `tech-doc-writer`.
 - Se uma issue mexeu em tela **e também** em regra de negócio ou
   arquitetura, isso pode significar mais de uma página a atualizar —
   confirme com Rafinha se é o caso antes de assumir que só a tela precisa
@@ -113,7 +161,19 @@ fraco/desatualizado, etc.) — nada disso muda o seu comportamento.
 
 ## Pré-requisitos obrigatórios
 
-### 1. Link da página do Confluence
+### 1. Confirmar o modo e carregar o template
+
+Antes de qualquer outra coisa, confirme o modo (`dev`, `user` ou `hybrid`) —
+ver "Os três modos" acima. **Não infira do nome da tela.** Se a página já
+existe, o modo dela é o que já está escrito lá; se é página nova e Rafinha
+não informou o modo, pergunte, com `hybrid` como recomendação padrão na
+dúvida.
+
+Com o modo confirmado, **leia o template correspondente em `references/`**
+antes de prosseguir — ele traz as seções exatas, a convenção de título e o
+que não vai na página.
+
+### 2. Link da página do Confluence
 
 Se Rafinha enviou o link, use o Atlassian Rovo para buscar a página
 (`getConfluencePage`) e checar se já existe conteúdo (atualização) ou não
@@ -122,7 +182,7 @@ página nova), pergunte antes de prosseguir — esta skill sempre escreve
 diretamente na página, nunca devolve o conteúdo só no chat como entrega
 final.
 
-### 2. Chrome aberto com a extensão Claude in Chrome ativa
+### 3. Chrome aberto com a extensão Claude in Chrome ativa
 
 Confirme que o Google Chrome está aberto e que a extensão **Claude in
 Chrome** está instalada e ativa antes de navegar (passo 2 do fluxo abaixo)
@@ -132,7 +192,7 @@ porque é o que comprovadamente funciona de forma consistente entre
 diferentes notebooks/ambientes. Se a extensão não estiver disponível ou
 ativa, **pare e avise Rafinha** em vez de tentar outro navegador.
 
-### 3. Como chegar na tela, ao vivo
+### 4. Como chegar na tela, ao vivo
 
 Você precisa navegar a tela de verdade antes de escrever qualquer seção
 que descreva campos, componentes ou estados. Confirme com Rafinha (se não
@@ -148,7 +208,7 @@ Se o ambiente já estiver no ar (ex.: reaproveitando uma sessão de QA em
 andamento), pode usar o que já está aberto em vez de subir tudo de novo —
 confirme com Rafinha se for o caso.
 
-### 4. Estado limpo antes de interagir com a tela
+### 5. Estado limpo antes de interagir com a tela
 
 Esta skill **observa e explora** a tela — nunca realiza ações que alterem
 dados reais do sistema. Preencher campos para ilustrar um estado
@@ -179,14 +239,14 @@ mesma página.
 
 Usando o Claude in Chrome (mesma integração da `jira-qa-executor`):
 
-1. Abra o ambiente confirmado no pré-requisito 3 e navegue até a tela.
+1. Abra o ambiente confirmado no pré-requisito 4 e navegue até a tela.
 2. Leia a tela como ela está: campos visíveis, rótulos, botões, textos de
    ajuda, valores padrão, o que está habilitado/desabilitado no estado
    inicial.
 3. Explore as interações relevantes para entender o comportamento real —
    preenchendo campos com dados de exemplo, dessa forma provocando
    validações, mensagens de erro, mudanças de estado — sempre respeitando
-   o limite do pré-requisito 4 (nunca submeter uma ação destrutiva/real
+   o limite do pré-requisito 5 (nunca submeter uma ação destrutiva/real
    sem confirmação).
 4. Ao longo da exploração, tire os poucos prints realmente necessários
    para ilustrar cada seção da página (ver seção "Prints" abaixo) — não é
@@ -216,67 +276,43 @@ chat):
   passa pelo `doc-pendency-resolver` — não é incerteza sua, é conteúdo.
   Escreva como uma observação factual normal, sem tom de pendência.
 
-### 4. Escrever a página seguindo a estrutura
+### 4. Escrever a página seguindo o template do modo
 
-A página segue estas 7 seções (pule uma só com a confirmação de Rafinha —
-ver nota de origem no topo):
+As seções, os títulos e a convenção de título são os do template carregado
+no pré-requisito 1 (`references/screen-dev.md`, `screen-user.md` ou
+`screen-hybrid.md`, conforme o modo confirmado). Preencha cada seção com o
+que foi observado ao vivo (passo 2) ou já confirmado por Rafinha — nunca
+improvise uma ordem ou um título que pareça mais natural. Uma seção do
+template sem conteúdo correspondente é candidata a pendência (passo 3), não
+algo para omitir em silêncio.
 
-#### Objetivo
-2–4 frases: o que a tela faz, para quem serve, onde fica no app (a partir
-de qual tela/menu se chega até ela). Linguagem simples — é a seção que um
-usuário final mais provavelmente lê.
-
-#### Campos e Componentes
-Lista dos campos, botões e elementos relevantes da tela, um item por
-componente, com descrição objetiva (tipo de campo, se é obrigatório, o que
-faz). É aqui que a maior parte dos prints inline entra — print do
-componente ou da região da tela logo junto do item que ele ilustra.
-
-#### Interações
-O que acontece quando o usuário faz cada ação relevante (preenche, clica,
-seleciona) — ação → resultado, em lista ou sequência numerada quando a
-ordem importar.
-
-#### Estados
-As variações visuais que a tela assume (vazio, carregando, preenchido,
-erro, sucesso, campo desabilitado por alguma condição etc.), com print de
-cada estado que for realmente esclarecedor — não é necessário um print por
-estado se a diferença for óbvia em texto.
-
-#### Regras de Exibição
-Condições que determinam o que aparece, some, habilita ou desabilita na
-tela (ex.: "o botão X só aparece se a viagem estiver com status Y"). Toda
-regra aqui vem de observação real ou confirmação de Rafinha — nunca
-suposição.
-
-#### Observações
-Gaps ou limitações conhecidas e já confirmadas por Rafinha (ver passo 3).
-Nunca pendência do Claude sem ter passado pelo `doc-pendency-resolver`
-antes.
-
-#### Referências
-Sempre a última seção. Links para a RN (`business-rule-writer`) ou
-documentação de módulo (`module-doc-writer`) relacionadas a esta tela, se
-existirem — com 1–2 frases de contexto para cada link, nunca lista solta
-sem explicação.
+Print inline entra nas seções onde o template pede algo visível (campos,
+botões, mensagens, estados) — normalmente as primeiras seções nos templates
+`user` e `hybrid`. O modo `dev` é predominantemente texto/tabela (rota,
+estado, chamadas de API); só leva print quando algo visual for
+genuinamente necessário para esclarecer o comportamento técnico.
 
 ### 5. Prints: capturar, anexar e embutir
 
 O Atlassian Rovo disponível hoje **não tem uma ferramenta de anexar
 arquivo** (nem no Jira, nem no Confluence) — isso já foi confirmado ao
-desenhar a `jira-qa-executor`. O caminho é a API REST do Confluence
-diretamente:
+desenhar a `jira-qa-executor`. O caminho é a API REST do Confluence, pelo
+utilitário compartilhado desta skill:
 
 ```bash
-curl -u "$JIRA_API_EMAIL:$JIRA_API_TOKEN" \
-  -X POST \
-  -H "X-Atlassian-Token: no-check" \
-  -F "file=@/caminho/para/print.png" \
-  "https://SEUSITE.atlassian.net/wiki/rest/api/content/{pageId}/child/attachment"
+~/.claude/skills/screen-doc-writer/scripts/anexar-print.sh <pageId> print1.png [print2.png ...]
 ```
 
-(Mesmas variáveis de ambiente `JIRA_API_EMAIL`/`JIRA_API_TOKEN` já usadas
-para anexo no Jira — funcionam também no Confluence do mesmo site.)
+Ele usa as variáveis `JIRA_API_EMAIL`/`JIRA_API_TOKEN` (as mesmas do anexo no
+Jira), converte o caminho para o formato Windows quando roda no Git Bash, e
+usa `PUT` — que **substitui** o anexo de mesmo nome em vez de falhar. Isso
+importa ao revisar uma página: o print novo da mesma região mantém o nome, e
+a macro de imagem que já o referencia continua valendo. O site padrão é
+`rafinha84dev.atlassian.net`; `ATLASSIAN_SITE` sobrescreve.
+
+O mesmo utilitário serve a `tech-doc-writer` quando uma página de componente
+reutilizável leva print — por isso ele é um script, não um bloco de comando
+repetido em cada skill.
 
 Depois de anexado, embuta o print **inline, dentro da seção a que se
 refere** (nunca numa galeria separada no fim da página) usando a macro de
@@ -304,7 +340,7 @@ Rafinha:
 ```
 ✅ Página [criada/atualizada]: [link da página]
 📸 Prints anexados e embutidos: [quantidade] — [em quais seções]
-📋 Seções escritas: Objetivo, Campos e Componentes, Interações, Estados, Regras de Exibição, Observações, Referências
+📋 Modo: [dev / user / hybrid] — Seções escritas: [lista, conforme o template do modo]
 ⚠️ Pendências sinalizadas (via doc-pendency-resolver): [quantidade e resumo, ou "nenhuma"]
 🔗 Referências (RN/módulo): [lista ou "nenhuma"]
 ```
@@ -313,15 +349,18 @@ Rafinha:
 
 ## Regras de redação (tom e estilo)
 
-- Tom **imperativo e descritivo do estado atual** — como a `business-rule-writer`.
+- Tom **imperativo e descritivo do estado atual** — como a `product-doc-writer`.
   Proibido "passou a", "agora a tela faz", "diferente de antes", ou
   qualquer referência a número/chave de issue no corpo do texto.
-- Escreva pensando em dois leitores ao mesmo tempo: um programador que
-  precisa saber exatamente o que a tela faz, e um usuário final do sistema
-  que só quer entender como usá-la. Isso significa: linguagem direta, sem
-  jargão técnico desnecessário (nada de nome de classe, provider, rota de
-  código, endpoint — isso é `module-doc-writer`), mas sem eliminar detalhe
-  que muda o comportamento percebido pelo usuário.
+- **No modo `user`** (e na metade "para quem usa" do `hybrid`): escreva para
+  quem opera a tela, não para quem a mantém — linguagem direta, sem jargão
+  técnico desnecessário (nada de nome de classe, provider, rota de código,
+  endpoint), mas sem eliminar detalhe que muda o comportamento percebido.
+- **No modo `dev`** (e no bloco "Detalhes técnicos" do `hybrid`): o oposto
+  vale — rota, cubit/provider, chamadas de API e IDs de componente são
+  exatamente o que o template pede. O que continua fora, nos três modos, é a
+  arquitetura do **módulo inteiro** (isso é sempre `tech-doc-writer`) — aqui
+  o escopo técnico é só o que pertence a **esta tela**.
 - **Sucinto de verdade**: prefira listas curtas e frases diretas a
   parágrafos longos. Se uma seção está ficando densa, é sinal de que ela
   precisa de mais estrutura (lista, tabela) ou de um print no lugar de
@@ -339,18 +378,26 @@ Rafinha:
   o comportamento não for observável.
 - ❌ Nunca realizar, no navegador, uma ação que crie, altere ou exclua um
   dado real sem confirmação explícita de Rafinha — preenchimento de
-  exemplo é permitido, submissão real não é (ver pré-requisito 4).
+  exemplo é permitido, submissão real não é (ver pré-requisito 5).
 - ❌ Nunca abrir um ambiente de produção para navegar/capturar prints —
   sempre local/dev, e sempre confirmado com Rafinha se não estiver claro.
 - ❌ Nunca prosseguir sem confirmar que a extensão Claude in Chrome está
-  ativa (Pré-requisito 2) — nunca tente usar o navegador embutido do
+  ativa (Pré-requisito 3) — nunca tente usar o navegador embutido do
   Claude Code como alternativa; pare e avise Rafinha se a extensão não
   estiver disponível.
+- ❌ Nunca mudar de modo, ou escrever sem ter confirmado um, mesmo quando o
+  nome da tela parecer sugerir claramente qual seria (ver pré-requisito 1).
 - ❌ Nunca escrever em tom narrativo/histórico ou citar número de issue no
-  corpo da página — isso é exclusivo da `module-doc-writer`.
-- ❌ Nunca incluir detalhe de código (classe, arquivo, provider, endpoint,
-  rota interna) — isso é sempre `module-doc-writer`; aqui é só
-  comportamento visível.
+  corpo da página — isso é exclusivo da `tech-doc-writer`.
+- ❌ **No modo `user`**, não incluir detalhe de código (classe, arquivo,
+  provider, endpoint, rota interna) — isso é comportamento visível, não
+  implementação. **No modo `dev`**, o oposto é o erro: omitir rota, estado,
+  chamadas de API ou IDs de componente que o template pede é deixar a
+  página incompleta.
+- ❌ Em nenhum modo, documentar a arquitetura do **módulo inteiro** onde a
+  tela vive (camadas, todos os cubits do módulo) — isso é sempre
+  `tech-doc-writer`, mesmo no modo `dev`, que só cobre o que é específico
+  desta tela.
 - ❌ Nunca marcar algo como pendência sem passar pelo `doc-pendency-resolver`
   primeiro — a única exceção são gaps que Rafinha já confirmou como fato.
 - ❌ Nunca centralizar prints numa galeria ao final — cada print fica
@@ -361,7 +408,7 @@ Rafinha:
   conteúdo novo — ao revisar uma página com texto fraco, reescreva o
   trecho afetado por completo em vez de só complementar.
 - ❌ Nunca use esta skill para regra de negócio isolada
-  (`business-rule-writer`) ou documentação de módulo/arquitetura
-  (`module-doc-writer`).
+  (`product-doc-writer`) ou documentação de módulo/arquitetura
+  (`tech-doc-writer`).
 - ❌ Nunca classifique sozinha se uma issue da coluna "Documentar" é sobre
   tela — isso é sempre confirmado por Rafinha antes de você agir.
