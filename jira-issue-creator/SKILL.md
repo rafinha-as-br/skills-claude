@@ -1,6 +1,6 @@
 ---
 name: jira-issue-creator
-description: "Criar uma issue (ou subtask) no Jira a partir de uma necessidade mencionada por Rafinha — seja no meio de uma mensagem sobre outro assunto, seja em um pedido dedicado, seja a partir de uma GitHub Issue apontada por ele (link ou número) como origem do trabalho. Usar sempre que Rafinha disser algo como \"cria uma issue para isso\", \"vira uma issue no Jira\", \"registra isso como issue/ticket\", apontar uma GitHub Issue para virar issue do Jira, ou mencionar explicitamente que algo deve virar uma issue/ticket em qualquer ponto da conversa, mesmo que o resto da mensagem seja sobre outro tópico. Decide a hierarquia (Issue vs. Subtask, consultando workflow-development-flow em caso de dúvida) e o tipo oficial do ticket — Implementação, Correção, Bug, Refatoração Técnica, Documentação ou Epic — que substituiu o campo customizado `Tipo`, agora fora do contrato. Propõe apenas labels da matriz oficial mantida no Confluence, nunca inventa label, e exige label de trilha documental (rn-doc, module-doc, screen-doc, component-doc, …) em issue do tipo Documentação. Pode SUGERIR `requires-design` no rascunho, marcada como sugestão, mas nunca aplica essa label sozinha — ela é confirmada manualmente por Rafinha. Propõe a intenção de plataforma (web/mobile), que a jira-issue-executor confirma depois. Cria a issue em `A fazer`, a coluna de entrada do board, ou no backlog — nunca direto em `Fazer - Claude` ou `Design de produto - Rafinha`. Esta skill APENAS cria a issue — nunca implementa código, documentação ou qualquer outra coisa relacionada ao conteúdo da issue."
+description: "Criar uma issue (ou subtask) no Jira a partir de uma necessidade mencionada por Rafinha — seja no meio de uma mensagem sobre outro assunto, seja em um pedido dedicado, seja a partir de uma GitHub Issue apontada por ele (link ou número) como origem do trabalho. Usar sempre que Rafinha disser algo como \"cria uma issue para isso\", \"vira uma issue no Jira\", \"registra isso como issue/ticket\", apontar uma GitHub Issue para virar issue do Jira, ou mencionar explicitamente que algo deve virar uma issue/ticket em qualquer ponto da conversa, mesmo que o resto da mensagem seja sobre outro tópico. Decide a hierarquia (Issue vs. Subtask, consultando workflow-development-flow em caso de dúvida) e o tipo oficial do ticket — Implementação, Correção, Bug, Refatoração Técnica, Documentação ou Epic — que substituiu o campo customizado `Tipo`, agora fora do contrato. Propõe apenas labels da matriz oficial mantida no Confluence, nunca inventa label, e exige label de trilha documental (rn-doc, module-doc, screen-doc, component-doc, …) em issue do tipo Documentação. Pode SUGERIR `requires-design` no rascunho, marcada como sugestão, mas nunca aplica essa label sozinha — ela é confirmada manualmente por Rafinha. Propõe a intenção de plataforma (web/mobile), que a jira-issue-executor confirma depois. Cria a issue em `A fazer`, a coluna de entrada bruta do board, ou no backlog — nunca direto em `Fazer - Claude`, `Design de produto - Rafinha`, `Decisão - Rafinha` ou `Ready`. Escreve sempre a descrição padronizada de 9 seções definida em `workflow-development-flow` §17 (Objetivo, Contexto, Escopo, Fora do escopo, Regras de negócio, Critérios de aceite, Pendências de decisão, Decisões registradas, Orientação para implementação) — nunca o formato antigo de Contexto/Objetivo. Esta skill APENAS cria a issue — nunca implementa código, documentação ou qualquer outra coisa relacionada ao conteúdo da issue."
 ---
 
 # Criador de Issues — Jira genérico
@@ -214,9 +214,25 @@ Tipo: [Implementação | Correção | Bug | Refatoração Técnica | Documentaç
 Hierarquia: [Issue | Subtask] — [Issue pai / Épico pai, se aplicável]
 Título: [título objetivo]
 
-Descrição:
-  Contexto: [o motivo/necessidade que originou a issue]
-  Objetivo: [o que precisa ser alcançado/entregue]
+Descrição (padronizada — workflow-development-flow §17):
+  ## Objetivo
+  [o que precisa ser alcançado/entregue]
+  ## Contexto
+  [o motivo/necessidade que originou a issue]
+  ## Escopo
+  [o que está incluído]
+  ## Fora do escopo
+  [o que explicitamente não está incluído, se já souber]
+  ## Regras de negócio
+  [regras já conhecidas, ou "Nenhuma"]
+  ## Critérios de aceite
+  [já conhecidos, ou "Nenhum"]
+  ## Pendências de decisão
+  [qualquer incerteza real que Rafinha ainda precisa fechar, ou "Nenhuma"]
+  ## Decisões registradas
+  [Nenhuma — preenchida depois, se a issue passar por Decisão - Rafinha]
+  ## Orientação para implementação
+  [notas técnicas relevantes, ou "Nenhuma"]
 
 Labels: [labels propostas, todas da matriz oficial]
 Trilha documental: [só para tipo Documentação — rn-doc | module-doc | ...]
@@ -225,6 +241,12 @@ requires-design: [SUGESTÃO — precisa da sua confirmação | não se aplica]
 Destino: [Backlog | A fazer] — [quem definiu e por quê]
 Origem: [GitHub Issue #N (link) | Validação Humana CHAVE (cenário reprovado) | Chat]
 ```
+
+> **A seção Pendências de decisão não é decoração.** Se, ao montar o
+> rascunho, sobrar alguma incerteza real de escopo, regra de negócio,
+> comportamento ou critério de aceite que você não pode assumir sozinho,
+> registre-a ali — é o que leva a issue para `Decisão - Rafinha` depois de
+> criada, em vez de ela chegar madura demais tarde, em `Fazer - Claude`.
 
 > **`requires-design` aparece sempre como SUGESTÃO**, nunca como decisão
 > tomada. Se Rafinha não confirmar explicitamente, a label **não** é aplicada.
@@ -241,26 +263,32 @@ no escopo/objetivo da sprint atual do projeto:
 - Se encaixa → proponha criar em **`A fazer`**, a coluna de entrada do board.
 - Se não encaixa (ou não há sprint ativa) → proponha manter no **backlog**.
 
-**`A fazer` é a entrada do board quando a issue sai do backlog.** O backlog
-continua existindo como etapa pré-sprint — os dois coexistem.
+**`A fazer` é a entrada bruta do board quando a issue sai do backlog.** O
+backlog continua existindo como etapa pré-sprint — os dois coexistem. `A
+fazer` não é fila autorizada para envio direto a `Fazer - Claude`.
 
-A issue **nunca** é criada direto em `Fazer - Claude`, nem em
-`Design de produto - Rafinha`. A passagem de `A fazer` para a coluna seguinte
-é de Rafinha:
+A issue **nunca** é criada direto em `Fazer - Claude`, `Design de produto -
+Rafinha`, `Decisão - Rafinha` ou `Ready`. Quem decide o próximo passo a
+partir de `A fazer` é a `jira-sprint-intake-executor` (ou, na ausência de
+pendência e sem design necessário, o próprio julgamento de Rafinha):
 
 ```text
-A fazer → Design de produto - Rafinha   (quando tem requires-design)
-A fazer → Fazer - Claude                (quando não tem)
+A fazer → Decisão - Rafinha            (pendência real registrada — ver Pendências de decisão)
+A fazer → Design de produto - Rafinha  (requires-design confirmada, sem pendência)
+A fazer → Ready                        (caso excepcional: pronta, sem design, sem pendência)
 ```
 
-Deixe essa decisão e o motivo dela visíveis no rascunho do passo 5, para que
-Rafinha possa corrigir antes de aprovar.
+Esta skill não decide entre essas três — só cria em `A fazer` ou backlog e
+deixa a seção **Pendências de decisão** da descrição refletindo o que já
+sabe. Deixe a decisão de destino e o motivo dela visíveis no rascunho do
+passo 5, para que Rafinha possa corrigir antes de aprovar.
 
 ### 7. Criar a issue no Jira
 
 Somente após a aprovação do rascunho, crie a issue no Jira (via Atlassian
 Rovo) com:
-- Título e descrição (Contexto e Objetivo) conforme aprovado.
+- Título e descrição **padronizada de 9 seções** (workflow-development-flow
+  §17) conforme aprovado — nunca só Contexto/Objetivo.
 - **Tipo oficial** correto (um dos 7 — passo 3).
 - Labels aprovadas, **todas da matriz oficial**.
 - `requires-design` **somente se Rafinha confirmou explicitamente** no
@@ -304,8 +332,12 @@ breve do que foi registrado.
 - ❌ Nunca usar label de produto/módulo/feature que não esteja declarada na
   página de Controle de workflow daquele produto.
 - ❌ Nunca criar issue do tipo Documentação sem label de trilha documental.
-- ❌ Nunca criar a issue direto em `Fazer - Claude` ou em
-  `Design de produto - Rafinha` — o destino é `A fazer` ou backlog.
+- ❌ Nunca criar a issue direto em `Fazer - Claude`, `Design de produto -
+  Rafinha`, `Decisão - Rafinha` ou `Ready` — o destino é sempre `A fazer` ou
+  backlog.
+- ❌ Nunca usar o formato antigo de descrição (só Contexto/Objetivo) — a
+  descrição padronizada de 9 seções (workflow-development-flow §17) é
+  obrigatória em toda issue criada.
 - ❌ Nunca deixar de gravar o campo `Link para GitHub Issue` quando a issue
   teve origem numa GitHub Issue (passo 1) — sem ele, `jira-issue-executor`
   não consegue referenciá-la no PR nem fechá-la automaticamente.

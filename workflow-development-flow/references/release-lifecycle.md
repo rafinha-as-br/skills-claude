@@ -18,7 +18,7 @@ dentro e obrigadas por fora, pelo que está definido aqui.
 
 > **Issue workflow e Release workflow não são a mesma coisa.**
 
-- **Issue workflow** (as 10 colunas) → processo de conclusão de uma unidade de
+- **Issue workflow** (as 12 colunas) → processo de conclusão de uma unidade de
   mudança. Termina em `Concluído`.
 - **Release workflow** (este arquivo) → processo de entrega do produto. Agrupa
   várias issues concluídas numa versão publicada.
@@ -26,11 +26,9 @@ dentro e obrigadas por fora, pelo que está definido aqui.
 ```text
 ISSUE WORKFLOW                             RELEASE WORKFLOW
 
-A fazer                                    Pedido de release (sob demanda)
+A fazer → Decisão → Design → Ready         Pedido de release (sob demanda)
       ↓                                           ↓
-Design de produto - Rafinha                Tipo + Escopo
-      ↓                                           ↓
-Fazer - Claude                             Dependências → Escopo efetivo
+Fazer - Claude                             Tipo + Escopo → Dependências → Escopo efetivo
       ↓                                           ↓
 Análise - Rafinha                          Versões decididas por Rafinha
       ↓                                           ↓

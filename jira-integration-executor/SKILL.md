@@ -172,7 +172,9 @@ Riscos ou bloqueios:          <lista, ou "nenhum detectado">
 A execução só prossegue depois da confirmação, **salvo** quando Rafinha já
 tiver informado explicitamente a operação, o modo e o escopo no comando
 inicial. Mesmo nesse caso, o resumo é impresso — ele é o registro do que a
-skill entendeu, não apenas um pedido de permissão.
+skill entendeu, não apenas um pedido de permissão. Esta exigência já é o
+Gate de Escopo do princípio 11 de `workflow-development-flow` — esta skill
+nunca varreu coluna inteira sem confirmação explícita.
 
 > ⚠️ Se qualquer linha do resumo não puder ser preenchida com um valor real
 > — origem desconhecida, épico ambíguo, escopo indefinido — **pare e

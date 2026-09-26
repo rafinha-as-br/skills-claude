@@ -1,6 +1,6 @@
 ---
 name: jira-issue-executor
-description: "Executar, uma a uma, as issues da coluna \"Fazer - Claude\" da sprint atual de QUALQUER projeto Jira que Rafinha indicar. Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. Lê o TIPO NATIVO DO TICKET (Implementação, Correção, Bug, Refatoração Técnica, Documentação) como natureza da issue — o campo customizado `Tipo` saiu do contrato e nunca deve ser lido. Aplica o GATE DE DESIGN antes de qualquer linha de código: se a issue tem `requires-design` e não existe `.claude/design-packages/<ISSUE-KEY>/` na máquina, bloqueia e reporta, sem nunca implementar no escuro nem concluir que o design não foi feito. Respeita as labels de risco e controle (do-not-expand-scope, needs-manual-decision, needs-evidence, high-risk, breaking-change, legacy, needs-human-review) e só usa labels da matriz oficial do Confluence — nunca inventa label, nunca aplica `requires-design`, e não aplica mais a label genérica de revisão, que saiu do contrato. Issues de código são implementadas de verdade: branch com prefixo derivado do tipo do ticket (feat/, fix/, refactor/), commit, code review automatizado via `/code-review` e `/ponytail:ponytail-review`, testes obrigatórios e proporcionais ao risco, push e abertura automática de Pull Request referenciando a Issue do Jira e fechando a GitHub Issue de origem via Closes #N quando houver. A BRANCH DA ISSUE NEM SEMPRE NASCE DA DEVELOP: se a issue pertence a um épico com branch `epic/<EPIC-KEY>-<nome>` ativa, ela nasce da branch do épico, e o Pull Request aponta para a branch do épico, não para a develop — a jira-integration-executor valida esse destino no Modo A. Issue de épico sem branch usa a develop normalmente. Havendo mais de uma branch do mesmo épico, para e pergunta qual é a ativa. Registra a branch base escolhida no Execution State e no comentário da issue. Reaproveita componentes reutilizáveis por ID canônico e reporta divergência em vez de recriar componente existente. Confirma ou corrige a label de plataforma (web/mobile) conforme os arquivos realmente alterados — a jira-qa-executor depende dela e não tem mais fallback. Registra no comentário \"Implementação Claude\" o uso do Design Package e os IDs canônicos aplicados. Mantém um Execution State (`.claude/execution-state/<CHAVE>.md`, ver workflow-development-flow seção 13). Issues do tipo Documentação são delegadas por label de trilha, segundo a tabela de roteamento da workflow-development-flow §3.3, a um dos cinco writers (product-doc-writer, tech-doc-writer, screen-doc-writer, user-doc-writer, workflow-doc-writer) — sem label de trilha, pergunta antes de prosseguir; qa-doc não tem writer e para. Roda via Claude Code no repositório real dele. É TAMBÉM A ÚNICA SKILL QUE CRIA BRANCH DE ÉPICO, numa operação à parte do fluxo de issues: só sob comando explícito de Rafinha (\"cria a branch do épico X\"), nascida da develop atualizada, nomeada `epic/<EPIC-KEY>-<nome-do-epico>`, com a origem registrada em comentário no épico. Pertencer a um épico NÃO autoriza a criação automática da branch — rodar a coluna Fazer - Claude nunca cria branch de épico. Execution State é commitado apenas na branch da issue; nunca em epic/**, develop, release/current ou branches efêmeras de release. Mergear continua fora do escopo desta skill."
+description: "Executar, de forma PASSIVA, uma a uma, as issues da coluna \"Fazer - Claude\" (agora alimentada por `Ready`, não mais direto de `A fazer`) da sprint atual de QUALQUER projeto Jira que Rafinha indicar — implementa o que já foi decidido, nunca cria regra de negócio, nunca decompõe escopo e nunca conduz decisão de produto durante a implementação. Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Antes de buscar issues, confirma o escopo explícito com Rafinha (Épico, lista de issues, ou coluna inteira confirmada — workflow-development-flow, princípio 11); sem escopo confirmado, não roda às cegas. Sem projeto informado, pergunte antes de prosseguir. Lê o TIPO NATIVO DO TICKET (Implementação, Correção, Bug, Refatoração Técnica, Documentação) como natureza da issue — o campo customizado `Tipo` saiu do contrato e nunca deve ser lido. Aplica o GATE DE PENDÊNCIA DE DECISÃO antes do GATE DE DESIGN, antes de qualquer linha de código: se a seção `Pendências de decisão` da descrição não estiver vazia, bloqueia e reporta — a issue precisa voltar para `Decisão - Rafinha`, nunca é decidida aqui. Aplica também o GATE DE DESIGN: se a issue tem `requires-design` e não existe `.claude/design-packages/<ISSUE-KEY>/` na máquina, bloqueia e reporta, sem nunca implementar no escuro nem concluir que o design não foi feito. Respeita as labels de risco e controle (do-not-expand-scope, needs-evidence, high-risk, breaking-change, legacy, needs-human-review — `needs-manual-decision` saiu do contrato, substituída pela coluna `Decisão - Rafinha` e pela seção `Pendências de decisão`) e só usa labels da matriz oficial do Confluence — nunca inventa label, nunca aplica `requires-design`, e não aplica mais a label genérica de revisão, que saiu do contrato. Issues de código são implementadas de verdade: branch com prefixo derivado do tipo do ticket (feat/, fix/, refactor/), commit, code review automatizado via `/code-review` e `/ponytail:ponytail-review`, testes obrigatórios e proporcionais ao risco, push e abertura automática de Pull Request referenciando a Issue do Jira e fechando a GitHub Issue de origem via Closes #N quando houver. A BRANCH DA ISSUE NEM SEMPRE NASCE DA DEVELOP: se a issue pertence a um épico com branch `epic/<EPIC-KEY>-<nome>` ativa, ela nasce da branch do épico, e o Pull Request aponta para a branch do épico, não para a develop — a jira-integration-executor valida esse destino no Modo A. Issue de épico sem branch usa a develop normalmente. Havendo mais de uma branch do mesmo épico, para e pergunta qual é a ativa. Registra a branch base escolhida no Execution State e no comentário da issue. Reaproveita componentes reutilizáveis por ID canônico e reporta divergência em vez de recriar componente existente. Confirma ou corrige a label de plataforma (web/mobile) conforme os arquivos realmente alterados — a jira-qa-executor depende dela e não tem mais fallback. Registra no comentário \"Implementação Claude\" o uso do Design Package e os IDs canônicos aplicados. Mantém um Execution State (`.claude/execution-state/<CHAVE>.md`, ver workflow-development-flow seção 13). Issues do tipo Documentação são delegadas por label de trilha, segundo a tabela de roteamento da workflow-development-flow §3.3, a um dos cinco writers (product-doc-writer, tech-doc-writer, screen-doc-writer, user-doc-writer, workflow-doc-writer) — sem label de trilha, pergunta antes de prosseguir; qa-doc não tem writer e para. Roda via Claude Code no repositório real dele. É TAMBÉM A ÚNICA SKILL QUE CRIA BRANCH DE ÉPICO, numa operação à parte do fluxo de issues: só sob comando explícito de Rafinha (\"cria a branch do épico X\"), nascida da develop atualizada, nomeada `epic/<EPIC-KEY>-<nome-do-epico>`, com a origem registrada em comentário no épico. Pertencer a um épico NÃO autoriza a criação automática da branch — rodar a coluna Fazer - Claude nunca cria branch de épico. Execution State é commitado apenas na branch da issue; nunca em epic/**, develop, release/current ou branches efêmeras de release. Mergear continua fora do escopo desta skill."
 ---
 
 # Executor de Issues — Coluna "Fazer - Claude" (Jira genérico)
@@ -181,10 +181,22 @@ Branch de épico só é criada mediante comando explícito de Rafinha.
 
 ### 1. Localizar as issues elegíveis
 
-Busque, na sprint atual do projeto indicado, todas as issues que estão na
-coluna **"Fazer - Claude"** (via `searchJiraIssuesUsingJql` ou equivalente,
-filtrando por status/coluna e sprint ativa). Processe-as **uma de cada
-vez**, do início ao fim do fluxo abaixo, antes de passar para a próxima.
+**Gate de escopo (workflow-development-flow, princípio 11).** Antes de
+buscar qualquer issue, confirme o escopo desta execução com Rafinha, se
+ainda não estiver explícito na mensagem dele:
+1. **Épico** — só as issues daquele épico;
+2. **Lista de issues** — só os códigos informados;
+3. **Coluna inteira** — só quando Rafinha confirmar explicitamente que é
+   para processar a coluna toda.
+
+Estar na coluna correta não autoriza uma issue fora do escopo confirmado.
+Não rode a busca abaixo sem essa confirmação.
+
+Busque, na sprint atual do projeto indicado, as issues do escopo confirmado
+que estão na coluna **"Fazer - Claude"** (via `searchJiraIssuesUsingJql` ou
+equivalente, filtrando por status/coluna, sprint ativa e o escopo). Processe-as
+**uma de cada vez**, do início ao fim do fluxo abaixo, antes de passar para a
+próxima.
 
 **Interpretar a hierarquia de cada item antes de processá-lo:**
 - **Épico** → recuse executá-lo. Aponte as Issues filhas relacionadas a
@@ -271,7 +283,37 @@ Se estiver processando várias issues na mesma execução e restar mais de uma
 dúvida real, pode perguntar todas de uma vez, no início, para não
 interromper o fluxo issue a issue.
 
-### 3.1 Gate de Design — antes de qualquer implementação
+### 3.1 Gate de Pendência de decisão — antes do Gate de Design
+
+Este gate roda **antes** do Gate de Design (3.2) e antes de qualquer outra
+coisa nos passos 4a/4b. Ele vale para issues de código; issues do tipo
+Documentação não passam por ele.
+
+Leia a seção **Pendências de decisão** da descrição padronizada da issue
+(`workflow-development-flow` §17). Se não estiver vazia ou não disser
+"Nenhuma", **pare e reporte** em vez de implementar:
+
+```text
+BLOQUEIO — Pendência de decisão não resolvida
+
+Issue: <CHAVE>
+Pendências de decisão (da descrição):
+  - <cada item listado>
+
+Fazer - Claude não é lugar para fechar decisão de produto, regra de
+negócio ou escopo. Esta issue precisa passar por Decisão - Rafinha antes
+de ser implementada.
+```
+
+**Por que este gate existe mesmo a issue já estando em `Fazer - Claude`.** É
+defesa em profundidade: a issue não devia ter saído de `Ready` com pendência
+aberta, mas o gate cobre o caso de isso ter acontecido de qualquer forma —
+mesma lógica de nunca confiar cegamente num estado upstream sem conferir.
+
+Você **nunca** fecha a pendência sozinho, nem por inferência do contexto —
+isso é trabalho da `jira-issue-decision-resolver`, com Rafinha.
+
+### 3.2 Gate de Design — antes de qualquer implementação
 
 Este gate roda **antes** dos passos 4a/4b e antes de qualquer linha de
 código. Ele vale para issues de código; issues do tipo Documentação não
@@ -348,14 +390,13 @@ canônico (`<sigla>.<tipo>.<subtipo>`):
 issue não previu, **pare e pergunte**. Você não escolhe sozinho entre a
 descrição da issue e o design.
 
-### 3.2 Labels de risco e controle
+### 3.3 Labels de risco e controle
 
 Antes de implementar, verifique as labels de controle da issue e respeite-as:
 
 | Label | O que ela obriga |
 |---|---|
 | `do-not-expand-scope` | Não faça nada além do escopo literal da issue. Nem melhoria óbvia |
-| `needs-manual-decision` | Há decisão pendente de Rafinha. Pergunte antes de implementar |
 | `needs-evidence` | Evidência é obrigatória no comentário de execução |
 | `high-risk` | Reforce testes e registre explicitamente o risco tratado |
 | `breaking-change` | Registre o que quebra e o impacto no comentário |
@@ -704,7 +745,7 @@ mesmo que ainda não exista naquele projeto. O que não pode é inventar.
 > diferentes da mesma ideia.
 
 > ⚠️ **Nunca aplique `requires-design`.** Ela é confirmada manualmente por
-> Rafinha (seção 3.1). Se achar que a issue deveria tê-la, comente a
+> Rafinha (seção 3.2). Se achar que a issue deveria tê-la, comente a
 > observação e siga.
 
 **Label de plataforma — apenas issues de código.** Aplique o label nativo do
@@ -786,8 +827,10 @@ mais fallback** — se a label faltar, o QA bloqueia. Aplicar corretamente aqui
   seja incompatível com o que a descrição pede, sem antes perguntar a
   Rafinha (passo 3).
 - ❌ Nunca implementar uma issue com `requires-design` sem o Design Package
-  local (passo 3.1). Sem o pacote, o trabalho **para** — não existe "fazer
+  local (passo 3.2). Sem o pacote, o trabalho **para** — não existe "fazer
   só a parte que não é visual".
+- ❌ Nunca implementar uma issue com a seção **Pendências de decisão** não
+  vazia na descrição (passo 3.1) — pare e reporte, não infira a decisão.
 - ❌ Nunca concluir que "o design não foi feito" quando o pacote não está na
   máquina. A conclusão correta é que **o artefato não está aqui**.
 - ❌ Nunca aplicar `requires-design`. Ela é confirmada manualmente por
@@ -803,9 +846,8 @@ mais fallback** — se a label faltar, o QA bloqueia. Aplicar corretamente aqui
   Se o ID citado no design não existe no código, **reporte a divergência**.
 - ❌ Nunca escolher sozinho entre a descrição da issue e o design quando os
   dois divergirem — pare e pergunte.
-- ❌ Nunca ignorar `do-not-expand-scope`, `needs-manual-decision`,
-  `needs-evidence`, `high-risk`, `breaking-change`, `legacy` ou
-  `needs-human-review` (passo 3.2).
+- ❌ Nunca ignorar `do-not-expand-scope`, `needs-evidence`, `high-risk`,
+  `breaking-change`, `legacy` ou `needs-human-review` (passo 3.3).
 - ❌ Nunca tratar a aplicação da skill `flutter-development-standards` como
   opcional ou como menção passiva — para issues de código Flutter/Dart, a
   autorevisão do passo 5.3b é obrigatória e deve gerar correções reais no

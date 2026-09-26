@@ -59,9 +59,9 @@ Esta é a última camada antes de "Concluído", num pipeline maior de
 colunas, cada uma com sua própria skill:
 
 ```
-A fazer  →  [requires-design?]  →  Design de produto - Rafinha (manual)
-                          ↓                        ↓
-Fazer - Claude (jira-issue-executor)  ←────────────┘
+A fazer → Decisão - Rafinha → Design de produto - Rafinha → Ready
+                          ↓
+Fazer - Claude (jira-issue-executor)
                           ↓
 Análise - Rafinha (revisão manual)
                           ↓
@@ -127,8 +127,15 @@ trabalha em branch isolada). Ver `workflow-development-flow`, seção 13.
 
 ### 1. Localizar as issues elegíveis
 
-Busque, na sprint atual do projeto identificado, todas as issues que estão
-na coluna **"Análise Final - Claude"**. Processe-as uma de cada vez.
+**Gate de escopo (workflow-development-flow, princípio 11).** Antes de
+buscar qualquer issue, confirme o escopo explícito com Rafinha, se ele
+ainda não o deixou claro no comando: Épico, lista de issues, ou coluna
+inteira confirmada. Estar na coluna correta não autoriza uma issue fora do
+escopo confirmado.
+
+Busque, na sprint atual do projeto identificado, as issues do escopo
+confirmado na coluna **"Análise Final - Claude"**. Processe-as uma de cada
+vez.
 
 ### 2. Revisar cada issue por completo
 
@@ -225,9 +232,14 @@ mesmo que boa, é achado.
 | `needs-evidence` | Evidência está registrada? |
 | `high-risk` | O risco foi tratado e registrado? |
 | `breaking-change` | O que quebra está documentado? |
-| `needs-manual-decision` | A decisão de Rafinha foi obtida antes da implementação? |
 | `legacy` | O raio de alteração foi contido? |
 | `needs-human-review` | A necessidade de revisão reforçada foi sinalizada? |
+
+**5.1 Descrição padronizada sem resíduo de pendência.** A issue usa a
+descrição de 9 seções (`workflow-development-flow` §17) e a seção
+**Pendências de decisão** está vazia/"Nenhuma" — ela não devia ter chegado
+até aqui com pendência aberta (o Gate 12 de `Fazer - Claude` já deveria ter
+bloqueado antes). Resíduo aqui é achado.
 
 **6. QA executou o protocolo esperado.**
 Se a issue tem labels de protocolo (`regression-qa`, `visual-qa`, …), o

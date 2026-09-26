@@ -92,8 +92,14 @@ seção 13, para o mecanismo completo.
 
 ### 1. Localizar as issues elegíveis e decidir a trilha
 
-Busque, na sprint atual do projeto indicado, todas as issues na coluna
-**"Documentar"**. Processe-as uma de cada vez.
+**Gate de escopo (workflow-development-flow, princípio 11).** Antes de
+buscar qualquer issue, confirme o escopo explícito com Rafinha, se ele
+ainda não o deixou claro no comando: Épico, lista de issues, ou coluna
+inteira confirmada. Estar na coluna correta não autoriza uma issue fora do
+escopo confirmado.
+
+Busque, na sprint atual do projeto indicado, as issues do escopo confirmado
+na coluna **"Documentar"**. Processe-as uma de cada vez.
 
 **Exclusão obrigatória — issues de validação.** Ignore qualquer issue que
 tenha a label **`validacao-humana`**. A issue do tipo `Validação Humana`

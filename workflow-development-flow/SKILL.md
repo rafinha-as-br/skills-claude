@@ -1,6 +1,6 @@
 ---
 name: workflow-development-flow
-description: "Skill mãe do Workflow Rafinha-Claude — referência consultável sobre a lista canônica de 10 colunas (A fazer, Design de produto - Rafinha, Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Análise Final - Rafinha, Documentar, Análise Final - Claude, Concluído), a camada de Design de Produto e o gate `requires-design` com Design Package em `.claude/design-packages/<ISSUE-KEY>/`, os 7 tipos oficiais de ticket (Epic, Implementação, Correção, Bug, Refatoração Técnica, Documentação, Validação Humana) que substituíram o campo customizado `Tipo`, a matriz oficial de labels mantida no Confluence, os 11 gates operacionais e a proibição de fallback silencioso, a hierarquia Épico → Issue → Subtask e a verificação de subtarefas antes de movimentação crítica, as camadas de validação, a integração GitHub Issues ↔ Jira ↔ Pull Request, o MODELO DE BRANCHES (seção 16) — branch da issue, branch de épico opcional e criada só sob comando explícito, develop, release/current e main, mais os três modos da Integração (A: issue→épico, B: épico→develop, C: issue→develop), a regra de que o modo nunca é inferido, e o ciclo das duas labels de estado `integrado-epico` e `qa-develop-aprovado` —, o ciclo separado de Release & Versionamento (contratos completos em `references/release-lifecycle.md`), a Validação Humana Agregada (seção 12) e o Execution State (seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, qual gate se aplica, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'como funciona o gate de design', 'quais labels são oficiais', 'como funciona o ciclo de release', ou qualquer dúvida sobre o workflow."
+description: "Skill mãe do Workflow Rafinha-Claude — referência consultável sobre a lista canônica de 12 colunas (A fazer, Decisão - Rafinha, Design de produto - Rafinha, Ready, Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Análise Final - Rafinha, Documentar, Análise Final - Claude, Concluído), o princípio de escopo operacional explícito (Épico, lista de issues ou coluna inteira confirmada — nenhuma skill executora roda às cegas), a descrição padronizada da issue em 9 seções (seção 17), a camada de Design de Produto e o gate `requires-design` com Design Package em `.claude/design-packages/<ISSUE-KEY>/`, os 7 tipos oficiais de ticket (Epic, Implementação, Correção, Bug, Refatoração Técnica, Documentação, Validação Humana) que substituíram o campo customizado `Tipo`, a matriz oficial de labels mantida no Confluence (a label `needs-manual-decision` saiu do contrato, substituída pela coluna `Decisão - Rafinha` e pela descrição padronizada), os 13 gates operacionais e a proibição de fallback silencioso, a hierarquia Épico → Issue → Subtask e a verificação de subtarefas antes de movimentação crítica, as camadas de validação, a integração GitHub Issues ↔ Jira ↔ Pull Request, o MODELO DE BRANCHES (seção 16) — branch da issue, branch de épico opcional e criada só sob comando explícito, develop, release/current e main, mais os três modos da Integração (A: issue→épico, B: épico→develop, C: issue→develop), a regra de que o modo nunca é inferido, e o ciclo das duas labels de estado `integrado-epico` e `qa-develop-aprovado` —, o ciclo separado de Release & Versionamento (contratos completos em `references/release-lifecycle.md`), a Validação Humana Agregada (seção 12) e o Execution State (seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, qual gate se aplica, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'como funciona o gate de design', 'quais labels são oficiais', 'como funciona o ciclo de release', ou qualquer dúvida sobre o workflow."
 ---
 
 # Fluxo de Desenvolvimento — Skill Mãe (Rafinha + Claude)
@@ -9,18 +9,20 @@ description: "Skill mãe do Workflow Rafinha-Claude — referência consultável
 
 Esta é a **skill mãe** do workflow de desenvolvimento, revisão, integração,
 QA e documentação de Rafinha e Claude. Ela guarda o vocabulário e o mapa do
-processo que todas as demais skills do pipeline (`jira-issue-creator`,
-`jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`,
-`jira-doc-executor`, `jira-human-validation-executor`,
-`jira-review-executor`, `product-doc-writer`, `tech-doc-writer`,
-`screen-doc-writer`, `user-doc-writer`, `workflow-doc-writer`,
-`jira-release-executor`)
+processo que todas as demais skills do pipeline (`jira-sprint-intake-executor`,
+`jira-issue-decision-resolver`, `jira-issue-creator`, `jira-issue-executor`,
+`jira-integration-executor`, `jira-qa-executor`, `jira-doc-executor`,
+`jira-human-validation-executor`, `jira-review-executor`,
+`workflow-incident-capture-executor`, `product-doc-writer`,
+`tech-doc-writer`, `screen-doc-writer`, `user-doc-writer`,
+`workflow-doc-writer`, `jira-release-executor`)
 referenciam quando precisam entender em qual etapa uma issue está, o que
 vem antes ou depois, o que uma etapa deve produzir, qual gate se aplica, ou
 o que fazer diante de incerteza sobre o fluxo — incluindo o ciclo separado
 de Release & Versionamento (seção 10), a camada de Validação Humana
 Agregada (seção 12), o Execution State (seção 13), a camada de Design de
-Produto (seção 14) e o vocabulário de labels (seção 15).
+Produto (seção 14), o vocabulário de labels (seção 15) e a descrição
+padronizada da issue (seção 17).
 
 > **Estado do contrato: `preparado`.** Este documento descreve o contrato de
 > destino. O Jira ainda não foi configurado — a configuração é manual, feita
@@ -169,6 +171,22 @@ Válidos para todas as etapas, sem exceção:
    consultada posteriormente.**
 10. **A responsabilidade final pelas regras de negócio, pela aceitação do
     produto e pelas decisões técnicas críticas permanece com Rafinha.**
+11. **Nenhuma skill executora roda às cegas — toda execução operacional
+    exige escopo explícito.** O Jira indica o estado da issue; Rafinha
+    autoriza o escopo; a skill só executa quando estado e escopo forem
+    compatíveis. Escopo explícito é sempre uma destas três formas:
+    - **Épico** — somente issues do épico informado;
+    - **Lista de issues** — somente os códigos informados;
+    - **Coluna inteira confirmada** — somente quando Rafinha autorizar
+      explicitamente que é para processar a coluna toda.
+
+    Estar na coluna correta **não** autoriza uma issue fora do escopo. Estar
+    no escopo, mas em estado incompatível, **também não** autoriza execução.
+    Toda skill executora do pipeline (`jira-issue-executor`,
+    `jira-integration-executor`, `jira-qa-executor`, `jira-doc-executor`,
+    `jira-human-validation-executor`, `jira-review-executor`) confirma o
+    escopo com Rafinha antes de buscar issues, quando ele ainda não o
+    deixou explícito no próprio comando.
 
 **Extensão à camada de pipeline:** o princípio 2 se aplica também à
 validação por GitHub Actions (seção 6) — falha na pipeline é bloqueio de
@@ -275,7 +293,11 @@ Quando houver ambiguidade real sobre o tipo na criação da issue, a skill
 ```text
 A fazer
         ↓
+Decisão - Rafinha                (só quando há pendência de decisão real)
+        ↓
 Design de produto - Rafinha      (só quando requires-design)
+        ↓
+Ready
         ↓
 Fazer - Claude
         ↓
@@ -299,15 +321,35 @@ Concluído
 > Jira, e o contrato segue o Jira. É `QA - Claude`, com espaços ao redor do
 > hífen.
 
-**Duas mudanças em relação ao fluxo anterior:**
+**Três mudanças em relação ao fluxo anterior:**
 
-1. Entram `A fazer` (entrada do board quando a issue sai do backlog) e
-   `Design de produto - Rafinha` (etapa manual, seção 5.2).
-2. `Documentar` passou para **depois** de `Análise Final - Rafinha`. A
+1. Entram `Decisão - Rafinha` (maturação humana de pendências, seção 5.2) e
+   `Ready` (fila de issues prontas, seção 5.4) — o workflow passa de 10 para
+   12 colunas.
+2. `Documentar` continua **depois** de `Análise Final - Rafinha`. A
    documentação descreve o estado **aceito**, não apenas o testado.
+3. `Fazer - Claude` passa a receber **somente** issues que já saíram de
+   `Ready` — não é mais lugar para fechar decisão de produto, regra de
+   negócio ou escopo (ver o Gate de Pendência na seção 5.5).
 
-**Backlog** continua existindo como etapa pré-sprint, sem mudança. Issue sem
-`requires-design` vai de `A fazer` direto para `Fazer - Claude`.
+**O eixo de entrada.** Da `A fazer`, o destino depende do que a maturação
+(`jira-sprint-intake-executor`) encontrar:
+
+```text
+A fazer
+  → Decisão - Rafinha            (pendência de decisão real e relevante)
+  → Design de produto - Rafinha  (requires-design confirmada, sem pendência)
+  → Ready                        (caso excepcional: pronta, sem design, sem pendência)
+```
+
+`Decisão - Rafinha`, depois de resolvida
+(`jira-issue-decision-resolver`), segue para `Design de produto - Rafinha`
+(quando aplicável) ou direto para `Ready`. `Design de produto - Rafinha`,
+depois de concluída, segue manualmente para `Ready`. A transição
+`Ready → Fazer - Claude` é manual, feita por Rafinha — nenhuma skill varre
+`Ready` para empurrar issues adiante.
+
+**Backlog** continua existindo como etapa pré-sprint, sem mudança.
 
 Para issues do tipo Documentação, as etapas técnicas não aplicáveis são
 ignoradas conforme o tipo do ticket (seção 3).
@@ -322,14 +364,55 @@ ignoradas conforme o tipo do ticket (seção 3).
 
 ### 5.1 A fazer
 
-Entrada visual do board quando a issue sai do backlog. Não é etapa de
-trabalho — nenhuma skill executa nada aqui.
+Entrada bruta do board quando a issue sai do backlog. A issue existe, mas
+ainda não está necessariamente madura, decidida, pronta para design ou
+pronta para execução — **não** é fila autorizada para envio direto a
+`Fazer - Claude`.
 
-Da `A fazer` a issue segue para:
-- `Design de produto - Rafinha`, quando tem a label `requires-design`;
-- `Fazer - Claude`, quando não tem.
+A `jira-sprint-intake-executor` amadurece o que estiver no escopo informado
+por Rafinha (épico, issues soltas ou conjunto de trabalho) e decide, para
+cada issue, o próximo destino:
+- `Decisão - Rafinha`, quando resta pendência de decisão real e relevante
+  (escopo, regra de negócio, comportamento, critério de aceite);
+- `Design de produto - Rafinha`, quando a issue tem `requires-design`
+  confirmada e não há pendência de decisão;
+- `Ready`, **só no caso excepcional** em que a issue já está claramente
+  pronta, sem design e sem incerteza relevante.
 
-### 5.2 Design de produto - Rafinha (manual)
+Ela amadurece e explicita o escopo existente, mas **não** pode alterar a
+intenção original do épico ou da issue, nem criar regra de negócio, nem
+substituir a `jira-issue-decision-resolver`.
+
+### 5.2 Decisão - Rafinha (manual)
+
+> **Objetivo:** maturação humana de incertezas relevantes de escopo, regra
+> de negócio, comportamento, critério de aceite, decisão de produto ou
+> outra definição que não possa ser assumida logicamente a partir do
+> contexto original.
+
+Toda issue nesta coluna tem a seção **Pendências de decisão** preenchida na
+descrição padronizada (seção 17). A `jira-issue-decision-resolver` resolve
+essas pendências **uma issue por vez**, em conversa com Rafinha — não é
+linha de produção, não varre a coluna inteira automaticamente.
+
+Ao fechar as pendências, ela:
+- atualiza a descrição (remove pendências resolvidas, preenche **Decisões
+  registradas**);
+- move a issue para `Design de produto - Rafinha` (quando exige design) ou
+  direto para `Ready` (quando não exige).
+
+Ela **não** implementa, não cria PR, não faz QA, não documenta, não cria
+issues e não decide sozinha sem Rafinha. Decisão durável de regra de
+negócio, arquitetura ou necessidade documental é sinalizada para o artefato
+certo — a resolução da issue não substitui a documentação futura.
+
+`requires-design` também pode ser confirmada aqui, além do momento da
+criação — sempre manualmente por Rafinha, nunca inferida.
+
+**Resultado esperado:** `Pronto para Design de produto - Rafinha` ou
+`Pronto para Ready`
+
+### 5.3 Design de produto - Rafinha (manual)
 
 > **Objetivo:** produzir o Design Package que a implementação vai consumir.
 
@@ -354,13 +437,39 @@ já está aprovado — por construção, não por veredito.
 o design precisa virar decisão explícita de Rafinha e ser refletido na issue
 antes da implementação.
 
+**Resultado esperado:** `Pronto para Ready`
+
+### 5.4 Ready
+
+> **Objetivo:** ser a fila de issues maduras, decididas e prontas para
+> implementação.
+
+Uma issue nesta coluna não pode ter pendências de decisão abertas e, quando
+aplicável, já passou pelo design manual. Nenhuma skill varre `Ready` —
+chegar até aqui e transitar para `Fazer - Claude` é:
+- excepcional, direto da `A fazer`, quando a `jira-sprint-intake-executor`
+  já a encontra claramente pronta, sem design e sem incerteza relevante;
+- pela `jira-issue-decision-resolver`, depois de resolver as pendências;
+- manual, por Rafinha, depois do design.
+
+A transição `Ready → Fazer - Claude` é **manual, feita por Rafinha** — mesmo
+padrão de `Design de produto - Rafinha → Ready`.
+
 **Resultado esperado:** `Pronto para Fazer - Claude`
 
-### 5.3 Fazer - Claude
+### 5.5 Fazer - Claude
 
 > **Objetivo:** implementar a issue conforme requisitos, regras de negócio e
 > arquitetura estabelecidos, produzindo os testes necessários para comprovar
 > o comportamento alterado.
+
+**Gate de Pendência — antes do Gate de Design, antes de qualquer linha de
+código.** A skill lê a seção **Pendências de decisão** da descrição
+padronizada (seção 17). Se não estiver vazia/"Nenhuma", **para e reporta**
+em vez de implementar com decisão pendente — `Fazer - Claude` não é lugar
+para fechar decisão de produto, regra de negócio ou escopo. É defesa em
+profundidade: a issue não devia ter saído de `Ready` com pendência aberta,
+mas o gate cobre o caso de isso ter acontecido de qualquer forma.
 
 **Gate de Design — antes de qualquer linha de código.** Se a issue tem
 `requires-design`, a skill procura `.claude/design-packages/<ISSUE-KEY>/`. Se
@@ -388,8 +497,8 @@ Responsabilidades:
   foram considerados ou aplicados.
 
 **Labels de risco e controle que esta etapa respeita:**
-`do-not-expand-scope`, `needs-manual-decision`, `needs-evidence`,
-`high-risk`, `breaking-change`, `legacy`, `needs-human-review`.
+`do-not-expand-scope`, `needs-evidence`, `high-risk`, `breaking-change`,
+`legacy`, `needs-human-review`.
 
 **Design System.** Se o design referencia um ID canônico
 (`<sigla>.<tipo>.<subtipo>`) que não existe no código nem na documentação de
@@ -399,7 +508,7 @@ Falha de análise estática, build ou teste é bloqueio de avanço.
 
 **Resultado esperado:** `Pronto para Análise - Rafinha`
 
-### 5.4 Análise - Rafinha (manual)
+### 5.6 Análise - Rafinha (manual)
 
 > **Objetivo:** verificar se a implementação atende aos requisitos, às regras
 > de negócio, à arquitetura estabelecida e possui testes adequados.
@@ -418,7 +527,7 @@ insuficientes para o risco, ou comportamento incorreto.
 
 **Resultado esperado:** `Pronto para Integração`
 
-### 5.5 Integração
+### 5.7 Integração
 
 > **Objetivo:** integrar a alteração ao destino correto, verificando que ela
 > passa pelos gates técnicos num ambiente independente (GitHub Actions) e que
@@ -475,7 +584,7 @@ isso é o QA.
 **Resultado esperado:** `Pronto para QA - Claude` (modos B e C) ou
 `Integrado no épico, aguardando promoção` (modo A)
 
-### 5.6 QA - Claude
+### 5.8 QA - Claude
 
 > **Objetivo:** verificar se o sistema **já integrado na `develop`** continua
 > funcionando e se a alteração não introduziu regressões.
@@ -523,7 +632,7 @@ no épico como fato, não como unidade de julgamento.
 
 **Resultado esperado:** `Pronto para Análise Final - Rafinha`
 
-### 5.7 Análise Final - Rafinha (manual)
+### 5.9 Análise Final - Rafinha (manual)
 
 > **Objetivo:** analisar se o produto realmente entrega o que era proposto.
 
@@ -547,7 +656,7 @@ de uma vez.
 
 **Resultado esperado:** `Pronto para Documentar`
 
-### 5.8 Documentar
+### 5.10 Documentar
 
 > **Objetivo:** registrar o estado final e **aceito** do sistema, mantendo
 > sincronizadas a documentação do código e a do Confluence.
@@ -567,7 +676,7 @@ label `validacao-humana`** — a issue de Validação Humana não passa por aqui
 
 **Resultado esperado:** `Pronto para Análise Final - Claude`
 
-### 5.9 Análise Final - Claude
+### 5.11 Análise Final - Claude
 
 > **Objetivo:** auditoria final da issue para identificar pendências,
 > inconsistências ou itens não contemplados nas etapas anteriores.
@@ -598,7 +707,7 @@ Rafinha interrompe a conclusão e solicita a decisão.
 
 **Resultado esperado:** `Concluído`
 
-### 5.10 Concluído
+### 5.12 Concluído
 
 Estado terminal da issue. Nenhuma ação adicional é esperada nesta coluna.
 
@@ -676,15 +785,25 @@ Existem dois tipos de gate, e eles respondem perguntas diferentes.
 ```text
 A fazer
     ↓
-(requires-design? → Design de produto - Rafinha; senão → Fazer - Claude)
+(pendência real? → Decisão - Rafinha; requires-design sem pendência? →
+ Design de produto - Rafinha; claramente pronta? → Ready)
+    ↓
+Decisão - Rafinha
+    ↓
+Pendências de decisão fechadas, descrição atualizada
     ↓
 Design de produto - Rafinha
     ↓
 Design Package exportado e salvo em .claude/design-packages/<ISSUE-KEY>/
     ↓
+Ready
+    ↓
+Movida manualmente por Rafinha
+    ↓
 Fazer - Claude
     ↓
-Implementação + testes + análise estática + build + documentação + PR aberto
+Sem pendência de decisão aberta + implementação + testes + análise estática
++ build + documentação + PR aberto
     ↓
 Análise - Rafinha
     ↓
@@ -740,6 +859,8 @@ entrada delas.
 | 9 | Modo de integração | Modo não informado por Rafinha nem confirmado por ele | `jira-integration-executor` |
 | 10 | Integração de épico | Issue obrigatória do escopo sem `integrado-epico` na promoção | `jira-integration-executor` |
 | 11 | Subtarefa | Subtarefa obrigatória pendente antes de mover a issue pai para `QA - Claude` | `jira-integration-executor` |
+| 12 | Pendência de decisão | Seção **Pendências de decisão** não vazia numa issue em `Fazer - Claude` | `jira-issue-executor` |
+| 13 | Escopo operacional | Escopo (Épico, lista de issues ou coluna confirmada) não confirmado por Rafinha antes da varredura | `jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`, `jira-doc-executor`, `jira-human-validation-executor`, `jira-review-executor` |
 
 > O gate **G10 de elegibilidade de release** (todo commit do intervalo
 > `release/current..develop` precisa rastrear para issue com
@@ -771,7 +892,9 @@ não significa nada.
 | Etapa | Pergunta principal |
 |---|---|
 | A fazer | "Esta issue está pronta para entrar no fluxo?" |
+| Decisão - Rafinha | "As incertezas relevantes desta issue já foram resolvidas por Rafinha?" |
 | Design de produto - Rafinha | "O design está adequado para ser implementado?" |
+| Ready | "Esta issue está madura, decidida e (quando aplicável) desenhada?" |
 | Fazer - Claude | "Consigo implementar a issue e produzir evidências de que a mudança funciona?" |
 | Análise - Rafinha | "A implementação está tecnicamente e funcionalmente correta?" |
 | Integração | "Essa mudança consegue conviver com o restante do sistema, validada por um ambiente independente?" |
@@ -979,6 +1102,9 @@ sobre dificuldade de raciocínio e risco técnico, não sobre volume.
 | QA complexo | Sonnet | XHigh |
 | Documentação | Sonnet | Medium |
 | Auditoria final | Opus | High |
+| Triagem e maturação de issue (intake) | Sonnet | Medium |
+| Resolução de decisão em conversa (decision resolver) | Sonnet | Medium |
+| Captura de incidente operacional | Sonnet | Medium |
 
 Orientação geral — uma skill pode sobrescrevê-la com justificativa
 explícita na sua própria seção `## Model Policy`.
@@ -1052,7 +1178,7 @@ declarar seção própria; herdam o modelo/effort de quem as invoca.
 
 ## 12. Validação Humana Agregada
 
-Camada que prepara a etapa `Análise Final - Rafinha` (seção 5.7). Não é
+Camada que prepara a etapa `Análise Final - Rafinha` (seção 5.9). Não é
 uma etapa nova, não é uma coluna nova, e não altera a hierarquia
 Épico → Issue → Subtask (seção 1).
 
@@ -1166,9 +1292,9 @@ Regras que não podem ser violadas:
 | Etapa | O que muda |
 |---|---|
 | `QA - Claude` | Passa a mover a issue aprovada para `Análise Final - Rafinha` (antes ia para `Documentar`). |
-| `Análise Final - Rafinha` | Quando existe validação, Rafinha executa a partir dela (seção 5.7). Issues aprovadas seguem para `Documentar`. |
+| `Análise Final - Rafinha` | Quando existe validação, Rafinha executa a partir dela (seção 5.9). Issues aprovadas seguem para `Documentar`. |
 | `Documentar` | Documenta o estado **aceito**, não só o testado. **Ignora issues com a label `validacao-humana`** na varredura. |
-| `Análise Final - Claude` | Passa a receber de `Documentar` e audita também o estado da validação vinculada (seção 5.9). |
+| `Análise Final - Claude` | Passa a receber de `Documentar` e audita também o estado da validação vinculada (seção 5.11). |
 | `Fazer - Claude` | Reconhece `validação humana reprovada` como gatilho de correção, ao lado de `review reprovada por…`. |
 | Demais etapas | Nada. |
 
@@ -1481,7 +1607,7 @@ Minúsculas, sem acento, sem espaço, `kebab-case` quando composta.
 | Protocolo de QA | `functional-qa`, `visual-qa`, `regression-qa`, `e2e-qa`, `smoke-qa`, `manual-qa`, `maestro` | matriz global |
 | Design | `requires-design` | matriz global |
 | Validação humana | `validacao-*` e os `*-check` | matriz global |
-| Risco e controle | `high-risk`, `breaking-change`, `legacy`, `needs-human-review`, `do-not-expand-scope`, `needs-evidence`, `needs-manual-decision`, `intermittent`, `reproducible`, `regression` | matriz global |
+| Risco e controle | `high-risk`, `breaking-change`, `legacy`, `needs-human-review`, `do-not-expand-scope`, `needs-evidence`, `intermittent`, `reproducible`, `regression` | matriz global |
 | Natureza do defeito | `correcao-ui`, `visual-bug`, `data-bug`, `build-bug` | matriz global |
 | Refatoração técnica | `cleanup`, `deduplication`, `performance`, `testability`, `dependency`, `naming` | matriz global |
 | Documentação | trilhas documentais (`rn-doc`, `module-doc`, `screen-doc`, `component-doc`, …) | matriz global |
@@ -1516,6 +1642,7 @@ tem. O ciclo de vida completo das duas vive na matriz do Confluence.
 | Label genérica de revisão, em todas as grafias | A revisão já é representada por coluna do workflow |
 | `validacao-aprovada` | O estado aprovado já é a coluna `Concluído` mais o histórico |
 | Labels de agente/modelo (`needs-opus`, `needs-sonnet`, `claude-suitable`, `codex-suitable`) | Modelo e esforço são a Model Escalation Policy (seção 11), não label |
+| `needs-manual-decision` | Substituída pela coluna `Decisão - Rafinha` e pela seção **Pendências de decisão** da descrição padronizada (seção 17) |
 
 ---
 
@@ -1630,6 +1757,52 @@ ciclo) e §22 (promoção, gate G10 e a divisão do bump).
 
 ---
 
+## 17. Descrição padronizada da issue
+
+A descrição é a **fonte oficial** de pendências e decisões da issue. Não
+existe campo customizado no Jira para esse fim — é sempre a descrição.
+
+```text
+## Objetivo
+
+## Contexto
+
+## Escopo
+
+## Fora do escopo
+
+## Regras de negócio
+
+## Critérios de aceite
+
+## Pendências de decisão
+
+## Decisões registradas
+
+## Orientação para implementação
+```
+
+**Quem escreve cada seção:**
+
+| Momento | Skill | O que faz |
+|---|---|---|
+| Criação | `jira-issue-creator` | Preenche a base (Objetivo, Contexto, Escopo, Fora do escopo, Regras de negócio, Critérios de aceite quando já conhecidos) |
+| Maturação | `jira-sprint-intake-executor` | Explicita lacunas, registra pendências reais em **Pendências de decisão** |
+| Resolução | `jira-issue-decision-resolver` | Remove pendências resolvidas, preenche **Decisões registradas** |
+| Implementação | `jira-issue-executor` | Só **lê** — nunca escreve nesta descrição para fechar decisão própria |
+
+**Coerência com a coluna.** A descrição precisa ser coerente com a coluna em
+que a issue está:
+- `Decisão - Rafinha` → **Pendências de decisão** preenchida;
+- `Ready` e qualquer coluna depois → **Pendências de decisão** vazia ("Nenhuma")
+  ou ausente. Se não estiver, é a condição do Gate 12 (seção 8.2) em
+  `Fazer - Claude`.
+
+Seção sem conteúdo real usa "Nenhuma" — mesma convenção do Execution State
+(seção 13.2): nunca inventar conteúdo só para preencher o template.
+
+---
+
 ## Quando Rafinha aciona esta skill diretamente
 
 Perguntas do tipo:
@@ -1669,6 +1842,12 @@ Perguntas do tipo:
 - "Uma subtarefa aberta trava a issue pai?"
 - Qualquer dúvida sobre nomenclatura de colunas, ordem das etapas, gates,
   ou regra de bloqueio de avanço.
+- "O que é a coluna `Decisão - Rafinha`?" / "Quando uma issue vai pra lá em
+  vez de `Ready`?"
+- "Quem move issue de `Ready` para `Fazer - Claude`?"
+- "Por que essa execução parou pedindo escopo?" / "O que conta como escopo
+  explícito?"
+- "O que vai em cada seção da descrição padronizada da issue?"
 
 ## O que esta skill NUNCA faz
 

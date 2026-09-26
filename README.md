@@ -8,9 +8,13 @@ Cada coluna do Jira tem uma skill dona. Issues de código são implementadas de 
 
 ```mermaid
 flowchart LR
-    Z["A fazer"] --> Y["Design de produto - Rafinha"]
-    Z --> A["Fazer - Claude"]
-    Y --> A
+    Z["A fazer"] --> W["Decisão - Rafinha"]
+    Z --> Y["Design de produto - Rafinha"]
+    Z --> R["Ready"]
+    W --> Y
+    W --> R
+    Y --> R
+    R --> A["Fazer - Claude"]
     A --> B["Análise - Rafinha"]
     B --> C["Integração"]
     C --> D["QA - Claude"]
@@ -27,7 +31,30 @@ flowchart LR
 > nos repositórios de produto é manual, feita por Rafinha em sessão
 > separada — confirme com ele antes de assumir que já rodou. O piloto do
 > catálogo de componentes espera a sigla oficial do produto (ver
-> `plano-pacote-3.md` §7).
+> `plano-pacote-3.md` §7). **Pacote 4 (revisão do workflow inteiro,
+> `plano-pacote-4.md`) implementado nas skills e no Confluence** — 12
+> colunas, escopo operacional explícito e as três skills novas de intake,
+> decisão e captura de incidente. A configuração real do board do Jira
+> (criar as colunas `Decisão - Rafinha` e `Ready`) continua manual, de
+> Rafinha, fora desta sessão.
+
+**`Decisão - Rafinha` e `Ready` entram como camadas oficiais.** `A fazer` é
+entrada bruta — nunca fila para `Fazer - Claude` direto. A
+`jira-sprint-intake-executor` amadurece o escopo informado e roteia para
+`Decisão - Rafinha` (pendência real), `Design de produto - Rafinha`
+(design confirmado) ou, excepcionalmente, `Ready`. A
+`jira-issue-decision-resolver` fecha pendências **uma issue por vez, em
+conversa** com Rafinha, e move para design ou `Ready`. `Fazer - Claude`
+passa a receber só de `Ready`, e ganha um gate defensivo: se a descrição
+ainda tiver **Pendências de decisão** abertas, a `jira-issue-executor` para
+e reporta em vez de implementar decisão pendente.
+
+**Nenhuma skill executora roda às cegas.** Toda execução operacional
+(`jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`,
+`jira-doc-executor`, `jira-human-validation-executor`,
+`jira-review-executor`) exige escopo explícito de Rafinha antes de buscar
+issues — Épico, lista de issues, ou coluna inteira **confirmada**. Estar na
+coluna certa não autoriza issue fora do escopo.
 
 **Documentar é trabalho composto.** São cinco writers, um por fonte da
 verdade — produto, código, tela, usuário final e o próprio workflow. Numa
@@ -118,9 +145,11 @@ GitHub Release só em versão **final** — nenhum RC polui a aba Releases, e ne
 
 | Skill | O que faz |
 |---|---|
-| [`workflow-development-flow`](workflow-development-flow/SKILL.md) | Referência do fluxo: lista canônica de 10 colunas, hierarquia Épico/Issue/Subtask, os 7 tipos oficiais de ticket, os 11 gates operacionais, a camada de Design de Produto, o vocabulário de labels, o modelo de branches e os três modos da Integração, ciclo de release e Execution State. |
-| [`jira-issue-creator`](jira-issue-creator/SKILL.md) | Cria issues/subtasks no Jira com tipo oficial e labels da matriz — sugere `requires-design`, nunca aplica. Destino: `A fazer` ou backlog. |
-| [`jira-issue-executor`](jira-issue-executor/SKILL.md) | Implementa as issues de "Fazer - Claude": gate de Design, código + testes + review automatizado + PR. |
+| [`workflow-development-flow`](workflow-development-flow/SKILL.md) | Referência do fluxo: lista canônica de 12 colunas, escopo operacional explícito, hierarquia Épico/Issue/Subtask, os 7 tipos oficiais de ticket, os 13 gates operacionais, a camada de Design de Produto, o vocabulário de labels, a descrição padronizada da issue, o modelo de branches e os três modos da Integração, ciclo de release e Execution State. |
+| [`jira-issue-creator`](jira-issue-creator/SKILL.md) | Cria issues/subtasks no Jira com tipo oficial, descrição padronizada de 9 seções e labels da matriz — sugere `requires-design`, nunca aplica. Destino: `A fazer` ou backlog. |
+| [`jira-sprint-intake-executor`](jira-sprint-intake-executor/SKILL.md) | Amadurece o escopo confirmado em `A fazer`: explicita lacunas, registra pendências, roteia para `Decisão - Rafinha`, `Design de produto - Rafinha` ou `Ready`. Nunca move direto para `Fazer - Claude`. |
+| [`jira-issue-decision-resolver`](jira-issue-decision-resolver/SKILL.md) | Fecha pendências de decisão de uma issue por vez, em conversa com Rafinha — nunca varre a coluna em lote. |
+| [`jira-issue-executor`](jira-issue-executor/SKILL.md) | Implementa, de forma passiva, as issues de "Fazer - Claude" vindas de `Ready`: gate de Pendência de decisão, gate de Design, código + testes + review automatizado + PR. |
 | [`jira-integration-executor`](jira-integration-executor/SKILL.md) | Faz o merge real para `develop`, validando GitHub Actions e conflitos antes. |
 | [`jira-qa-executor`](jira-qa-executor/SKILL.md) | QA funcional/visual — plataforma escolhe o executor, protocolo escolhe a estratégia. Sem label de plataforma, bloqueia. |
 | [`jira-doc-executor`](jira-doc-executor/SKILL.md) | Roda depois da aceitação. Identifica a documentação impactada e delega para o writer certo; ignora `validacao-humana`. |
@@ -144,6 +173,7 @@ GitHub Release só em versão **final** — nenhum RC polui a aba Releases, e ne
 | Skill | O que faz |
 |---|---|
 | [`flutter-development-standards`](flutter-development-standards/SKILL.md) | Checklist de arquitetura/boas práticas Flutter, incluindo componentes reutilizáveis e IDs canônicos do Design System. |
+| [`workflow-incident-capture-executor`](workflow-incident-capture-executor/SKILL.md) | Registra incongruências do workflow num `.md` local, sem corrigir nada nem tocar Jira/Confluence/GitHub/código — observação pura para retomada depois. |
 | [`weekly-organizer`](weekly-organizer/SKILL.md) | Organiza a semana e o inbox do Todoist. |
 | [`task-creator-trabalho`](task-creator-trabalho/SKILL.md) | Registra tarefas e contexto de trabalhos acadêmicos. |
 

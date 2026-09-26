@@ -254,8 +254,14 @@ Nunca altere essas frases.
 
 ### 1. Levantar o lote elegível
 
-Busque, na sprint atual do projeto indicado, todas as issues na coluna
-**"Análise Final - Rafinha"**.
+**Gate de escopo (workflow-development-flow, princípio 11).** Antes de
+buscar qualquer issue, confirme o escopo explícito com Rafinha, se ele
+ainda não o deixou claro no comando: Épico, lista de issues, ou coluna
+inteira confirmada. Estar na coluna correta não autoriza uma issue fora do
+escopo confirmado.
+
+Busque, na sprint atual do projeto indicado, as issues do escopo confirmado
+na coluna **"Análise Final - Rafinha"**.
 
 **Exclua** as que já estão cobertas: issue que tenha link `Relates` para
 uma issue com a label `validacao-humana` que ainda não esteja em
