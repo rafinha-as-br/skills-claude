@@ -129,7 +129,7 @@ GitHub Release só em versão **final** — nenhum RC polui a aba Releases, e ne
 | [`tech-doc-writer`](tech-doc-writer/SKILL.md) | Documentação técnica: módulo, API, arquitetura para devs, componente reutilizável. |
 | [`screen-doc-writer`](screen-doc-writer/SKILL.md) | Documentação de tela/UI, com prints reais via navegação ao vivo — modos `dev`/`user`/`hybrid`. |
 | [`user-doc-writer`](user-doc-writer/SKILL.md) | Guias de usuário final — a tarefa que atravessa telas, ponta a ponta. |
-| [`workflow-doc-writer`](workflow-doc-writer/SKILL.md) | Documentação do próprio workflow: fichas de skill (com checagem de drift contra o `SKILL.md` real), páginas de pipeline, registro de releases. |
+| [`workflow-doc-writer`](workflow-doc-writer/SKILL.md) | Documentação do próprio workflow: fichas de skill (com checagem de drift contra o `SKILL.md` real), páginas de pipeline, documentação de release de cada projeto (o Manifest copiado, nunca reescrito). |
 | [`doc-pendency-resolver`](doc-pendency-resolver/SKILL.md) | Resolve pendências e ambiguidades perguntando antes de escrever, nunca assumindo. |
 
 ### Qualidade & produtividade

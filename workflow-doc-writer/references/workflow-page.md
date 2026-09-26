@@ -8,8 +8,8 @@ branches", "Vocabulário operacional de labels", "Gates operacionais",
 "Controle de workflow - <produto>")
 
 Este é o template **guarda-chuva** para tudo que documenta o pipeline em si,
-e não uma skill específica (isso é `skill-page.md`) nem uma release específica
-(isso é `release-doc.md`): modelo de branches, gates, hierarquia, vocabulário
+e não uma skill específica (isso é `skill-page.md`) nem a documentação de
+release de um projeto (isso é `release-doc.md`): modelo de branches, gates, hierarquia, vocabulário
 de labels, tipos de ticket, página de controle por produto.
 
 ## O que esta página documenta
@@ -41,7 +41,7 @@ que mudou, e a decisão que motivou (se houver uma registrada em
 | Conteúdo | Vai em | Skill |
 |---|---|---|
 | Detalhe de comportamento de uma skill específica | Ficha da skill | `workflow-doc-writer`, template `skill-page.md` |
-| Registro de uma release específica | Registro de release | `workflow-doc-writer`, template `release-doc.md` |
+| Documentação de release de um projeto | Árvore `CI/CD - Workflow Rafinha-Claude` | `workflow-doc-writer`, template `release-doc.md` |
 | Regra de negócio ou requisito de produto | RN / requisito | `product-doc-writer` |
 
 > Se o conteúdo só faz sentido para uma skill (o que ela faz passo a passo)

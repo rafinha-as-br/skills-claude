@@ -2,11 +2,20 @@
 
 **Label:** `component-doc` · **Skill:** `tech-doc-writer`
 **Fonte da verdade:** o código do componente
-**Convenção de título:** `Componente - <nome>`
+**Onde vive:** o catálogo é **uma página por produto**, filha de
+*Componentes reutilizáveis por produto* no espaço CS1 (página 68059167), com
+título `Componentes reutilizáveis - <produto>`. Cada componente é **uma
+seção** dessa página, com o ID canônico como título da seção (`## gp.button.primary`)
+— não uma página por componente. É o formato que a página oficial do CS1
+define; este template detalha a seção.
 
-Cada componente é uma entrada no catálogo do produto. O **ID canônico** é a
-ponte entre o Claude Design e o Claude Code — ele é o campo mais importante
-desta página.
+O **ID canônico** é a ponte entre o Claude Design e o Claude Code — ele é o
+campo mais importante da entrada.
+
+> ⛔ **Sem sigla oficial, não há entrada.** Se a página de *Controle de
+> workflow por produto* ainda marca a sigla do produto como pendente, pare:
+> o catálogo daquele produto não pode começar. Nunca use uma sigla
+> provisória nem a deduza do nome do produto.
 
 ## ID canônico
 ```
@@ -44,7 +53,10 @@ Trecho de código real de uso, curto.
 O que existe no Claude Design sob o mesmo ID, e divergências conhecidas.
 
 ## Prints
-Quando o componente for visual. Ver a rotina de anexo de prints.
+Quando o componente for visual. Anexe com o utilitário compartilhado
+`~/.claude/skills/screen-doc-writer/scripts/anexar-print.sh <pageId> <arquivo>`
+e embuta inline com `<ac:image><ri:attachment ri:filename="..." /></ac:image>`
+— mesma convenção de nome e de posição da `screen-doc-writer` (passo 5 dela).
 
 ## O que NÃO vai nesta página
 

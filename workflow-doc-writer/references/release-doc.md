@@ -1,41 +1,64 @@
-# Template — Registro de release
+# Template — Documentação de release do projeto
 
 **Label:** `release-doc` · **Skill:** `workflow-doc-writer`
-**Fonte da verdade:** a execução real da release — Release Orchestrator,
-GitHub Actions, `release-manifest.yml`
-**Convenção de título:** `Release - <produto ou componente> vX.Y.Z`
+**Fonte da verdade:** `.release/project.yml`, a `release.yml` de cada
+repositório, as GitHub Actions e, para cada distribuição, o
+`release-manifest.yml`
+**Contrato de origem:** `workflow-development-flow/references/release-lifecycle.md`,
+§13 (quem guarda o quê) e §19 (documentação obrigatória do projeto)
 
-## Resumo da distribuição
-Tipo (`PRE_RELEASE`/`FINAL`), escopo (parcial/completa), data, e o que essa
-versão entrega — 2–3 frases.
+Cobre a árvore **`CI/CD - Workflow Rafinha-Claude`** que todo projeto com
+ciclo de release precisa ter no seu space. Sem ela, o gate G0 bloqueia a
+primeira release. É uma árvore, não uma página — cada filha responde uma
+parte das perguntas do G0.
 
-## Componentes e versões
-Tabela: componente · versão anterior · versão nova · motivo do incremento (ou
-`carried`, quando o componente foi puxado por dependência mas não mudou).
+## Árvore e o que cada página responde
 
-## O que mudou
-Notas de release em texto corrido — vêm do que a `jira-release-executor` já
-reuniu do Jira; não reescreva do zero aqui.
+| Página | Responde | Fonte |
+|---|---|---|
+| `CI/CD - Workflow Rafinha-Claude` | índice da árvore; topologia (monorepo ou multi-repo) | `.release/project.yml` |
+| Projeto e Componentes | quais são os componentes, quais os repositórios, quais dependências | `.release/project.yml` |
+| Build e Artefatos | como cada componente é construído, quais artefatos produz | `release.yml` de cada repositório |
+| Execução de uma Versão | como uma versão é executada fora da IDE | `.release/project.yml`, Runtime Package |
+| Runtime Package | se existe e como é executado — ou, se `false`, a justificativa e como a versão roda sem ele | `.release/project.yml` |
+| Banco e Infraestrutura Local | só quando aplicável | Rafinha |
+| CI/CD | as Actions que existem e o que cada uma dispara | GitHub Actions |
+| Release | **índice das distribuições + cópia de cada Manifest** | `release-manifest.yml` |
+| Validação da Release | como a versão é validada, e o veredito de cada distribuição | fase 6 da `jira-release-executor` |
+| Versionamento | versão atual do produto e de cada componente | tags `<componente>/vX.Y.Z` |
+| Release Multi-Repository | obrigatória se `topology = multi_repo` | `.release/project.yml` |
 
-## Issues incluídas
-Tabela: chave da issue · resumo · tipo. É a rastreabilidade de quem precisa
-saber o que está dentro desta distribuição.
+Página com conteúdo ausente na fonte **não é preenchida por inferência** — é
+pendência do G0, via `doc-pendency-resolver`.
 
-## Artefatos e onde encontrar
-Link do pacote no Drive, e do `release-manifest.yml` quando relevante. Link
-do GitHub Release só existe para versão **final** — nunca para RC.
+## A página Release — regra própria
 
-## Riscos e exceções conhecidas
-Exceções ao gate G10 autorizadas para esta release, se houver: item, risco,
-autorização, impacto — os quatro campos, sem exceção.
+Cada distribuição **final** acrescenta uma entrada, nesta forma:
 
-## O que NÃO vai nesta página
+```text
+### <produto ou componente> vX.Y.Z — <data>
+Tipo: FINAL · Escopo: <parcial|completa>
+Pacote: <link do Drive>
+
+<conteúdo do release-manifest.yml, copiado literalmente num bloco de código>
+```
+
+> ⚠️ **O Confluence copia, não reinterpreta.** Nenhuma nota de release em
+> texto corrido, nenhuma tabela de componentes reescrita à mão: o Manifest
+> é a única versão. Uma segunda versão escrita à mão diverge do ZIP na
+> primeira correção, e o contrato de release proíbe isso explicitamente.
+
+Pre-release (`rc.N`) não entra nesta página — mesma regra do GitHub Release.
+
+Exceção ao gate G10 autorizada para aquela promoção entra logo abaixo da
+entrada, com os quatro campos (item, risco, autorização, impacto) — nunca
+pela metade.
+
+## O que NÃO vai nesta árvore
 
 | Conteúdo | Vai em | Skill |
 |---|---|---|
-| Regra de negócio entregue nesta release | RN | `product-doc-writer` |
-| Passo a passo de como a Action builda/publica | `release.yml` do repositório | não é página de Confluence |
-| Ficha da skill de release | Ficha da skill | `workflow-doc-writer`, template `skill-page.md` |
-
-> Esta página registra **o que saiu**, não como o processo de release
-> funciona em geral — isso é `workflow-page.md`.
+| Como o ciclo de release funciona em geral, para todos os projetos | Página de workflow (Release & Versionamento) | `workflow-doc-writer`, template `workflow-page.md` |
+| Ficha da `jira-release-executor` | Ficha da skill | `workflow-doc-writer`, template `skill-page.md` |
+| Regra de negócio entregue numa versão | RN | `product-doc-writer` |
+| Notas de release reescritas à mão | lugar nenhum | o Manifest já é o registro |

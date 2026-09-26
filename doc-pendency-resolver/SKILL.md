@@ -20,7 +20,7 @@ Skills anfitriãs hoje:
 | `tech-doc-writer` | Documentação técnica — módulo, API, arquitetura, componente, README, ADR |
 | `screen-doc-writer` | Documentação de tela — campos, componentes, estados, nos três modos (`dev`/`user`/`hybrid`) |
 | `user-doc-writer` | Documentação de usuário final — guia de tarefa que atravessa telas |
-| `workflow-doc-writer` | Documentação do próprio workflow — ficha de skill, página de pipeline, registro de release |
+| `workflow-doc-writer` | Documentação do próprio workflow — ficha de skill, página de pipeline, documentação de release do projeto |
 
 Qualquer skill futura que escreva páginas formais no Confluence de Rafinha
 também passa por aqui. **Esta camada é transversal** — ela não pertence a

@@ -1,6 +1,6 @@
 ---
 name: "workflow-doc-writer"
-description: "Escritor da documentação do PRÓPRIO Workflow Rafinha-Claude no Confluence — páginas de skill, páginas de fluxo/gates/labels/tipos de ticket, controle por produto, e registro de releases. A fonte da verdade é o contrato operacional real: `SKILL.md` de cada skill, `.release/project.yml`, board do Jira, GitHub Actions e decisões oficiais no Notion/Confluence — nunca decisão de produto nem código de feature. Usar sempre que Rafinha disser \"atualiza a ficha dessa skill\", \"documenta essa release no Confluence\", \"a página de gates/labels/branches está desatualizada\", pedir para verificar se uma ficha de skill bate com o SKILL.md real, ou pedir para criar a página de controle de um produto novo. Roda com acesso ao repositório (mesmo contexto de jira-issue-executor) sempre que precisar ler um SKILL.md real para checar drift. Três templates em `references/`: `skill-page.md` (uma skill), `workflow-page.md` (regra do pipeline em si — branches, gates, labels, tipos de ticket, controle por produto), `release-doc.md` (uma distribuição específica). SEMPRE leia o template antes de escrever. Não usar para regra de negócio, requisito, documentação técnica de módulo/API, ou documentação de tela/usuário — essas são product-doc-writer, tech-doc-writer, screen-doc-writer e user-doc-writer."
+description: "Escritor da documentação do PRÓPRIO Workflow Rafinha-Claude no Confluence — páginas de skill, páginas de fluxo/gates/labels/tipos de ticket, controle por produto, e a documentação de release de cada projeto (árvore `CI/CD - Workflow Rafinha-Claude`, incluindo a entrada de cada distribuição na página Release, sempre como cópia literal do `release-manifest.yml`). A fonte da verdade é o contrato operacional real: `SKILL.md` de cada skill, `.release/project.yml`, board do Jira, GitHub Actions e decisões oficiais no Notion/Confluence — nunca decisão de produto nem código de feature. Usar sempre que Rafinha disser \"atualiza a ficha dessa skill\", \"documenta essa release no Confluence\", \"monta a documentação de CI/CD do projeto\", \"a página de gates/labels/branches está desatualizada\", pedir para verificar se uma ficha de skill bate com o SKILL.md real, ou pedir para criar a página de controle de um produto novo. Roda com acesso ao repositório (mesmo contexto de jira-issue-executor) sempre que precisar ler um SKILL.md real para checar drift. Três templates em `references/`: `skill-page.md` (uma skill), `workflow-page.md` (regra do pipeline em si — branches, gates, labels, tipos de ticket, controle por produto), `release-doc.md` (árvore de release de um projeto — acionada também pela jira-release-executor no gate G0 e no registro G9). SEMPRE leia o template antes de escrever. Não usar para regra de negócio, requisito, documentação técnica de módulo/API, ou documentação de tela/usuário — essas são product-doc-writer, tech-doc-writer, screen-doc-writer e user-doc-writer."
 ---
 
 # Escritor de Documentação de Workflow — Confluence de Rafinha
@@ -9,7 +9,7 @@ description: "Escritor da documentação do PRÓPRIO Workflow Rafinha-Claude no 
 
 Ao executar esta skill, você mantém a documentação **do próprio pipeline**
 — o Workflow Rafinha-Claude, suas skills, seus gates, seu vocabulário de
-labels, seus tipos de ticket, e o registro de cada release — no Confluence,
+labels, seus tipos de ticket, e a documentação de release de cada projeto — no Confluence,
 escrevendo ou atualizando diretamente a página cujo link Rafinha fornecer.
 
 **A fonte da verdade desta skill é o contrato operacional real**: o
@@ -39,7 +39,7 @@ apenas documenta o que a referência e as skills reais dizem).
 |---|---|---|---|
 | Ficha de skill | `skill-doc` | `references/skill-page.md` | uma skill |
 | Página de workflow | `workflow-doc` | `references/workflow-page.md` | branches, gates, hierarquia, labels, tipos de ticket, controle por produto |
-| Registro de release | `release-doc` | `references/release-doc.md` | uma distribuição específica |
+| Documentação de release | `release-doc` | `references/release-doc.md` | a árvore `CI/CD - Workflow Rafinha-Claude` de um projeto, incluindo a entrada de cada distribuição na página Release |
 
 📄 **Leia o template correspondente em `references/` antes de escrever.**
 Cada um traz a estrutura de seções, a convenção de título e o que não vai
@@ -97,9 +97,12 @@ página, nunca devolve texto solto no chat como entrega final.
   assunto (Notion, ou o `plano-pacote-*.md` mais recente que a decidiu) e
   as skills que a aplicam, se a página descrever um comportamento executado
   por elas.
-- **Registro de release** → use o que a `jira-release-executor` já reuniu
-  (escopo, notas, issues, `release-manifest.yml`) — não reabra o
-  levantamento do zero.
+- **Documentação de release** → `.release/project.yml`, a `release.yml` de
+  cada repositório e as Actions, para a árvore; e, para a entrada de uma
+  distribuição na página Release, o `release-manifest.yml` que a
+  `jira-release-executor` entrega. **O Manifest é copiado literalmente** —
+  nunca resumido, reescrito em texto corrido ou reorganizado em tabela
+  (contrato de release, §13: o Confluence copia, não reinterpreta).
 
 ### 3. Checagem de drift (só na trilha ficha de skill)
 
@@ -160,7 +163,7 @@ Crie ou atualize a página no Confluence (`createConfluencePage` ou
 
 ```
 ✅ Página [criada/atualizada]: [link da página]
-📋 Trilha: [ficha de skill / página de workflow / registro de release]
+📋 Trilha: [ficha de skill / página de workflow / documentação de release]
 🔍 Drift verificado (só ficha de skill): [quantidade de divergências corrigidas, ou "nenhuma"]
 ⚠️ Pendências sinalizadas (via doc-pendency-resolver): [quantidade e resumo, ou "nenhuma"]
 🔗 Links para outras páginas: [lista ou "nenhum"]

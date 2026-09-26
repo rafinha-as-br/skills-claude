@@ -280,6 +280,12 @@ class AppPrimaryButton extends StatelessWidget {
 O mesmo ID precisa valer nos três lugares — Claude Design, Confluence e
 código. Divergência entre eles é defeito de documentação, não detalhe.
 
+O docstring é a parte do código; a entrada no catálogo do Confluence é
+escrita pela `tech-doc-writer`, trilha `component-doc` (template
+`componente-reutilizavel.md`). Quem cria o componente registra o ID no
+docstring e sinaliza a entrada nova — não escreve o catálogo por conta
+própria.
+
 ### Checklist desta seção
 
 - [ ] Procurei componente existente antes de criar um novo?

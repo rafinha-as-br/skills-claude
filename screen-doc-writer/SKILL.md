@@ -296,19 +296,23 @@ genuinamente necessário para esclarecer o comportamento técnico.
 
 O Atlassian Rovo disponível hoje **não tem uma ferramenta de anexar
 arquivo** (nem no Jira, nem no Confluence) — isso já foi confirmado ao
-desenhar a `jira-qa-executor`. O caminho é a API REST do Confluence
-diretamente:
+desenhar a `jira-qa-executor`. O caminho é a API REST do Confluence, pelo
+utilitário compartilhado desta skill:
 
 ```bash
-curl -u "$JIRA_API_EMAIL:$JIRA_API_TOKEN" \
-  -X POST \
-  -H "X-Atlassian-Token: no-check" \
-  -F "file=@/caminho/para/print.png" \
-  "https://SEUSITE.atlassian.net/wiki/rest/api/content/{pageId}/child/attachment"
+~/.claude/skills/screen-doc-writer/scripts/anexar-print.sh <pageId> print1.png [print2.png ...]
 ```
 
-(Mesmas variáveis de ambiente `JIRA_API_EMAIL`/`JIRA_API_TOKEN` já usadas
-para anexo no Jira — funcionam também no Confluence do mesmo site.)
+Ele usa as variáveis `JIRA_API_EMAIL`/`JIRA_API_TOKEN` (as mesmas do anexo no
+Jira), converte o caminho para o formato Windows quando roda no Git Bash, e
+usa `PUT` — que **substitui** o anexo de mesmo nome em vez de falhar. Isso
+importa ao revisar uma página: o print novo da mesma região mantém o nome, e
+a macro de imagem que já o referencia continua valendo. O site padrão é
+`rafinha84dev.atlassian.net`; `ATLASSIAN_SITE` sobrescreve.
+
+O mesmo utilitário serve a `tech-doc-writer` quando uma página de componente
+reutilizável leva print — por isso ele é um script, não um bloco de comando
+repetido em cada skill.
 
 Depois de anexado, embuta o print **inline, dentro da seção a que se
 refere** (nunca numa galeria separada no fim da página) usando a macro de

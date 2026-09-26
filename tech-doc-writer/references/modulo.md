@@ -2,7 +2,11 @@
 
 **Label:** `module-doc` · **Skill:** `tech-doc-writer`
 **Fonte da verdade:** o código
-**Convenção de título:** `Módulo - <nome do módulo>`
+**Convenção de título:** `Módulo - <nome do módulo> (<app>)` — o app entre
+parênteses quando o produto tem mais de um (ex.: `Módulo - Autenticação (App
+Aplicador)`, `Módulo - Viagens (RouteCraft)`). É a forma das páginas reais; o
+mesmo nome de módulo existe em mais de um app, e sem o parêntese os títulos
+colidem.
 
 Estrutura **livre**. As seções abaixo são repertório, não checklist — escolha
 as que o módulo precisa e não force seção vazia.

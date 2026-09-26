@@ -2,7 +2,10 @@
 
 **Label:** `rn-doc` · **Skill:** `product-doc-writer`
 **Fonte da verdade:** decisão de produto, explicação de Rafinha
-**Convenção de título:** `RN - <nome da regra>`
+**Convenção de título:** `Regra de Negócio - <nome da regra>` — a forma usada
+nas páginas reais do Geoprag e do Compass. Algumas páginas antigas do Geoprag
+usam "Regra de negócio" em minúscula; isso é variação, não convenção: página
+nova usa "Negócio" com maiúscula, e ao reescrever uma antiga, alinhe o título.
 
 Estrutura **fixa**. As quatro seções são obrigatórias e nesta ordem.
 

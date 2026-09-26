@@ -45,7 +45,7 @@ resultado: "sem divergência" ou o que foi corrigido.
 |---|---|---|
 | Regra operacional que vale para várias skills (gate, modelo de branch) | Página de workflow | `workflow-doc-writer`, template `workflow-page.md` |
 | Passo a passo interno completo da skill | O próprio `SKILL.md` | não se repete no Confluence |
-| Registro de uma release específica | Registro de release | `workflow-doc-writer`, template `release-doc.md` |
+| Documentação de release de um projeto | Árvore `CI/CD - Workflow Rafinha-Claude` | `workflow-doc-writer`, template `release-doc.md` |
 
 > Esta página **resume** o `SKILL.md` para quem não vai abrir o repositório.
 > Nunca é a página que decide o que a skill faz — se ela divergir do

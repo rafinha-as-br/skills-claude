@@ -97,7 +97,7 @@ Rafinha" — sua auditoria é a última camada, não a única. O passo 2 desta
 skill — checar se a documentação foi devidamente atualizada — vale para os
 dois casos: no primeiro, é a `jira-doc-executor` quem já deveria ter
 atualizado a página certa; no segundo, é a própria página criada pela
-`product-doc-writer`/`tech-doc-writer`/`screen-doc-writer` lá atrás. Se
+writer da label de trilha lá atrás. Se
 algo estiver faltando ou divergente em qualquer um dos dois casos, trate
 como qualquer outra pendência (passo 3b) — o caminho de origem não muda o
 critério de revisão.
@@ -142,7 +142,13 @@ Para cada issue, revise:
   contraria o que já está documentado, ou se falta alguma informação crucial
   no que foi implementado frente ao que a documentação exige.
 - **Se a documentação foi devidamente atualizada**, caso o escopo da issue
-  exigisse isso.
+  exigisse isso. O comentário "Documentação Claude" da `jira-doc-executor`
+  precisa declarar os **cinco** writers — página atualizada ou motivo de não
+  aplicar. Writer ausente do comentário, ou "não aplica" sem motivo, é
+  pendência (passo 3b): é fallback silencioso na documentação. Confira
+  também se o motivo se sustenta — ex.: issue que mudou uma tela com
+  `user-doc-writer` marcado "não aplica" enquanto existe um guia que passa
+  por aquela tela.
 - **O estado da Validação Humana vinculada**, quando existir. Localize-a
   pelos links `Relates` da issue (ela é a issue relacionada com a label/
   categoria `validacao-humana` — nunca a identifique pelo tipo de issue) e

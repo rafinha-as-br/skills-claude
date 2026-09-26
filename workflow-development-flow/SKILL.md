@@ -13,7 +13,8 @@ processo que todas as demais skills do pipeline (`jira-issue-creator`,
 `jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`,
 `jira-doc-executor`, `jira-human-validation-executor`,
 `jira-review-executor`, `product-doc-writer`, `tech-doc-writer`,
-`screen-doc-writer`, `jira-release-executor`)
+`screen-doc-writer`, `user-doc-writer`, `workflow-doc-writer`,
+`jira-release-executor`)
 referenciam quando precisam entender em qual etapa uma issue está, o que
 vem antes ou depois, o que uma etapa deve produzir, qual gate se aplica, ou
 o que fazer diante de incerteza sobre o fluxo — incluindo o ciclo separado
@@ -219,6 +220,39 @@ Issue do tipo **Documentação** precisa de uma label de trilha documental
 Se nenhuma estiver presente, a skill **pergunta a Rafinha** — não infere a
 trilha pelo conteúdo quando isso define qual writer será usado. A label
 `confluence` é destino/meio e não satisfaz o gate sozinha.
+
+**Tabela de roteamento — label documental → writer.** Esta é a única fonte
+desta tabela; `jira-issue-executor` e `jira-doc-executor` consultam aqui em
+vez de manter cópia própria.
+
+| Label | Writer | Template / observação |
+|---|---|---|
+| `rn-doc` | `product-doc-writer` | `rn.md` |
+| `module-doc` | `tech-doc-writer` | `modulo.md` |
+| `api-doc` | `tech-doc-writer` | `api.md` |
+| `component-doc` | `tech-doc-writer` | `componente-reutilizavel.md` |
+| `architecture-doc` | `product-doc-writer` **ou** `tech-doc-writer` | conforme a fonte da verdade: decisão de produto → product; estrutura de código → tech. Na dúvida, pergunta |
+| `readme` | `tech-doc-writer` | **sem template** — o writer declara a lacuna e pergunta |
+| `adr` | `tech-doc-writer` | **sem template**, e sem uso real ainda |
+| `screen-doc` | `screen-doc-writer` | modo `dev`/`user`/`hybrid` confirmado pelo próprio writer, nunca pela label |
+| `user-doc` | `user-doc-writer` | `user-guide.md` |
+| `workflow-doc` | `workflow-doc-writer` | `workflow-page.md` |
+| `skill-doc` | `workflow-doc-writer` | `skill-page.md` |
+| `release-doc` | `workflow-doc-writer` | `release-doc.md` |
+| `qa-doc` | **nenhum** | destino operacional ainda não definido — a skill para e reporta, nunca delega por aproximação |
+| `confluence` | — | destino/meio, não escolhe writer |
+
+Requisito, caso de uso, fluxo de produto e critérios de aceitação são
+trilhas do `product-doc-writer` **sem label própria** na matriz. Numa issue
+do tipo Documentação, é a `rn-doc` que roteia para o `product-doc-writer`, e
+ele confirma com Rafinha qual template usar quando a descrição pede outra
+trilha de produto. Criar labels próprias para essas trilhas é decisão de
+matriz, fora deste contrato.
+
+**Documentar é trabalho composto.** Numa issue de código, a
+`jira-doc-executor` não escolhe **um** writer: monta o conjunto de writers
+aplicáveis e declara quais pulou e por quê (ver a própria skill e a D3 do
+`plano-pacote-3.md`).
 
 ### 3.4 Subtask
 
@@ -522,8 +556,10 @@ Roda **depois** da aceitação de Rafinha. Descreve o estado que foi aceito,
 não apenas o que foi testado.
 
 Responsabilidades: atualização da documentação de módulos no código (pasta
-`docs/`, só o que fizer sentido), atualização do Confluence (regra de
-negócio, módulo, tela), sem burocracia — nada é criado só por criar.
+`docs/`, só o que fizer sentido), atualização do Confluence (produto,
+módulo, tela, guia de usuário, workflow), sem burocracia — nada é criado só
+por criar. Uma issue de código gera um **conjunto** de delegações, não uma
+escolha de writer (seção 3.3).
 
 **Exclusão obrigatória.** A varredura desta coluna **ignora issues com a
 label `validacao-humana`** — a issue de Validação Humana não passa por aqui
