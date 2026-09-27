@@ -99,18 +99,30 @@ produz um verde que não significa nada.
 produto resolve o problema; só então a documentação registra o estado
 **aceito**, e a auditoria final vê as duas coisas prontas.
 
-**Branch de épico é opcional e explícita.** A branch da issue nem sempre nasce
-da `develop`: se a issue pertence a um épico com branch ativa, ela nasce de
-`epic/<EPIC-KEY>-<nome>`, e o Pull Request aponta para lá. Mas pertencer a um
-épico **não** cria a branch — ela só nasce sob comando explícito de Rafinha, e
-issue de épico sem branch integra direto na `develop`, normalmente.
+**Branches são artefatos temporários, não histórico (Correções 27/09).** O
+histórico permanente é commit + Pull Request + Jira — nunca a branch viva.
+A branch do épico deixou de ser opcional: a `jira-issue-executor` a
+**garante automaticamente** antes de qualquer issue do épico chegar à
+primeira Integração (a issue nasce de `epic/<EPIC-KEY>-<nome>`, e o PR
+aponta para lá). Depois que o Modo B promove o épico, ou o Modo C mergeia
+uma issue, com sucesso, as branches que já cumpriram o papel são
+**excluídas** — ausência de branch, depois disso, não é achado. A
+convenção de nome ganhou sufixo de tentativa —
+`{tipo}/<ISSUE-KEY>-claude[.<tentativa>]` — porque reimplementação após
+retorno/reprovação nunca reaproveita a branch antiga; o contador vem de um
+comentário estruturado na própria issue, nunca de contar branches.
 
 **A Integração tem três modos, e nunca escolhe sozinha.** Modo A (issue →
-branch do épico), Modo B (branch do épico → `develop`, promovendo o épico
-inteiro) e Modo C (issue → `develop`). Rafinha informa o modo, ou a skill para
-e pergunta — mesmo quando a estrutura das branches parece indicar o caminho
+branch do épico — ou o **Epic inteiro** como escopo, processando todas as
+issues dele em `Integração` de uma vez), Modo B (branch do épico →
+`develop`, promovendo o épico inteiro — agora **cria seu próprio PR** de
+promoção quando necessário e exige uma **autorização humana de merge**
+distinta da confirmação de modo/escopo, só depois de tudo verde e apto) e
+Modo C (issue → `develop`). Rafinha informa o modo, ou a skill para e
+pergunta — mesmo quando a estrutura das branches parece indicar o caminho
 óbvio. Antes de qualquer merge, a skill imprime o resumo operacional do que
-entendeu.
+entendeu. Se Rafinha negar a autorização de merge no Modo B, não é falha —
+a execução só encerra sem mergear, e revalida do zero na próxima vez.
 
 **Duas labels carregam o que a coluna não diz.** Existe **uma** coluna
 `Integração` para três destinos de merge, então `integrado-epico` é o único

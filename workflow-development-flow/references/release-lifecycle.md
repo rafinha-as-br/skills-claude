@@ -983,24 +983,53 @@ A label `qa-develop-aprovado` diz que uma **issue** passou. O gate precisa
 provar algo mais forte: que **todo commit** que vai entrar em
 `release/current` pertence a uma issue que passou.
 
-O caminho é o nome da branch. A convenção `{tipo}/<ISSUE-KEY>-claude` é
-mantida pela `jira-issue-executor` em toda issue de código, o que significa
-que cada merge commit na `develop` carrega a chave da issue no seu segundo
-pai.
+**Dois caminhos de entrada na `develop` (Correções 27/09).** Desde que o
+Modo B da Integração passou a promover épicos inteiros por um PR próprio
+(`epic/<EPIC-KEY>-<nome> → develop`), um merge commit pode vir de duas
+origens diferentes, e o G10 precisa reconhecer as duas:
 
 ```text
 1. Calcular o intervalo  release/current..develop
-2. Para cada merge commit do intervalo:
-     extrair a chave da issue do nome da branch de origem
-3. Para cada chave extraída:
-     verificar a presença de `qa-develop-aprovado`
-4. BLOQUEAR se:
-     - commit sem chave extraível        (inclui commit direto na develop)
-     - chave sem `qa-develop-aprovado`
+2. Para cada merge commit do intervalo, identificar o caminho pela
+   branch de origem:
+
+   CAMINHO 1 — merge direto de issue
+     branch = {tipo}/<ISSUE-KEY>-claude[.<tentativa>]
+     (convenção mantida pela jira-issue-executor; o sufixo de tentativa
+     não muda a chave extraída)
+     extrair a chave da issue do nome da branch
+     verificar a presença de `qa-develop-aprovado` nessa issue
+
+   CAMINHO 2 — merge agregador de Epic
+     branch = epic/<EPIC-KEY>-<nome>
+     identificar o Epic
+     localizar, no histórico de PRs mergeados no GitHub (permanente —
+     não é apagado quando a branch do Epic é excluída pela limpeza
+     automática do Modo B), os merges/PRs de issue individuais que
+     compuseram aquele estado promovido
+     usar o comentário de promoção registrado no Epic (ledger do Modo B)
+     como índice auxiliar para localizar essas issues — nunca como prova
+     técnica única; se ledger e Git/GitHub discordarem, Git/GitHub
+     prevalece, e a divergência é achado a reportar
+     obter as chaves das issues e verificar `qa-develop-aprovado` em
+     CADA UMA individualmente
+
+3. BLOQUEAR se:
+     - commit sem chave extraível e sem Epic identificável (inclui
+       commit direto na develop)
+     - chave (caminho 1) sem `qa-develop-aprovado`
      - chave que não resolve para issue existente
-5. Registrar o mapeamento commit → issue → label no bloco `eligibility`
-   do Release Request (§8), aprovado ou bloqueado
+     - qualquer issue do caminho 2 sem rastreamento possível, ou sem
+       `qa-develop-aprovado`
+4. Registrar o mapeamento commit → issue(s) → label no bloco `eligibility`
+   do Release Request (§8), citando o caminho usado, aprovado ou bloqueado
 ```
+
+> ⚠️ **A exclusão da branch não pode quebrar o G10.** O contrato depende de
+> histórico permanente — commits, PRs mergeados, comentários — nunca da
+> branch remota ainda existir. Um merge de Epic continua rastreável mesmo
+> com a branch do Epic já excluída, porque o PR mergeado permanece no
+> GitHub.
 
 **Commit direto na `develop`, sem Pull Request, bloqueia a promoção.** É
 deliberado: um commit sem PR é, por construção, um commit que não passou por

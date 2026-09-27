@@ -1,6 +1,6 @@
 ---
 name: "jira-release-executor"
-description: "Preparar e executar uma release do Workflow Rafinha-Claude — transformar um estado do software numa distribuição versionada, identificável, reproduzível e utilizável fora do ambiente de desenvolvimento. Usar quando Rafinha disser algo como \"prepara a release 0.5.0\", \"gera uma pre-release do APK do Routecraft\", \"fecha a versão completa do Compass\", \"que issues entram na próxima release\", ou pedir para publicar/versionar/distribuir o projeto. NUNCA é acionada por varredura de coluna do Jira — Release não é uma etapa do workflow de issue (ver workflow-development-flow), é um ciclo sob demanda e separado. Todo pedido tem dois eixos: TIPO (PRE_RELEASE ou FINAL) e ESCOPO (parcial ou completa). Projeto ≠ repositório: um projeto pode ser monorepo ou multi-repo, e a topologia é declarada no manifesto `.release/project.yml`, nunca inferida. Versiona por COMPONENTE (tags namespaced `<componente>/vX.Y.Z`), e uma distribuição completa recebe também uma versão de PRODUTO. Resolve dependências declaradas para expandir o escopo pedido no escopo efetivo, separando quem recebe versão nova de quem entra como `carried`. Mapeia issue → componente pelos arquivos do Pull Request, monta as notas a partir do campo Resumo das issues, sugere os incrementos com justificativa mas nunca decide sozinha, produz o Release Request e entrega a execução ao Release Orchestrator local (que dispara as Actions e monta a distribuição) ou dispara a Action direto quando não há o que agregar. Ao final aguarda a validação da distribuição fora da IDE, associa as Fix Versions namespaced (só em release final) e atualiza o Confluence. A RELEASE NÃO PARTE DA DEVELOP: ela parte de `release/current`, a branch persistente de estabilização, e chegar lá passa pelo GATE G10 DE ELEGIBILIDADE — todo merge commit do intervalo `release/current..develop` precisa rastrear, pelo nome da branch de origem, para uma issue com a label `qa-develop-aprovado`. Commit sem chave extraível (inclusive commit direto na develop, sem PR), chave sem a label, ou chave que não resolve para issue existente BLOQUEIAM a promoção. O mapeamento commit → issue → label vira o bloco `eligibility` do Release Request, obrigatório, registrado tanto na aprovação quanto no bloqueio. Rafinha pode autorizar exceção explícita, e aí a skill registra qual issue/épico ficou fora, o risco aceito, a frase de autorização e o impacto — exceção sem esses quatro itens não é exceção, é lacuna, e a skill não prossegue. O COMMIT DE BUMP VAI DIRETO NA `release/current`, não na branch efêmera: a versão semântica pertence à linha persistente e o metadado de build (+run_number) continua sendo carimbado pela Action na branch efêmera `release/<data>-<run_number>`, que passa a nascer da `release/current` já preparada. Na primeira promoção de um projeto, sem `release/current` para comparar, o intervalo é perguntado a Rafinha, nunca inferido. Herda as regras de segurança de jira-integration-executor (nunca --force, nunca descarta trabalho não commitado sem perguntar)."
+description: "Preparar e executar uma release do Workflow Rafinha-Claude — transformar um estado do software numa distribuição versionada, identificável, reproduzível e utilizável fora do ambiente de desenvolvimento. Usar quando Rafinha disser algo como \"prepara a release 0.5.0\", \"gera uma pre-release do APK do Routecraft\", \"fecha a versão completa do Compass\", \"que issues entram na próxima release\", ou pedir para publicar/versionar/distribuir o projeto. NUNCA é acionada por varredura de coluna do Jira — Release não é uma etapa do workflow de issue (ver workflow-development-flow), é um ciclo sob demanda e separado. Todo pedido tem dois eixos: TIPO (PRE_RELEASE ou FINAL) e ESCOPO (parcial ou completa). Projeto ≠ repositório: um projeto pode ser monorepo ou multi-repo, e a topologia é declarada no manifesto `.release/project.yml`, nunca inferida. Versiona por COMPONENTE (tags namespaced `<componente>/vX.Y.Z`), e uma distribuição completa recebe também uma versão de PRODUTO. Resolve dependências declaradas para expandir o escopo pedido no escopo efetivo, separando quem recebe versão nova de quem entra como `carried`. Mapeia issue → componente pelos arquivos do Pull Request, monta as notas a partir do campo Resumo das issues, sugere os incrementos com justificativa mas nunca decide sozinha, produz o Release Request e entrega a execução ao Release Orchestrator local (que dispara as Actions e monta a distribuição) ou dispara a Action direto quando não há o que agregar. Ao final aguarda a validação da distribuição fora da IDE, associa as Fix Versions namespaced (só em release final) e atualiza o Confluence. A RELEASE NÃO PARTE DA DEVELOP: ela parte de `release/current`, a branch persistente de estabilização, e chegar lá passa pelo GATE G10 DE ELEGIBILIDADE — todo merge commit do intervalo `release/current..develop` precisa rastrear para uma issue com a label `qa-develop-aprovado`, por DOIS CAMINHOS (Correções 27/09): merge direto de issue (chave extraída do nome da branch `{tipo}/<ISSUE-KEY>-claude[.<tentativa>]`) ou merge agregador de Epic (`epic/<EPIC-KEY>-<nome> → develop`, desagregado em issues individuais via histórico de PRs mergeados no GitHub, cada uma validada separadamente). A exclusão da branch depois do merge NÃO quebra este gate — a prova é Git/GitHub permanente, nunca a branch remota ainda existir. Commit sem chave extraível nem Epic identificável (inclusive commit direto na develop, sem PR), chave/issue sem a label, ou chave que não resolve para issue existente BLOQUEIAM a promoção. O mapeamento commit → issue → label vira o bloco `eligibility` do Release Request, obrigatório, registrado tanto na aprovação quanto no bloqueio. Rafinha pode autorizar exceção explícita, e aí a skill registra qual issue/épico ficou fora, o risco aceito, a frase de autorização e o impacto — exceção sem esses quatro itens não é exceção, é lacuna, e a skill não prossegue. O COMMIT DE BUMP VAI DIRETO NA `release/current`, não na branch efêmera: a versão semântica pertence à linha persistente e o metadado de build (+run_number) continua sendo carimbado pela Action na branch efêmera `release/<data>-<run_number>`, que passa a nascer da `release/current` já preparada. Na primeira promoção de um projeto, sem `release/current` para comparar, o intervalo é perguntado a Rafinha, nunca inferido. Herda as regras de segurança de jira-integration-executor (nunca --force, nunca descarta trabalho não commitado sem perguntar)."
 ---
 
 # Executor de Release — Ciclo de Distribuição do Produto
@@ -340,21 +340,43 @@ exige provar que a `develop` só carrega trabalho aprovado.
 "promover só as issues do escopo". Ou a `develop` inteira está apta, ou a
 promoção para.
 
-**Como provar (§22 da referência):**
+**Como provar (§22 da referência) — dois caminhos de entrada na `develop`
+(Correções 27/09):**
 
 ```text
 1. Calcular o intervalo  release/current..develop
-2. Para cada merge commit do intervalo:
-     extrair a chave da issue do nome da branch de origem
-     (convenção {tipo}/<ISSUE-KEY>-claude, mantida pela jira-issue-executor)
-3. Para cada chave extraída:
-     verificar a presença de `qa-develop-aprovado`
-4. BLOQUEAR se:
-     - commit sem chave extraível        (inclui commit direto na develop)
-     - chave sem `qa-develop-aprovado`
+2. Para cada merge commit do intervalo, identificar o caminho:
+
+   CAMINHO 1 — merge direto de issue
+     branch de origem = {tipo}/<ISSUE-KEY>-claude[.<tentativa>]
+     extrair a chave da issue do nome da branch (a tentativa não muda
+     a chave extraída)
+     verificar a presença de `qa-develop-aprovado` na issue
+
+   CAMINHO 2 — merge agregador de Epic
+     branch de origem = epic/<EPIC-KEY>-<nome>
+     identificar o Epic
+     localizar, no histórico Git/GitHub da promoção (PRs mergeados —
+     que não são apagados quando a branch é excluída), os merges/PRs de
+     issue que compuseram aquele estado promovido; usar o comentário de
+     promoção no Epic como índice auxiliar, nunca como prova única
+     obter as chaves das issues
+     verificar `qa-develop-aprovado` em CADA issue individualmente
+
+3. BLOQUEAR se:
+     - commit sem chave extraível e sem Epic identificável (inclui commit
+       direto na develop)
+     - chave (caminho 1) sem `qa-develop-aprovado`
      - chave que não resolve para issue existente
-5. Montar o mapeamento commit → issue → label
+     - qualquer issue do caminho 2 sem rastreamento possível ou sem
+       `qa-develop-aprovado`
+4. Montar o mapeamento commit → issue(s) → label, citando o caminho usado
 ```
+
+> ⚠️ **A exclusão da branch não pode quebrar o G10.** O contrato depende de
+> histórico permanente — commits, PRs mergeados, comentários — nunca da
+> branch remota ainda existir. Um merge de Epic é rastreável mesmo com a
+> branch do Epic já excluída, porque o PR mergeado continua no GitHub.
 
 Esse mapeamento vira o bloco `eligibility` do Release Request (passo 5.2).
 Ele é registrado **tanto na aprovação quanto no bloqueio** — o bloqueio

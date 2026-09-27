@@ -1,6 +1,6 @@
 ---
 name: "jira-integration-executor"
-description: "Executar a etapa \"Integração\" do Workflow Rafinha-Claude — mergear de verdade código aprovado, em três modos explícitos: Modo A (branch da issue → branch do épico), Modo B (branch do épico → develop, promovendo o épico inteiro) e Modo C (branch da issue → develop, integração direta). Usar quando Rafinha disser \"roda a Integração do projeto X\", \"processa a coluna Integração\", \"promove o épico Y para develop\", \"faz o merge das issues aprovadas\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. A SKILL NUNCA INFERE O MODO: Rafinha informa o modo, ou a skill para e pergunta — mesmo quando a estrutura da issue, do épico e das branches parece indicar um caminho óbvio. Antes de qualquer merge, imprime o resumo operacional (modo, issues, épico, branch de origem, branch de destino, operação, riscos) e só prossegue com confirmação, salvo quando Rafinha já informou modo e escopo no comando inicial. Sequência comum aos três modos: confirma PR existente → verifica GitHub Actions (bloqueia avanço se falhar) → reconcilia com a branch de destino por merge, nunca rebase (resolve conflito mecânico sozinha, para em conflito semântico) → merge real → smoke test mínimo → registra evidência. No Modo A aplica a label `integrado-epico` e NÃO move a issue de coluna. No Modo B exige `integrado-epico` em todas as issues obrigatórias do escopo — ausência da label é BLOQUEIO, nunca \"ainda não integrada\" — valida os critérios de aptidão do épico e move o lote para QA - Claude. No Modo C move a issue para QA - Claude. Verifica subtarefas antes de qualquer movimentação para QA - Claude: subtarefa aberta é tratada como obrigatória salvo marcação explícita de opcional. Promoção de épico é completa por padrão; parcial só por comando explícito de Rafinha. Nunca usa git push --force nem rebase. Nunca commita Execution State — ele é local em toda operação de integração. Herda as regras de segurança de jira-issue-executor."
+description: "Executar a etapa \"Integração\" do Workflow Rafinha-Claude — mergear de verdade código aprovado, em três modos explícitos: Modo A (branch da issue → branch do épico, ou — Correções 27/09 — branch de TODO UM EPIC quando a chave informada for um Epic, processando todas as issues dele que estão em Integração), Modo B (branch do épico → develop, promovendo o épico inteiro — agora responsável por CRIAR SEU PRÓPRIO PR de promoção quando necessário, e exigindo AUTORIZAÇÃO HUMANA EXPLÍCITA, distinta da confirmação de modo/escopo, só depois de todos os PRs verdes e aptos) e Modo C (branch da issue → develop, integração direta). Usar quando Rafinha disser \"roda a Integração do projeto X\", \"modo A - CPS-131\" (Epic ou issue), \"processa a coluna Integração\", \"promove o épico Y para develop\", \"faz o merge das issues aprovadas\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. A SKILL NUNCA INFERE O MODO: Rafinha informa o modo, ou a skill para e pergunta. Quando a chave do Modo A é um Epic, o escopo efetivo é issues-do-Epic ∩ issues-em-Integração, com leitura idempotente por PR+label (Gate 14 bloqueia se a topologia do Epic não foi preparada). Antes de qualquer merge, imprime o resumo operacional e só prossegue com confirmação. Sequência comum aos três modos: confirma PR existente (Modos A/C — esta skill NUNCA abre PR para eles) → verifica GitHub Actions (bloqueia avanço se falhar) → reconcilia com a branch de destino por merge, nunca rebase → merge real → smoke test mínimo → registra evidência estruturada (ledger) que sobrevive à exclusão da branch. No Modo A aplica `integrado-epico` e NÃO move a issue de coluna. No Modo B: cria o PR epic→develop se não existir (única exceção à regra \"nunca abre PR\"), exige Gate 15 (autorização humana de merge, após pipelines verdes) — resposta negativa de Rafinha NÃO é falha técnica, apenas encerra sem mergear —, exige `integrado-epico` em todas as issues obrigatórias, valida critérios de aptidão, e só então move o lote para QA - Claude. Suporta Epic multi-repositório: uma autorização humana única para N PRs (um por repo); issue só sai de Integração quando todos os repos aplicáveis mergearam. Depois do sucesso de B ou C, EXCLUI as branches que já cumpriram o papel (épico e/ou issue) — histórico permanente fica em commits/PRs/Jira, nunca na branch viva. `Links para merge` da issue NUNCA é sobrescrito pelo PR de promoção do épico. Verifica subtarefas antes de mover para QA - Claude. Nunca usa git push --force nem rebase. Nunca commita Execution State. Herda as regras de segurança de jira-issue-executor."
 ---
 
 # Executor de Integração — Coluna "Integração" (Jira genérico)
@@ -66,14 +66,14 @@ Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
 ## Os três modos
 
 ```text
-Modo A: branch da issue  → branch do épico
+Modo A: branch da issue (ou de TODO O EPIC) → branch do épico
 Modo B: branch do épico  → develop
 Modo C: branch da issue  → develop
 ```
 
 | Modo | Quando se aplica | O que acontece com a issue |
 |---|---|---|
-| **A** | A issue pertence a um épico **com branch ativa** | Recebe `integrado-epico`. **Não muda de coluna** — fica em `Integração` |
+| **A** | A issue pertence a um épico **com branch ativa**; ou a chave informada **é o próprio Epic** — nesse caso o escopo é todas as issues dele em `Integração` | Recebe `integrado-epico`. **Não muda de coluna** — fica em `Integração` |
 | **B** | Promoção do épico inteiro para a `develop` | Todo o lote do escopo vai para `QA - Claude` |
 | **C** | A issue não pertence a épico com branch ativa, ou Rafinha determinou integração direta | Vai para `QA - Claude` |
 
@@ -84,11 +84,18 @@ develop
   ↓
 epic/<EPIC-KEY>-<nome-do-epico>
   ↓
-{tipo}/<ISSUE-KEY>-claude
+{tipo}/<ISSUE-KEY>-claude[.<tentativa>]
 ```
 
-A convenção de nome da branch de issue **não mudou**. O épico acrescenta um
-nível intermediário; não substitui nada.
+**Branches são artefatos temporários (Correções 27/09).** O histórico
+permanente é commit + Pull Request + Jira — não a branch viva. A branch do
+épico é **garantida automaticamente** pela `jira-issue-executor` antes de
+qualquer issue dele chegar à primeira Integração (deixou de ser opcional/
+só-sob-comando); esta skill **nunca a cria**. Depois de um Modo B ou C
+bem-sucedido, as branches que já cumpriram o papel são **excluídas** — ver
+**Limpeza de branches**, abaixo. A branch de issue pode carregar um sufixo
+de tentativa (`.1`, `.2`, …) quando for uma reimplementação — ver
+`workflow-development-flow` §16.1.
 
 ### O modo nunca é inferido
 
@@ -127,6 +134,13 @@ Antes de qualquer operação git, confirme que o diretório de trabalho atual
 `origin`, ou o que estiver disponível para conferir). Se não estiver claro
 ou não bater com o projeto esperado, pergunte a Rafinha o caminho correto
 antes de prosseguir — nunca assuma um repositório errado silenciosamente.
+
+**Epic multi-repositório (Correções 27/09).** Quando o escopo (Modo A ou B)
+tocar mais de um repositório, a operação continua sendo **uma única
+execução lógica**: repita a mecânica git de cada modo por repositório, mas
+mantenha a decisão de modo, o resumo operacional e — no Modo B — a
+autorização humana de merge **únicos** para o conjunto inteiro. Ver
+**Operação multi-repositório**, mais abaixo.
 
 ### 3. Estado limpo antes de trocar de branch
 
@@ -182,25 +196,77 @@ nunca varreu coluna inteira sem confirmação explícita.
 
 ---
 
-## Modo A — branch da issue → branch do épico
+## Modo A — branch da issue (ou de todo um Epic) → branch do épico
 
-Usado quando a issue pertence a um épico com branch ativa.
+### Passo 0 — identificar o escopo real da chave informada
+
+Antes de tudo, consulte o **tipo nativo do ticket** da chave que Rafinha
+informou (ex.: `modo A - CPS-131`):
+
+```text
+Tipo da chave informada?
+   Epic  → escopo é o Epic inteiro (ver "Escopo de Epic", abaixo)
+   Issue → escopo é essa issue só (comportamento de sempre, abaixo)
+```
+
+Não infira pelo formato da chave — confirme o tipo real no Jira.
+
+### Escopo de Epic
+
+Quando a chave é um Epic, o escopo operacional passa a ser:
+
+```text
+escopo efetivo = issues do Epic ∩ issues em "Integração"
+```
+
+1. Confirme no Jira que a chave é um Epic.
+2. Consulte as issues pertencentes a ele.
+3. Filtre as que estão na coluna `Integração`.
+4. Apresente o conjunto encontrado no **resumo operacional** — nunca
+   processe silenciosamente "só a que está em checkout" ou qualquer
+   subconjunto não anunciado.
+5. Processe **todas** as issues elegíveis do conjunto, uma a uma, pelos
+   passos abaixo.
+
+O checkout Git atual (a branch em que o repositório está no momento)
+**nunca reduz, substitui ou infere o escopo** — ele vem inteiramente da
+consulta ao Jira.
+
+**Idempotência.** Como uma issue integrada ao épico permanece em
+`Integração` até o Modo B, uma nova execução do Modo A sobre o mesmo Epic
+precisa distinguir pendentes de já integradas — ver a tabela de leitura
+PR+label em `workflow-development-flow` §16.4. Nas quatro combinações:
+PR mergeado + label presente → **já integrada, não repita o merge**; PR
+aberto + label ausente → **pendente, processe**; as duas combinações
+restantes são **inconsistência** — bloqueie essa issue especificamente e
+reporte, sem travar as demais do conjunto.
+
+### Gate 14 — topologia de Epic ausente
+
+Para cada issue do escopo (seja ele um Epic inteiro ou uma issue só):
 
 1. Confirme que a issue **pertence a um épico**.
 2. Confirme que **existe branch ativa** para esse épico
-   (`epic/<EPIC-KEY>-<nome>`). Se não existir, **pare e pergunte a Rafinha**
-   qual caminho seguir — esta skill **nunca cria** branch de épico; isso é
-   responsabilidade da `jira-issue-executor`, sob comando explícito.
+   (`epic/<EPIC-KEY>-<nome>`). Ela deveria já existir — a
+   `jira-issue-executor` a garante antes da issue chegar aqui. Se **não
+   existir**, isso é **inconsistência upstream** (Gate 14): **pare e
+   reporte** essa issue especificamente — esta skill **nunca cria** branch
+   de épico, em nenhuma circunstância.
 3. Confirme que a **branch da issue nasceu da branch do épico**, não da
    `develop`. Se nasceu da `develop`, pare e reporte — mergear assim traria
    a `develop` inteira para dentro do épico.
-4. Imprima o **resumo operacional** e obtenha a confirmação.
+
+### Passo a passo (por issue do escopo)
+
+4. Imprima o **resumo operacional** (com o conjunto inteiro, se o escopo for
+   um Epic) e obtenha a confirmação.
 5. **R1** — confirme o Pull Request, apontando para a **branch do épico**.
 6. **R2** — verifique o GitHub Actions.
 7. **R3** — reconcilie com a branch do épico.
 8. Faça o merge da branch da issue na branch do épico e envie.
 9. **R4** — smoke test mínimo, sobre a **branch do épico**.
-10. **R6** — registre a evidência no comentário da issue.
+10. **R6** — registre o ledger no comentário da issue (ver **Ledger
+    operacional**, abaixo).
 11. Aplique a label **`integrado-epico`**.
 
 > **A issue não muda de coluna no Modo A.** Ela permanece em `Integração`
@@ -234,25 +300,65 @@ listas antes de qualquer merge:
 
 Se essa separação não estiver clara, **pare e peça decisão de Rafinha**.
 
+### Duas confirmações diferentes (Gate 15)
+
+O Modo B tem **duas** confirmações humanas distintas, e pipeline verde não
+equivale a autorização de merge:
+
+1. **Modo e escopo** — confirma o que será processado (igual às demais
+   etapas, resumo operacional de sempre).
+2. **Autorização final de merge (Gate 15)** — ocorre **somente** depois de
+   todos os PRs aplicáveis estarem verdes e aptos ao merge. É um pedido
+   explícito e separado, não implícito na confirmação de escopo.
+
 ### Passo a passo
 
 1. Confirme que Rafinha **solicitou ou confirmou explicitamente** o Modo B.
-2. Identifique o épico e sua branch.
+2. Identifique o épico, os repositórios envolvidos e o escopo.
 3. **Liste as issues obrigatórias** do épico consideradas no escopo.
 4. Confirme que todas foram **mergeadas na branch do épico**.
 5. Confirme que todas possuem a label **`integrado-epico`**.
 6. **R5** — verifique subtarefas de todas as issues do escopo.
 7. Avalie os **critérios de aptidão** (abaixo). Qualquer um que falhe
    **bloqueia a promoção**; registre a causa.
-8. Imprima o **resumo operacional** e obtenha a confirmação.
-9. **R3** — reconcilie a branch do épico com a `develop`, por merge.
-10. **R1** e **R2** — Pull Request da branch do épico para `develop`, e
-    GitHub Actions verde.
-11. Faça o merge da branch do épico na `develop` e envie.
-12. **R4** — smoke test mínimo sobre a `develop`.
-13. **R6** — registre a evidência da promoção, no épico e em cada issue do
+8. **R3** — reconcilie a branch do épico com a `develop`, por merge, em
+   cada repositório aplicável.
+9. Verifique se já existe um **PR de promoção** válido
+   (`epic/<EPIC-KEY>-<nome> → develop`) em cada repositório. Se não
+   existir, **crie você mesma** — é a única exceção à regra "a Integração
+   nunca abre PR" (ver **Responsabilidade por PR em cada modo**, abaixo).
+10. **R2** — aguarde o GitHub Actions de todos os PRs de promoção.
+    **Bloqueie enquanto houver pipeline falhando** em qualquer
+    repositório do escopo — não peça autorização com pipeline vermelha.
+11. Só quando **todos** os PRs aplicáveis estiverem verdes e aptos, imprima
+    o resumo operacional e **peça a autorização final de merge (Gate 15)**
+    — explicitamente, como confirmação separada da de modo/escopo.
+12. **Imediatamente antes de iniciar os merges**, revalide o estado dos PRs
+    e das pipelines — para reduzir o risco de drift entre a autorização e
+    a execução real.
+13. Faça o merge de cada PR de promoção na `develop` e envie.
+14. **R4** — smoke test mínimo sobre a `develop`.
+15. **Limpeza de branches** — exclua a branch do épico e as branches de
+    issue daquele ciclo que já cumpriram o papel (ver abaixo).
+16. **R6** — registre o ledger da promoção, no épico e em cada issue do
     escopo.
-14. Mova **todas as issues do escopo** para `QA - Claude`.
+17. Mova **todas as issues do escopo** para `QA - Claude` — só depois que
+    **todos** os repositórios aplicáveis tiverem sido efetivamente
+    mergeados.
+
+### Se Rafinha responder "não" à autorização (Gate 15)
+
+Não é falha técnica — significa apenas que **ainda não é o momento** de
+promover o épico. Nesse caso:
+
+- não realize nenhum merge;
+- não mova nenhuma issue para `QA - Claude`;
+- não execute a limpeza final de branches;
+- encerre a execução naquele ponto.
+
+Numa execução futura do Modo B, **revalide do zero** o estado dos PRs e das
+pipelines antes de voltar a pedir a autorização — não reaproveite a
+avaliação anterior, que pode estar desatualizada.
 
 ### Critérios de aptidão do épico
 
@@ -312,8 +418,91 @@ Rafinha confirmar integração direta.
 7. **R5** — verifique subtarefas.
 8. Faça o merge da branch da issue na `develop` e envie.
 9. **R4** — smoke test mínimo sobre a `develop`.
-10. **R6** — registre a evidência no comentário da issue.
-11. Mova a issue para `QA - Claude`.
+10. **Limpeza de branches** — exclua a branch da issue (ver abaixo).
+11. **R6** — registre o ledger no comentário da issue.
+12. Mova a issue para `QA - Claude`.
+
+---
+
+## Responsabilidade por PR em cada modo (Correções 27/09)
+
+| Modo | Responsabilidade |
+|---|---|
+| **A — issue/Epic → branch do épico** | PR criado anteriormente pela `jira-issue-executor`. Ausente ou com destino errado bloqueia — esta skill **nunca abre PR** aqui |
+| **B — branch do épico → develop** | A própria `jira-integration-executor` **cria o PR de promoção** se ele não existir |
+| **C — issue → develop** | PR criado anteriormente pela `jira-issue-executor`. Ausente ou com destino errado bloqueia — esta skill **nunca abre PR** aqui |
+
+A regra antiga "a Integração nunca abre PR" continua valendo **inteiramente**
+para os modos A e C. O Modo B é a única exceção do contrato.
+
+---
+
+## Operação multi-repositório (Correções 27/09)
+
+Quando um Epic toca múltiplos repositórios, a operação continua sendo
+**uma única execução lógica**, não uma série de execuções independentes.
+
+**Modo A.** Uma chamada processa **todos** os repositórios envolvidos no
+escopo daquele Epic — o Gate 14 e a idempotência PR+label se aplicam
+repositório por repositório.
+
+**Modo B.** A skill pode abrir **N PRs**, um por repositório aplicável
+(`epic/<EPIC-KEY> → develop` em cada um). A autorização humana (Gate 15) é
+**única** e vale para o conjunto inteiro:
+
+- antes de pedir a autorização, **todos** os PRs devem existir, **todas**
+  as pipelines devem estar 100% verdes, e **todos** os PRs devem estar
+  aptos ao merge;
+- imediatamente antes de iniciar os merges, revalide o conjunto inteiro de
+  novo, para reduzir o risco de drift entre pipeline e autorização;
+- as issues só saem de `Integração` para `QA - Claude` depois que **todos**
+  os repositórios aplicáveis tiverem sido efetivamente mergeados na
+  `develop`.
+
+### Falha durante promoção multi-repo
+
+Se a promoção já começou e um merge posterior (num repositório diferente)
+falhar:
+
+1. Pare o avanço do lote.
+2. Diagnostique o problema.
+3. Corrija o que estiver **dentro da responsabilidade da Integração**
+   (divergência operacional, reconciliação mecânica, conflito mecânico,
+   problema técnico simples).
+4. Reexecute as validações/pipeline necessárias.
+5. Conclua os merges restantes.
+6. Só então considere o Modo B concluído.
+
+Se surgir conflito semântico, decisão de negócio, decisão arquitetural, ou
+qualquer coisa que ultrapasse a responsabilidade desta skill, **pare e
+peça decisão de Rafinha** em vez de tentar resolver.
+
+**Enquanto o lote estiver incompleto:** nenhuma issue vai para
+`QA - Claude`; nenhuma limpeza final de branches é executada; a promoção
+permanece em andamento. A conclusão só ocorre quando o conjunto inteiro
+está efetivamente integrado.
+
+---
+
+## Limpeza de branches (Correções 27/09)
+
+```text
+Excluir a branch não exclui o histórico.
+Commits e Pull Requests permanecem como evidência permanente.
+```
+
+**Modo B, no encerramento bem-sucedido do lote inteiro:** exclua a branch
+do épico e as branches de issue daquele ciclo que já cumpriram o papel.
+
+**Modo C, depois do merge bem-sucedido:** exclua a branch da issue.
+
+A limpeza **só** acontece no encerramento bem-sucedido. Não limpe branch
+nenhuma enquanto houver falha pendente no lote, ou em qualquer cenário do
+Modo A (a branch da issue no Modo A ainda vai ser lida no Modo B).
+
+> ⚠️ Depois da limpeza, **a ausência de uma branch não é achado nem
+> indício de problema**. Só a ausência de **evidência** (PR, commit SHA,
+> comentário) é.
 
 ---
 
@@ -321,17 +510,23 @@ Rafinha confirmar integração direta.
 
 ### R1 — Confirmar o Pull Request
 
-Localize o PR associado à branch de origem. Ele deve ter sido aberto na
-etapa `Fazer - Claude` — esta skill **nunca abre um PR do zero**.
+**Modos A e C.** Localize o PR associado à branch de origem. Ele deve ter
+sido aberto na etapa `Fazer - Claude` — esta skill **nunca abre um PR do
+zero** para estes dois modos.
 
-Confirme que o **destino do PR é a branch de destino do modo em execução**.
-Um PR aberto contra a `develop` não serve para o Modo A.
+**Modo B.** É a única exceção: se o PR de promoção
+(`epic/<EPIC-KEY>-<nome> → develop`) não existir, **esta skill o cria**
+(ver **Responsabilidade por PR em cada modo**).
+
+Em qualquer modo, confirme que o **destino do PR é a branch de destino do
+modo em execução**. Um PR aberto contra a `develop` não serve para o
+Modo A.
 
 - **PR existe e aponta para o destino certo** → siga.
-- **PR não existe** → **pare e avise Rafinha**, no comentário da issue e no
-  resumo final. Isso indica algo fora do fluxo esperado.
+- **PR não existe** (Modos A/C) → **pare e avise Rafinha**, no comentário
+  da issue e no resumo final. Isso indica algo fora do fluxo esperado.
 - **PR existe mas aponta para outro destino** → **pare e pergunte**. Não
-  reaponte o PR sozinha.
+  reaponte o PR sozinha, em nenhum modo.
 
 ### R2 — Verificar o GitHub Actions do PR
 
@@ -439,23 +634,50 @@ técnica da entrega caso fique pendente.
 > ou não bloqueante. Na dúvida, a skill pergunta — não decide sozinha que
 > uma pendência é irrelevante.
 
-### R6 — Registrar a evidência
+### R6 — Registrar a evidência (ledger operacional)
 
-Publique um comentário na issue contendo:
+**Toda execução desta skill deixa um registro estruturado e permanente no
+Jira** — é o que mantém a auditabilidade depois que as branches forem
+excluídas (ver **Limpeza de branches**). Publique um comentário contendo,
+no mínimo, os campos abaixo por modo — além do que já era registrado
+(origem → destino, PR, resultado do GitHub Actions, conflito e resolução,
+smoke test, subtarefas, labels aplicadas/removidas, confirmação do merge):
 
-- **Modo** executado (A, B ou C).
-- **Origem → destino** do merge.
-- Link/número do Pull Request.
-- Resultado final do GitHub Actions, e se houve correções no caminho.
-- Se houve conflito: tipo (mecânico/semântico), o que foi reconciliado, e
-  se a issue precisou voltar para `Análise - Rafinha`.
-- Resultado do smoke test.
-- Subtarefas verificadas e seu estado.
-- Labels aplicadas ou removidas nesta operação.
-- Confirmação do merge realizado.
+**Modo A** — na issue:
+- modo executado; Epic; repositório; branch da issue (com a tentativa,
+  se houver sufixo); branch de destino; número/tentativa; PR; merge SHA
+  (ou evidência equivalente); data; resultado; aplicação de
+  `integrado-epico`.
 
-No **Modo B**, registre também **no épico**: quais issues compuseram o
-conjunto promovido, e — em promoção parcial — quais ficaram fora e por quê.
+**Modo B** — na promoção agregada, registrada **no épico**, e referenciada
+em cada issue participante:
+- repositórios envolvidos; PRs `epic/** → develop`; issues promovidas;
+  resultado das pipelines; **autorização de Rafinha** (Gate 15, com
+  evidência de que foi pedida e concedida); merges realizados; data;
+  resultado final; limpeza de branches executada. Em promoção parcial,
+  quais issues ficaram fora e por quê.
+
+**Modo C** — na issue:
+- modo; repositório; branch (com tentativa, se houver); destino
+  (`develop`); PR; merge SHA (ou evidência equivalente); data; resultado;
+  limpeza da branch executada.
+
+**Uso dos comentários.** Eles passam a apoiar: descoberta do próximo `.N`
+pela `jira-issue-executor`; retomada de reimplementação após QA;
+auditoria da `jira-review-executor`; investigação de incidentes;
+validação de histórico depois da exclusão das branches; rastreabilidade
+da promoção de Epic para o G10 da `jira-release-executor`.
+
+> Comentário do Jira é **registro operacional**, mas não substitui a
+> verificação da realidade em Git/GitHub quando é preciso provar um merge
+> ou PR — ele é o índice, não a prova técnica final (ver
+> `jira-release-executor`, G10).
+
+**`Links para merge` não é alterado por esta rotina no Modo B.** O PR de
+promoção `epic/** → develop` não substitui, não sobrescreve e não é
+gravado nesse campo — ele continua apontando para o PR individual da
+issue, aberto pela `jira-issue-executor`. O PR de promoção fica registrado
+só no GitHub e no ledger do Modo B.
 
 ---
 
@@ -504,9 +726,13 @@ já são a fonte de verdade permanente.
 - ❌ Nunca executar merge sem antes imprimir o resumo operacional.
 - ❌ Nunca preencher uma linha do resumo operacional com suposição — se o
   valor real não for conhecido, pare e pergunte.
-- ❌ **Nunca criar branch de épico** — isso é da `jira-issue-executor`, sob
-  comando explícito de Rafinha. Se a branch do épico não existir durante uma
-  integração, pare e pergunte.
+- ❌ **Nunca criar branch de épico** — isso é da `jira-issue-executor`,
+  automaticamente, antes da 1ª Integração. Se a branch do épico não
+  existir durante uma integração, é inconsistência upstream (Gate 14):
+  pare e reporte essa issue especificamente.
+- ❌ **Nunca reduzir, substituir ou inferir o escopo de um Modo A por Epic**
+  a partir do checkout Git atual — o escopo vem inteiramente da consulta
+  ao Jira (issues do Epic ∩ Integração).
 - ❌ Nunca promover um épico parcialmente sem comando explícito de Rafinha.
 - ❌ **Nunca tratar ausência de `integrado-epico` como "ainda não
   integrada"** — é bloqueio, e a skill para e pergunta.
@@ -525,9 +751,21 @@ já são a fonte de verdade permanente.
 - ❌ Nunca pular a devolução para `Análise - Rafinha` depois de resolver um
   conflito semântico nos modos A e C, mesmo que a pipeline passe depois.
 - ❌ Nunca prosseguir com smoke test reprovado.
-- ❌ Nunca abrir um Pull Request nesta skill — se o PR não existir, pare e
-  avise Rafinha.
-- ❌ Nunca reapontar o destino de um PR existente — pare e pergunte.
+- ❌ **Nos Modos A e C, nunca abrir um Pull Request** — se o PR não existir,
+  pare e avise Rafinha. **No Modo B, é o oposto**: se o PR de promoção não
+  existir, criá-lo é responsabilidade desta skill.
+- ❌ Nunca reapontar o destino de um PR existente, em nenhum modo — pare e
+  pergunte.
+- ❌ **Nunca mergear no Modo B sem a autorização humana do Gate 15** — pipeline
+  verde não é autorização de merge. E, se Rafinha responder "não", nunca
+  trate isso como falha técnica — apenas encerre sem mergear.
+- ❌ Nunca executar a limpeza de branches (Modo B ou C) enquanto houver
+  falha pendente no lote, nem antes do sucesso completo.
+- ❌ Nunca gravar o PR de promoção do Modo B no campo `Links para merge` das
+  issues — esse campo é sempre o PR individual, aberto pela
+  `jira-issue-executor`.
+- ❌ Em Epic multi-repositório, nunca mover issue para `QA - Claude` antes
+  de **todos** os repositórios aplicáveis estarem mergeados.
 - ❌ Nunca criar uma pipeline de GitHub Actions do zero.
 - ❌ Nunca dar checkout em outra branch, ou criar uma nova, sem antes
   checar `git status` e resolver alterações não commitadas com Rafinha.
@@ -549,31 +787,37 @@ já são a fonte de verdade permanente.
 
 Depois de processar a execução, apresente a Rafinha um resumo consolidado.
 
-**Modo A ou C:**
+**Modo A (escopo de Epic) ou C:**
 
 ```
 ✅ Projeto processado: [nome/chave do projeto]
-🔀 Modo: A (issue → branch do épico)
-📋 Issues processadas: [quantidade]
-  - [ISSUE-1]: PR #12, pipeline OK, sem conflito → merge em epic/PROJ-40-cadastro → smoke OK → `integrado-epico` aplicada (permanece em Integração)
+🔀 Modo: A — escopo: Epic PROJ-40 (issues do Epic ∩ Integração)
+📋 Issues do conjunto: [quantidade]
+  - [ISSUE-1]: já integrada (PR mergeado + integrado-epico presente) → não repetida
   - [ISSUE-2]: PR #13, pipeline corrigida 1x (lint), conflito mecânico resolvido (import duplicado) → merge em epic/PROJ-40-cadastro → smoke OK → `integrado-epico` aplicada
   - [ISSUE-3]: PR #14, pipeline OK, conflito semântico (duas implementações da mesma validação) — Rafinha decidiu qual prevalece, pipeline revalidada → devolvida para Análise - Rafinha
-⚠️ Issues não processadas (PR ausente, destino errado, subtarefa pendente ou pipeline não configurada): [lista ou "nenhuma"]
+  - [ISSUE-4]: Gate 14 — branch do Epic ausente para esta issue → bloqueada, inconsistência upstream reportada
+⚠️ Issues não processadas (PR ausente, destino errado, subtarefa pendente, pipeline não configurada ou Gate 14): [lista ou "nenhuma"]
 ```
 
 **Modo B:**
 
 ```
 ✅ Projeto processado: [nome/chave do projeto]
-🔀 Modo: B (epic/PROJ-40-cadastro → develop)
+🔀 Modo: B (epic/PROJ-40-cadastro → develop) — 1 repositório
 📦 Escopo: completo — 5 issues obrigatórias
   - Todas com `integrado-epico` ✓
   - Subtarefas verificadas: 3 fechadas, 0 pendentes ✓
   - Critérios de aptidão: 10/10 ✓
+📬 PR de promoção: criado por esta skill (#88), pipeline verde
+🔓 Autorização de merge (Gate 15): concedida por Rafinha em 27/09 14:32
 🔀 Merge realizado: epic/PROJ-40-cadastro → develop
 🧪 Smoke test: OK
+🧹 Branches removidas: epic/PROJ-40-cadastro, feat/PROJ-41-claude, feat/PROJ-42-claude
 📋 Issues movidas para QA - Claude: PROJ-41, PROJ-42, PROJ-43, PROJ-44, PROJ-45
 ```
 
 Quando a promoção for **bloqueada**, diga qual critério falhou e o que falta
-— nunca só "não foi possível promover".
+— nunca só "não foi possível promover". Quando Rafinha **negar** a
+autorização de merge, diga isso explicitamente e deixe claro que não é
+falha técnica — a execução só encerrou sem mergear.

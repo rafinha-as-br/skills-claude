@@ -716,15 +716,26 @@ leria uma label verdadeira sobre um estado que não existe mais.
 É o caso normal da integração direta (Modo C). Não há o que remover —
 aplique só `qa-develop-aprovado` na aprovação e siga.
 
-### Correção de issue reprovada que veio de épico
+### Correção de issue reprovada que veio de épico (Correções 27/09)
 
-A branch do épico já cumpriu o papel quando o épico foi promovido. O código
-da issue já está na `develop`. A correção segue o fluxo normal a partir da
-`develop` e integra direto (Modo C) — **não** volta para a branch do épico.
+**Isto substitui a regra anterior.** Antes, esta correção integrava direto
+na `develop` pelo Modo C, porque a branch do épico "já tinha cumprido o
+papel". Isso mudou: a branch do épico foi **excluída** depois da promoção
+(limpeza automática do Modo B), mas o ciclo correto **não** é integração
+direta — é reabrir o Epic.
 
-Se Rafinha quiser outro caminho, ele diz; a skill não decide isso sozinha,
-mas também não deve sugerir reabrir a branch do épico como se fosse o
-padrão.
+Ao reprovar, esta skill só devolve a issue para `Fazer - Claude` com o
+comentário fixo (`Teste de QA - Claude falharam`) e o motivo, normalmente.
+É a `jira-issue-executor`, ao processar essa correção, quem:
+
+1. recria a branch do Epic a partir da `develop` atual (a antiga não é
+   reaproveitada);
+2. cria a nova branch da issue com o próximo sufixo `.N`;
+3. leva a issue de volta pelo ciclo completo Epic → Modo A → Modo B.
+
+Esta skill não decide isso — só reporta a reprovação como sempre fez. Não
+sugira integração direta (Modo C) para uma issue que pertence a um Epic; o
+caminho correto agora é sempre a reintegração via Epic.
 
 ---
 

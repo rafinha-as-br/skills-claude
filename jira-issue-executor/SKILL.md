@@ -1,6 +1,6 @@
 ---
 name: jira-issue-executor
-description: "Executar, de forma PASSIVA, uma a uma, as issues da coluna \"Fazer - Claude\" (agora alimentada por `Ready`, não mais direto de `A fazer`) da sprint atual de QUALQUER projeto Jira que Rafinha indicar — implementa o que já foi decidido, nunca cria regra de negócio, nunca decompõe escopo e nunca conduz decisão de produto durante a implementação. Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Antes de buscar issues, confirma o escopo explícito com Rafinha (Épico, lista de issues, ou coluna inteira confirmada — workflow-development-flow, princípio 11); sem escopo confirmado, não roda às cegas. Sem projeto informado, pergunte antes de prosseguir. Lê o TIPO NATIVO DO TICKET (Implementação, Correção, Bug, Refatoração Técnica, Documentação) como natureza da issue — o campo customizado `Tipo` saiu do contrato e nunca deve ser lido. Aplica o GATE DE PENDÊNCIA DE DECISÃO antes do GATE DE DESIGN, antes de qualquer linha de código: se a seção `Pendências de decisão` da descrição não estiver vazia, bloqueia e reporta — a issue precisa voltar para `Decisão - Rafinha`, nunca é decidida aqui. Aplica também o GATE DE DESIGN: se a issue tem `requires-design` e não existe `.claude/design-packages/<ISSUE-KEY>/` na máquina, bloqueia e reporta, sem nunca implementar no escuro nem concluir que o design não foi feito. Respeita as labels de risco e controle (do-not-expand-scope, needs-evidence, high-risk, breaking-change, legacy, needs-human-review — `needs-manual-decision` saiu do contrato, substituída pela coluna `Decisão - Rafinha` e pela seção `Pendências de decisão`) e só usa labels da matriz oficial do Confluence — nunca inventa label, nunca aplica `requires-design`, e não aplica mais a label genérica de revisão, que saiu do contrato. Issues de código são implementadas de verdade: branch com prefixo derivado do tipo do ticket (feat/, fix/, refactor/), commit, code review automatizado via `/code-review` e `/ponytail:ponytail-review`, testes obrigatórios e proporcionais ao risco, push e abertura automática de Pull Request referenciando a Issue do Jira e fechando a GitHub Issue de origem via Closes #N quando houver. A BRANCH DA ISSUE NEM SEMPRE NASCE DA DEVELOP: se a issue pertence a um épico com branch `epic/<EPIC-KEY>-<nome>` ativa, ela nasce da branch do épico, e o Pull Request aponta para a branch do épico, não para a develop — a jira-integration-executor valida esse destino no Modo A. Issue de épico sem branch usa a develop normalmente. Havendo mais de uma branch do mesmo épico, para e pergunta qual é a ativa. Registra a branch base escolhida no Execution State e no comentário da issue. Reaproveita componentes reutilizáveis por ID canônico e reporta divergência em vez de recriar componente existente. Confirma ou corrige a label de plataforma (web/mobile) conforme os arquivos realmente alterados — a jira-qa-executor depende dela e não tem mais fallback. Registra no comentário \"Implementação Claude\" o uso do Design Package e os IDs canônicos aplicados. Mantém um Execution State (`.claude/execution-state/<CHAVE>.md`, ver workflow-development-flow seção 13). Issues do tipo Documentação são delegadas por label de trilha, segundo a tabela de roteamento da workflow-development-flow §3.3, a um dos cinco writers (product-doc-writer, tech-doc-writer, screen-doc-writer, user-doc-writer, workflow-doc-writer) — sem label de trilha, pergunta antes de prosseguir; qa-doc não tem writer e para. Roda via Claude Code no repositório real dele. É TAMBÉM A ÚNICA SKILL QUE CRIA BRANCH DE ÉPICO, numa operação à parte do fluxo de issues: só sob comando explícito de Rafinha (\"cria a branch do épico X\"), nascida da develop atualizada, nomeada `epic/<EPIC-KEY>-<nome-do-epico>`, com a origem registrada em comentário no épico. Pertencer a um épico NÃO autoriza a criação automática da branch — rodar a coluna Fazer - Claude nunca cria branch de épico. Execution State é commitado apenas na branch da issue; nunca em epic/**, develop, release/current ou branches efêmeras de release. Mergear continua fora do escopo desta skill."
+description: "Executar, de forma PASSIVA, uma a uma, as issues da coluna \"Fazer - Claude\" (agora alimentada por `Ready`, não mais direto de `A fazer`) da sprint atual de QUALQUER projeto Jira que Rafinha indicar — implementa o que já foi decidido, nunca cria regra de negócio, nunca decompõe escopo e nunca conduz decisão de produto durante a implementação. Usar quando ele disser \"realiza as issues do Jira X\", \"roda a coluna Fazer - Claude do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Antes de buscar issues, confirma o escopo explícito com Rafinha (Épico, lista de issues, ou coluna inteira confirmada — workflow-development-flow, princípio 11); sem escopo confirmado, não roda às cegas. Sem projeto informado, pergunte antes de prosseguir. Lê o TIPO NATIVO DO TICKET (Implementação, Correção, Bug, Refatoração Técnica, Documentação) como natureza da issue — o campo customizado `Tipo` saiu do contrato e nunca deve ser lido. Aplica o GATE DE PENDÊNCIA DE DECISÃO antes do GATE DE DESIGN, antes de qualquer linha de código: se a seção `Pendências de decisão` da descrição não estiver vazia, bloqueia e reporta — a issue precisa voltar para `Decisão - Rafinha`, nunca é decidida aqui. Aplica também o GATE DE DESIGN: se a issue tem `requires-design` e não existe `.claude/design-packages/<ISSUE-KEY>/` na máquina, bloqueia e reporta, sem nunca implementar no escuro nem concluir que o design não foi feito. Respeita as labels de risco e controle (do-not-expand-scope, needs-evidence, high-risk, breaking-change, legacy, needs-human-review — `needs-manual-decision` saiu do contrato, substituída pela coluna `Decisão - Rafinha` e pela seção `Pendências de decisão`) e só usa labels da matriz oficial do Confluence — nunca inventa label, nunca aplica `requires-design`, e não aplica mais a label genérica de revisão, que saiu do contrato. Issues de código são implementadas de verdade: branch com prefixo derivado do tipo do ticket (feat/, fix/, refactor/), commit, code review automatizado via `/code-review` e `/ponytail:ponytail-review`, testes obrigatórios e proporcionais ao risco, push e abertura automática de Pull Request referenciando a Issue do Jira e fechando a GitHub Issue de origem via Closes #N quando houver. A BRANCH DA ISSUE NEM SEMPRE NASCE DA DEVELOP: se a issue pertence a um épico, ela nasce da branch do épico — e essa branch agora é GARANTIDA AUTOMATICAMENTE por esta skill (Correções 27/09) como parte do fluxo normal de \"Fazer - Claude\", sem precisar de comando separado (a versão antiga desta regra, que dizia que pertencer a um épico não autorizava criação automática, saiu do contrato). O Pull Request aponta para a branch do épico, não para a develop — a jira-integration-executor valida esse destino no Modo A e NUNCA cria a branch do épico ela mesma. Havendo mais de uma branch do mesmo épico, para e pergunta qual é a ativa. A CONVENÇÃO DE BRANCH GANHOU SUFIXO DE TENTATIVA: `{tipo}/<ISSUE-KEY>-claude[.<tentativa>]` — reimplementação após retorno/reprovação NUNCA reaproveita a branch antiga, sempre cria uma nova com o próximo `.N`. O contador vem de um comentário estruturado na própria issue (nunca de contar branches remotas ou PRs); branches deletadas não zeram o contador. Se a issue pertence a um Epic cuja branch já foi excluída (após Modo B bem-sucedido) e o QA reprova, esta skill recria a branch do Epic a partir da develop atual antes de abrir a nova tentativa — nunca reaproveita a branch antiga do Epic. Registra a branch base e o número da tentativa no Execution State e no comentário da issue. Reaproveita componentes reutilizáveis por ID canônico e reporta divergência em vez de recriar componente existente. Confirma ou corrige a label de plataforma (web/mobile) conforme os arquivos realmente alterados — a jira-qa-executor depende dela e não tem mais fallback. Registra no comentário \"Implementação Claude\" o uso do Design Package, os IDs canônicos aplicados, e o número da tentativa com a tentativa anterior (quando houver). Mantém um Execution State (`.claude/execution-state/<CHAVE>.md`, ver workflow-development-flow seção 13). Issues do tipo Documentação são delegadas por label de trilha, segundo a tabela de roteamento da workflow-development-flow §3.3, a um dos cinco writers (product-doc-writer, tech-doc-writer, screen-doc-writer, user-doc-writer, workflow-doc-writer) — sem label de trilha, pergunta antes de prosseguir; qa-doc não tem writer e para. Roda via Claude Code no repositório real dele. Continua existindo um comando manual explícito (\"cria a branch do épico X\") como conveniência para preparar a topologia antes de qualquer issue chegar a Fazer - Claude, mas deixou de ser a única via — a criação automática cobre o caso normal. Branches (de épico e de issue) são artefatos temporários: depois do sucesso do Modo B/C da Integração, elas são excluídas pela jira-integration-executor; o histórico permanente é commit + PR + Jira, nunca a branch viva. Execution State é commitado apenas na branch da issue; nunca em epic/**, develop, release/current ou branches efêmeras de release. Mergear continua fora do escopo desta skill."
 ---
 
 # Executor de Issues — Coluna "Fazer - Claude" (Jira genérico)
@@ -124,29 +124,39 @@ do arquivo, Recovery Check genérico, política de Git).
 
 ---
 
-## Operação especial — criar a branch de um épico
+## Garantia da branch de épico (Correções 27/09)
 
-Esta skill é a **única** que cria branch de épico. Ela não faz isso durante
-o fluxo normal de issues: é uma operação à parte, acionada por comando
-explícito de Rafinha.
+Esta skill é a **única** que cria branch de épico. A partir desta
+atualização, a criação deixa de depender de um comando separado: é
+**garantida automaticamente**, dentro do passo 5.2 do fluxo normal, sempre
+que uma issue pertencer a um Epic e a branch dele ainda não existir.
 
 ```text
-Branch de épico só é criada mediante comando explícito de Rafinha.
+Uma issue pertencente a um Epic deve chegar à primeira Integração com a
+topologia Git já preparada. A jira-integration-executor nunca cria branch
+de épico — se a topologia estiver ausente, ela bloqueia.
 ```
 
-> ❗ **Pertencer a um épico não autoriza, por si só, a criação da branch.**
-> Uma issue vinculada a um épico sem branch segue o fluxo normal e integra
-> direto na `develop` (Modo C da `jira-integration-executor`). Isso é o
-> comportamento esperado, não uma lacuna a ser corrigida sozinha.
+> ❗ **Isto substitui a regra anterior.** Antes, pertencer a um épico não
+> autorizava a criação automática, e uma issue de épico sem branch
+> integrava direto na `develop` como comportamento esperado. Agora, a
+> ausência da branch do Epic quando a issue chega à Integração é
+> **inconsistência upstream** — o Gate 14 bloqueia especificamente aquela
+> issue.
 
-### Quando executar
+### Comando manual (conveniência, não obrigatório)
 
-- Rafinha pede explicitamente ("cria a branch do épico PROJ-40", "abre a
-  branch desse épico"). → Crie.
-- Rafinha chama a skill para rodar a coluna `Fazer - Claude` normalmente.
-  → **Não crie nada**, mesmo que as issues pertençam a um épico sem branch.
+Continua existindo um comando explícito ("cria a branch do épico PROJ-40",
+"abre a branch desse épico") para preparar a topologia **antes** de
+qualquer issue do Epic chegar a `Fazer - Claude` — por exemplo, logo depois
+de criar o Epic. Ele não é mais a única via: se Rafinha não o usar, o
+passo 5.2 cria a branch de qualquer forma, na hora em que a primeira issue
+do Epic precisar dela.
 
 ### Como criar
+
+Este é o mesmo procedimento que o passo 5.2 executa automaticamente,
+quando a branch ainda não existir e uma issue do Epic precisar dela.
 
 1. Identifique o épico e confirme a chave com Rafinha se houver mais de um
    candidato.
@@ -418,13 +428,31 @@ Leia atentamente os comentários do review reprovado e faça exatamente as
 alterações propostas nele — não refaça a issue do zero nem introduza
 mudanças não solicitadas na review.
 
-- Para issues de **código**: a branch dessa issue provavelmente já existe no
-  repositório local (de uma execução anterior) — vá para o passo 5.2 para
-  retomá-la normalmente.
+- Para issues de **código**: **nunca reaproveite a branch anterior**
+  (Correções 27/09) — vá para o passo 5.2, que cria uma branch **nova**
+  com o próximo sufixo de tentativa `.N`, mesmo que a branch antiga ainda
+  exista localmente.
 - Para issues de **documentação**: a página do Confluence já
   existe — invoque a skill correspondente (seção 6) normalmente, ela mesma
   trata a leitura do conteúdo já publicado e a atualização a partir do
   review.
+
+#### Reprovação de issue pertencente a um Epic já promovido
+
+Se a issue reprovada pertence a um Epic cuja branch **já foi excluída**
+(porque o Modo B já promoveu aquele Epic com sucesso — ver
+`workflow-development-flow` §16.2):
+
+1. Confirme que a branch do Epic realmente não existe mais (local nem
+   remoto).
+2. **Recrie a branch do Epic a partir da `develop` atualizada** — mesmo
+   procedimento de **Garantia da branch de épico**, acima. Nunca reaproveite
+   a branch antiga do Epic, mesmo que por algum motivo ainda exista
+   localmente.
+3. Siga para o passo 5.2 e crie a nova branch da issue (`.N`) a partir da
+   branch do Epic recriada.
+4. O ciclo desta issue volta a ser Epic → Modo A → Modo B — registre isso
+   no comentário de resumo (passo 7), citando que o Epic foi reaberto.
 
 ### 5. Issues de código: implementação real
 
@@ -463,8 +491,10 @@ foi:
 - Exceção: se já existe um comentário de Rafinha pedindo para segurar por
   causa dessa dependência, siga a regra do passo 2 (não implemente).
 
-**5.2 Resolver a branch.** A convenção de nome é
-`{tipo}/{CHAVE-DA-ISSUE}-claude`, e o prefixo vem do **tipo do ticket**:
+**5.2 Resolver a branch.** A convenção de nome ganhou sufixo de tentativa
+(Correções 27/09):
+`{tipo}/{CHAVE-DA-ISSUE}-claude[.<tentativa>]`, e o prefixo vem do **tipo do
+ticket**:
 
 | Tipo do ticket | Prefixo |
 |---|---|
@@ -474,50 +504,67 @@ foi:
 | Refatoração Técnica | `refactor/` |
 | Documentação | sem branch por padrão; `docs/` só quando a documentação for versionada em Git (README, ADR, `docs/`, `.md`) |
 
-Exemplo: issue `EP-4` do tipo Implementação → branch `feat/EP-4-claude`.
+Exemplo: issue `EP-4` do tipo Implementação, primeira tentativa → branch
+`feat/EP-4-claude`. Segunda tentativa (depois de um retorno/reprovação) →
+`feat/EP-4-claude.1`.
 
 Não infira o prefixo pelo resumo da issue — ele é determinado pelo tipo.
 
+**Determinar o número da tentativa.** Leia os comentários "Implementação
+Claude" já publicados nesta issue (passo 7) e encontre o campo `Tentativa:`
+do mais recente. Sem comentário anterior → tentativa 1, sem sufixo. Com
+tentativa anterior N → esta é `N+1`, com sufixo `.N`. **Nunca** conte
+branches remotas nem consulte todos os PRs só para descobrir o número —
+o comentário estruturado já é lido no passo 2 desta execução.
+
 Verifique nesta ordem:
-1. A branch já existe **localmente**? → dê checkout nela e continue o
-   trabalho de onde parou (típico do cenário de correção, passo 4b).
-2. A branch não existe localmente, mas existe **no remoto** (`origin`)?
-   → dê `git fetch origin` e checkout com tracking
-   (`git checkout -b {branch} origin/{branch}` ou equivalente). Isso cobre
-   o caso de Rafinha já ter dado push nela manualmente fora desta skill.
-3. Não existe em lugar nenhum → **determine a branch base** (ver abaixo),
-   dê checkout nela, atualize com `git pull origin {base}`, e crie a branch
-   nova a partir dela (`git checkout -b {branch}`).
+1. **Issue nova (sem review reprovado, passo 4a):** a branch (com o sufixo
+   de tentativa calculado acima) já existe **localmente**? → dê checkout
+   nela e continue. Não existe localmente mas existe **no remoto**
+   (`origin`)? → `git fetch origin` e checkout com tracking. Não existe em
+   lugar nenhum → determine a branch base (ver abaixo), dê checkout nela,
+   atualize com `git pull origin {base}`, e crie a branch nova a partir
+   dela.
+2. **Issue com review reprovado (passo 4b):** **nunca reutilize** a branch
+   da tentativa anterior, mesmo que ela ainda exista localmente ou no
+   remoto — crie sempre uma branch **nova**, com o próximo `.N`, a partir
+   da branch base atual (que pode ter avançado desde a tentativa
+   anterior).
 
 **Qual é a branch base.** A branch da issue nem sempre nasce da `develop`:
 
 | Situação | Branch base |
 |---|---|
-| A issue pertence a um épico **com branch ativa** | `epic/<EPIC-KEY>-<nome>` |
-| A issue pertence a um épico **sem branch** | `develop` |
+| A issue pertence a um épico | `epic/<EPIC-KEY>-<nome>` |
 | A issue não pertence a épico nenhum | `develop` |
 
-Para descobrir: consulte o campo de épico/pai da issue no Jira; havendo
-épico, verifique se existe `epic/<EPIC-KEY>-*` no remoto
-(`git ls-remote --heads origin 'epic/<EPIC-KEY>-*'` ou equivalente).
+Para descobrir: consulte o campo de épico/pai da issue no Jira.
 
-> ❗ **Não crie a branch do épico aqui.** Se a issue pertence a um épico que
-> não tem branch, use a `develop` e siga normalmente. A criação de branch de
-> épico é operação separada, sob comando explícito de Rafinha (ver
-> **Operação especial**, acima).
+> ❗ **Issue de épico: garanta a branch do épico antes de continuar
+> (Correções 27/09).** Verifique se existe `epic/<EPIC-KEY>-*` no remoto
+> (`git ls-remote --heads origin 'epic/<EPIC-KEY>-*'` ou equivalente).
+> - **Existe** → use-a como base.
+> - **Não existe** → **crie agora**, seguindo exatamente o procedimento de
+>   **Garantia da branch de épico** (acima): a partir da `develop`
+>   atualizada, nomeada `epic/<EPIC-KEY>-<nome-do-epico>`, com a origem
+>   registrada em comentário no épico. Isto substitui a regra antiga de
+>   nunca criar a branch do épico neste passo — agora é exatamente aqui
+>   que ela nasce, na maioria dos casos.
+> - **Excluída após promoção anterior** (Epic já passou pelo Modo B) → ver
+>   **Reprovação de issue pertencente a um Epic já promovido**, no passo 4b.
 
 > ⚠️ Se existir **mais de uma** branch `epic/<EPIC-KEY>-*` para o mesmo
 > épico, **pare e pergunte** qual é a ativa. Escolher sozinha significaria
 > decidir onde o trabalho vai parar.
 
-**Registre a base escolhida** no Execution State e no comentário final da
-issue. A `jira-integration-executor` valida, no Modo A, que a branch da
-issue nasceu da branch do épico — sem esse registro, a validação vira
-arqueologia de histórico.
+**Registre a base escolhida e o número da tentativa** no Execution State e
+no comentário final da issue. A `jira-integration-executor` valida, no
+Modo A, que a branch da issue nasceu da branch do épico — sem esse
+registro, a validação vira arqueologia de histórico.
 
 Nunca commite em `main`, em `develop`, em `release/current` ou numa branch
 `epic/**` diretamente, nem em uma branch fora da convenção
-`{tipo}/{CHAVE}-claude`.
+`{tipo}/{CHAVE}-claude[.<tentativa>]`.
 
 *Checkpoint:* grave/atualize `.claude/execution-state/{CHAVE}.md` com
 `Estado: EM_EXECUÇÃO`, o objetivo da issue e "Próxima ação: implementar"
@@ -690,11 +737,20 @@ O comentário deve:
 
 - Ter como título **"Implementação Claude"**.
 - Descrever o que foi realizado.
-- Para issues de código: nome exato da branch (nova ou retomada), resultado
-  do gate de qualidade (passou / o que ficou pendente), status do push
-  (feito com sucesso / rejeitado por divergência), link/número do Pull
-  Request aberto (passo 5.6), e o aviso de dependência não resolvida quando
-  aplicável (passo 5.1).
+- **Para issues de código, o campo `Tentativa` é obrigatório** (Correções
+  27/09) — é a fonte que a próxima execução lê para saber o número da
+  próxima tentativa:
+  ```text
+  Tentativa: <N> (branch: {tipo}/<CHAVE>-claude[.<N>])
+  Tentativa anterior: <N-1> (branch: ...) | Nenhuma
+  ```
+- Para issues de código: nome exato da branch (nova ou nova tentativa — não
+  há mais "retomada" da mesma branch depois de reprovação), branch base
+  usada (inclusive se a branch do épico foi criada ou recriada nesta
+  execução), resultado do gate de qualidade (passou / o que ficou
+  pendente), status do push (feito com sucesso / rejeitado por
+  divergência), link/número do Pull Request aberto (passo 5.6), e o aviso
+  de dependência não resolvida quando aplicável (passo 5.1).
 - Para issues de código em projetos Flutter/Dart: resultado da autorevisão
   contra `flutter-development-standards` (passo 5.3b) — seções verificadas,
   violações encontradas e corrigidas antes do commit, ou confirmação de que
@@ -800,17 +856,28 @@ mais fallback** — se a label faltar, o QA bloqueia. Aplicar corretamente aqui
   automatizados (unitários novos ou existentes).
 - ❌ Nunca commitar direto em `main`, `develop`, `release/current` ou numa
   branch `epic/**`, nem em uma branch fora da convenção
-  `{tipo}/{CHAVE}-claude`.
-- ❌ **Nunca criar branch de épico durante o fluxo normal de issues** — ela
-  só nasce por comando explícito de Rafinha, na operação especial. Issue de
-  épico sem branch usa a `develop` e segue normalmente.
+  `{tipo}/{CHAVE}-claude[.<tentativa>]`.
+- ❌ **Nunca deixar uma issue de Epic chegar a `Fazer - Claude` sem garantir
+  a branch do Epic** (Correções 27/09) — deixou de ser opcional; a
+  ausência bloqueia a Integração depois (Gate 14), então o custo de não
+  criar aqui é maior, não menor.
+- ❌ **Nunca reaproveitar a branch de uma tentativa anterior** depois de
+  retorno/reprovação — sempre criar nova, com o próximo `.N`. Isso vale
+  mesmo quando a branch antiga ainda existe local ou remotamente.
+- ❌ **Nunca reaproveitar a branch antiga de um Epic** já excluída após
+  promoção — recriá-la a partir da `develop` atual, nunca assumir que a
+  branch antiga (se ainda existir por acaso) reflete o estado certo.
+- ❌ Nunca contar branches remotas ou consultar todos os PRs para descobrir
+  o número da próxima tentativa — o comentário estruturado é a única
+  fonte.
 - ❌ Nunca abrir o PR contra a `develop` quando a branch da issue nasceu de
   uma branch de épico — o destino do PR acompanha a base, e a Integração
   valida isso.
 - ❌ Nunca escolher sozinha entre duas branches `epic/<EPIC-KEY>-*` do mesmo
   épico — pare e pergunte qual é a ativa.
-- ❌ Nunca deixar de registrar a branch base escolhida no Execution State e
-  no comentário da issue — é o que permite à Integração validar a origem
+- ❌ Nunca deixar de registrar a branch base escolhida e o número da
+  tentativa no Execution State e no comentário da issue — é o que permite
+  à Integração validar a origem
   sem escavar histórico.
 - ❌ Nunca dar checkout em outra branch, ou criar uma nova, sem antes
   checar `git status` e resolver alterações não commitadas com o Rafinha.
