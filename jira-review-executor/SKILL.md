@@ -1,6 +1,6 @@
 ---
 name: jira-review-executor
-description: "Fazer a auditoria final (revisão do Claude) das issues que estão na coluna \"Análise Final - Claude\" da sprint atual de qualquer projeto Jira que Rafinha indicar (ou que já esteja claro pelo contexto da conversa) — a última etapa antes de \"Concluído\". Recebe as issues vindas de \"Documentar\", que agora fica depois da aceitação de Rafinha em \"Análise Final - Rafinha\": a documentação auditada descreve o estado ACEITO, não apenas o testado. Usar sempre que Rafinha disser algo como \"revisa as issues do Jira X\", \"roda a coluna Análise Final - Claude\", \"faz a auditoria final do projeto Y\", ou mencionar explicitamente essa coluna em qualquer contexto de Jira/Atlassian Rovo/Confluence. Além das pendências clássicas e do estado da Validação Humana vinculada, audita o contrato de labels, tipos e gates: se o tipo do ticket é coerente com o que foi entregue, se as labels estão na matriz oficial do Confluence, se a issue com `requires-design` registrou o uso do Design Package no comentário (audita o REGISTRO, nunca a pasta local, que é efêmera), se o escopo não foi expandido, se as labels de risco e controle foram respeitadas, se o QA executou o protocolo esperado, e se correção visual foi tratada como Correção com correcao-ui em vez de Bug. AUDITA TAMBÉM O CONTRATO DE BRANCHES POR ÉPICO E TEMPORÁRIAS (Correções 27/09): se a integração aconteceu no destino correto para o modo declarado (Modo A com PR contra a branch do épico — inclusive quando o escopo foi um Epic inteiro —, Modo B com PR de promoção próprio e autorização humana do Gate 15, Modo C contra a develop), se o resumo operacional da integração está registrado, se o QA rodou sobre a develop integrada, se o ledger operacional está completo por modo, se `Links para merge` não foi sobrescrito pelo PR de promoção, se o número de tentativa é coerente com o histórico de retornos (nunca reaproveitando branch), e se as labels operacionais foram aplicadas E removidas na hora certa — `integrado-epico` presente numa issue que chega aqui é achado, porque o QA deveria tê-la removido no veredito, e `qa-develop-aprovado` ausente é o achado mais consequente de todos, porque só quebra semanas depois, no gate G10 da release. Esta skill NUNCA aplica nem remove essas labels: ela audita as duas pontas, que pertencem a skills diferentes. Issue trabalhada antes da vigência do contrato de branches por épico não é reprovada por esses pontos — a observação é registrada e a revisão segue. Aprovação mantém o comentário \"claude review aprovado\" e move para \"Concluído\"; reprovação mantém \"review reprovada por claude\" e move direto para \"Fazer - Claude\" (a coluna de espera \"Review - Rafinha\" foi eliminada do fluxo). Esta skill NUNCA implementa código ou documentação — apenas revisa, comenta e move o ticket."
+description: "Fazer a auditoria final (revisão do Claude) das issues que estão na coluna \"Análise Final - Claude\" da sprint atual de qualquer projeto Jira que Rafinha indicar (ou que já esteja claro pelo contexto da conversa) — a última etapa antes de \"Concluído\". Recebe as issues vindas de \"Documentar\", que agora fica depois da aceitação de Rafinha em \"Análise Final - Rafinha\": a documentação auditada descreve o estado ACEITO, não apenas o testado. Usar sempre que Rafinha disser algo como \"revisa as issues do Jira X\", \"roda a coluna Análise Final - Claude\", \"faz a auditoria final do projeto Y\", ou mencionar explicitamente essa coluna em qualquer contexto de Jira/Atlassian Rovo/Confluence. Além das pendências clássicas e do estado da Validação Humana vinculada, audita o contrato de labels, tipos e gates: se o tipo do ticket é coerente com o que foi entregue, se as labels estão na matriz oficial do Confluence, se a issue com `requires-design` registrou o uso do Design Package no comentário (audita o REGISTRO, nunca a pasta local, que é efêmera), se o escopo não foi expandido, se as labels de risco e controle foram respeitadas, se o QA executou o protocolo esperado, e se correção visual foi tratada como Correção com correcao-ui em vez de Bug. AUDITA TAMBÉM O CONTRATO DE BRANCHES POR ÉPICO E TEMPORÁRIAS (Correções 27/09): se a integração aconteceu no destino correto para o modo declarado (Modo A com PR contra a branch do épico — inclusive quando o escopo foi um Epic inteiro —, Modo B com PR de promoção próprio e autorização humana do Gate 15, Modo C contra a develop), se o resumo operacional da integração está registrado, se o QA rodou sobre a develop integrada, se o ledger operacional está completo por modo, se `Links para merge` não foi sobrescrito pelo PR de promoção, se o número de tentativa é coerente com o histórico de retornos (nunca reaproveitando branch), e se as labels operacionais foram aplicadas E removidas na hora certa — `integrado-epico` presente numa issue que chega aqui é achado, porque o QA deveria tê-la removido no veredito, e `qa-develop-aprovado` ausente é o achado mais consequente de todos, porque só quebra semanas depois, no gate G10 da release. Esta skill NUNCA aplica nem remove essas labels: ela audita as duas pontas, que pertencem a skills diferentes. Issue trabalhada antes da vigência do contrato de branches por épico não é reprovada por esses pontos — a observação é registrada e a revisão segue. Aprovação mantém o comentário \"claude review aprovado\" e move para \"Concluído\"; reprovação mantém \"review reprovada por claude\" e move direto para \"Fazer - Claude\" (a coluna de espera \"Review - Rafinha\" foi eliminada do fluxo). Esta skill NUNCA implementa código ou documentação — apenas revisa, comenta e move o ticket. REVISÃO DO WORKFLOW 2: audita também o Contrato Efetivo da issue — o atestado de Preparação técnica (`PRONTA`) em issue normal, o fast-track e a autorização de Rafinha em Hotfix, os estados `Satisfeita` / `Não aplicável` / `Excepcionada` (nunca tratando `Excepcionada` como `Satisfeita` nem exigindo evidência de etapa corretamente marcada `Não aplicável`/`Excepcionada`) e a integração por Modo C da Hotfix. Escopo explícito (issue, lista, Epic ou coluna de um Epic específico — nunca coluna inteira). HOTFIX: registra o resultado do review e a atestação `claude review aprovado`/`review reprovada por claude`, mas NÃO MOVE a issue — mesmo aprovada, permanece em `Análise Final - Claude` até Rafinha movê-la. Pode consultar AI Memory só como contexto complementar e delegar à ai-memory-manager achados finais/handoff; após a issue chegar a `Concluído` no Jira (fluxo normal), pode solicitar o arquivamento `active → history` (em Hotfix, só depois de o Jira confirmar que Rafinha moveu para estado final). Nunca escreve `ai-memory/` diretamente."
 ---
 
 # Revisor de Issues — Coluna "Análise Final - Claude" (Jira genérico)
@@ -26,6 +26,82 @@ enquanto. Ele acompanha toda a implementação e entende a arquitetura
 envolvida. Comentários de revisão continuam objetivos: declare o que foi
 observado e, em caso de reprovação, a decisão que ele já tomou (passo 3b) —
 sem explicar conceitos ou convenções que ele já domina.
+
+---
+
+## Contrato da skill
+
+### Finalidade
+Executar a auditoria final em `Análise Final - Claude` antes de uma issue chegar a
+`Concluído`.
+
+### Escopo e acionamento
+Opera issue por issue dentro do escopo explicitamente confirmado (issue, lista, Epic
+ou coluna de um Epic específico — nunca coluna inteira).
+
+### Autoridade
+- **Decisão.** Audita o contrato e determina tecnicamente **aprovada ou reprovada**
+  segundo os critérios vigentes. Quando reprovada, **para e obtém a decisão de
+  Rafinha** sobre o tratamento antes da movimentação.
+- **Mutação.** Comenta o resultado, mantém/apaga Execution State e move a issue
+  conforme resultado e autoridade prevista. **Nunca corrige código, documentação ou
+  labels durante a auditoria.**
+- **Atestação.** É a autoridade da atestação **`claude review aprovado`** quando a
+  auditoria completa satisfaz o contrato; pode registrar **`review reprovada por
+  claude`** ao encontrar achado bloqueante.
+- **Transição.** *Fluxo normal:* aprovada → `Concluído`; reprovada →
+  `Fazer - Claude`, somente após tratamento/decisão de Rafinha; Validação Humana
+  vinculada pendente/reprovada bloqueia a conclusão. ***Hotfix:* registra o resultado
+  do review e a atestação, mas não move a issue.** Mesmo aprovada, a Hotfix
+  permanece em `Análise Final - Claude` até Rafinha movê-la para `Concluído` ou
+  outro destino.
+
+### Entradas e pré-condições
+Escopo; issue completa; **Contrato Efetivo resolvido**; **atestado de Preparação
+Técnica** quando aplicável ao fluxo normal; **fast-track completo** quando
+`Tipo = Hotfix`; registros de implementação, integração, QA, aceite e documentação
+aplicáveis; evidências Git/GitHub/AIO/Confluence quando necessárias.
+
+### Obrigações
+- auditar o **Contrato Efetivo da issue** e as evidências produzidas pelas
+  capacidades anteriores;
+- fluxo normal: verificar o atestado de Preparação Técnica quando contratualmente
+  exigido;
+- Hotfix: verificar fast-track, autorização de Rafinha, estados `Satisfeita` /
+  `Não aplicável` / `Excepcionada` e integração por Modo C;
+- **não exigir evidência de etapa corretamente resolvida como `Não aplicável` ou
+  `Excepcionada`**, e **nunca tratar `Excepcionada` como `Satisfeita`**;
+- usar listas específicas apenas para verificações próprias desta capacidade ou como
+  implementação técnica do contrato — **sem manter segunda taxonomia hardcoded** de
+  tipos, políticas, gates e obrigações que o Contrato Efetivo já resolve;
+- verificar plano documental somente quando aplicável; pendências de decisão
+  residuais; evidência de integração, labels operacionais, ledger e tentativas;
+- não reprovar retroativamente por regra que não valia no momento da execução; a
+  Revisão do workflow 2 **não exige migração de issues existentes**, nem cria
+  roteamento condicional "issue antiga × nova";
+- auditar **evidência**, não a existência atual de branches efêmeras;
+- consultar AI Memory apenas como contexto complementar, nunca como substituto das
+  fontes oficiais; **delegar à `ai-memory-manager`** achados finais, pendências
+  técnicas ou handoff com valor de continuidade;
+- no fluxo normal, depois de a issue efetivamente chegar a `Concluído`, pode
+  solicitar à `ai-memory-manager` o arquivamento `active → history`; **em Hotfix, a
+  aprovação do review não autoriza arquivamento** — só depois que o Jira confirmar
+  que Rafinha moveu a issue para estado final.
+
+### Evidências, saída e limites
+O Jira preserva o comentário de review; as evidências permanecem nas fontes
+primárias. Saída: auditoria concluída com resultado **aprovado ou reprovado**.
+**Limites:** nunca corrige nada; nunca aplica/remove labels operacionais; nunca
+aprova sem auditoria completa; nunca executa ou decide Validação Humana; nunca move
+reprovada antes do tratamento humano requerido; nunca move Hotfix; nunca escreve,
+reorganiza ou arquiva `ai-memory/` diretamente.
+
+### Delegações
+AI Memory → `ai-memory-manager`.
+
+> Passo 0 de toda execução: resolver o Contrato Efetivo
+> (`workflow-development-flow/references/contrato-efetivo.md`). Defaults herdados:
+> `workflow-development-flow/references/contrato-skills.md`.
 
 ---
 
@@ -59,7 +135,8 @@ Esta é a última camada antes de "Concluído", num pipeline maior de
 colunas, cada uma com sua própria skill:
 
 ```
-A fazer → Decisão - Rafinha → Design de produto - Rafinha → Ready
+A fazer → Decisão - Rafinha → Design de produto - Rafinha
+        → Preparação técnica - Claude → Ready
                           ↓
 Fazer - Claude (jira-issue-executor)
                           ↓
@@ -129,9 +206,9 @@ trabalha em branch isolada). Ver `workflow-development-flow`, seção 13.
 
 **Gate de escopo (workflow-development-flow, princípio 11).** Antes de
 buscar qualquer issue, confirme o escopo explícito com Rafinha, se ele
-ainda não o deixou claro no comando: Épico, lista de issues, ou coluna
-inteira confirmada. Estar na coluna correta não autoriza uma issue fora do
-escopo confirmado.
+ainda não o deixou claro no comando: issue individual, lista de issues, Epic ou
+coluna de um Epic específico — **nunca coluna inteira**. Estar na coluna correta
+não autoriza uma issue fora do escopo confirmado.
 
 Busque, na sprint atual do projeto identificado, as issues do escopo
 confirmado na coluna **"Análise Final - Claude"**. Processe-as uma de cada
@@ -177,16 +254,22 @@ Para cada issue, revise:
 
 ### 2.1 Auditoria do contrato de labels, tipos e gates
 
-Além do acima, audite estes treze pontos. Cada um é uma regra que alguma
-skill do pipeline tinha obrigação de respeitar — seu papel aqui é verificar
-se ela respeitou.
+**Passo 0.** Resolva o Contrato Efetivo da issue
+(`workflow-development-flow/references/contrato-efetivo.md`): tipo, políticas
+ativas, etapa, obrigações e seus estados de satisfação. É dele — e não de uma lista
+fixa nesta skill — que vem **o que** a issue exigia. Os dezesseis pontos abaixo são
+as verificações **próprias** desta capacidade (evidência concreta que as skills
+anteriores tinham obrigação de deixar) e a implementação técnica do contrato.
 
-> **Issues anteriores à vigência.** Os pontos 8, 9 e 10 dependem do contrato
-> de branches por épico e release controlada; os pontos 11–13 dependem do
-> contrato de branches temporárias e ledger operacional (Correções 27/09).
-> Uma issue trabalhada antes de cada vigência não tem como cumprir os
-> pontos correspondentes — registre a observação, mas **não reprove por
-> isso**. O mesmo critério que já vale para o ponto 2.
+> **Vigência.** Não reprove retroativamente por regra que não valia no momento da
+> execução (`contrato-workflow.md`, Bloco E). Issue trabalhada antes de uma regra
+> não tem como cumpri-la — registre a observação, mas **não reprove por isso**.
+> Isto vale para os contratos anteriores (branches por épico, release controlada,
+> branches temporárias e ledger). Quanto à Revisão do workflow 2: **não há
+> convivência com o contrato antigo nem migração de issues existentes**, e esta
+> skill **não implementa** roteamento nem auditoria condicionados a "issue antiga ×
+> nova" — o workflow novo é a única referência para novas execuções realizadas
+> sob ele.
 
 **1. Tipo do ticket coerente com o que foi entregue.**
 Uma issue tipo **Implementação** que só corrigiu espaçamento deveria ser
@@ -320,6 +403,34 @@ Se a issue já teve `N` reprovações/retornos registrados nos comentários
 citar `.N`. Tentativa reaproveitada (mesmo número ou mesma branch de uma
 tentativa anterior) é achado.
 
+**14. Atestado de Preparação Técnica (issue normal).**
+Issue normal que passou por `Ready` precisa ter, entre os comentários, o
+`## Preparação Técnica — Atestado` com `Resultado: PRONTA` anterior ao início da
+implementação. Atestado ausente, ou implementação iniciada com o mais recente em
+`BLOQUEADA` / `AGUARDANDO DECISÃO TÉCNICA`, é achado. Verifique também que, em
+issue de Epic, a branch do Epic foi preparada ali (evidência no atestado, seção
+**Git**) e **não** criada pelo `jira-issue-executor`.
+
+**15. Hotfix — fast-track e estados das obrigações.**
+Para `Tipo = Hotfix`: a descrição traz o fast-track completo (contexto, objetivo,
+escopo, etapas aplicáveis/dispensadas com justificativa, condições, estratégia Git,
+testes e validação, QA, documentação, revisão, **autorização de Rafinha**); cada
+obrigação dispensada está marcada `Não aplicável` ou `Excepcionada` (nunca
+`Satisfeita`), e `Excepcionada` tem autorização registrada (obrigação, motivo,
+contexto); `requires-design`, quando presente, está resolvido como `Não aplicável`
+ou `Excepcionada`; a branch foi `hotfix/<ISSUE-KEY>` a partir de `develop`; a
+integração foi **Modo C** direto em `develop`, sem branch de Epic. **Não exija
+evidência de uma etapa corretamente marcada `Não aplicável` ou `Excepcionada`** —
+exigir seria achado contra o auditor. Testes e validação suficientes para provar a
+correção continuam obrigatórios.
+
+**16. Composição multi-repo e transições de Hotfix (quando aplicável).**
+Em produto multi-repo, a evidência da Integração inclui o commit de composição e a
+branch do Workspace correta para o modo (`workspace/epic|issue|hotfix` →
+`workspace/develop`); gitlink normal não aponta para commit isolado em branch de
+implementação. Em Hotfix, o histórico não mostra movimentação automática de coluna
+por skill (só por Rafinha).
+
 ### 3. Decidir o resultado da revisão
 
 #### 3a. Issue aprovada (sem pendências)
@@ -328,9 +439,15 @@ Se não há nenhuma ponta solta ou pendência:
 
 1. Comente na issue: **"claude review aprovado"**, com um breve resumo do
    que foi conferido.
-2. Mova o ticket para **"Concluído"**.
+2. **Issue normal:** mova o ticket para **"Concluído"**. **Hotfix: não mova** —
+   registre a atestação e deixe a Hotfix em `Análise Final - Claude`; Rafinha a
+   move para `Concluído` (ou outro destino).
 3. Apague `.claude/execution-state/{CHAVE}.md` se existir — o Jira já é o
    registro permanente a partir daqui.
+4. *(Opcional, fluxo normal)* Com a issue **efetivamente em `Concluído` no Jira**,
+   solicite à `ai-memory-manager` o arquivamento `active → history` da memória da
+   issue (e do Epic, se este foi concluído). Em Hotfix, só depois de o Jira
+   confirmar que Rafinha moveu a issue para estado final.
 
 #### 3b. Issue reprovada (há pendência ou necessidade de decisão)
 
@@ -356,11 +473,13 @@ documentação faltante:
 3. O comentário deve começar com o texto exato **"review reprovada por
    claude"** (não altere essa frase — ela é usada por outra automação para
    identificar issues que precisam de correção).
-4. Mova o ticket direto para **"Fazer - Claude"** — a coluna de espera
-   "Review - Rafinha" foi eliminada do fluxo novo. Como a decisão de
+4. **Issue normal:** mova o ticket direto para **"Fazer - Claude"** — a coluna de
+   espera "Review - Rafinha" foi eliminada do fluxo novo. Como a decisão de
    Rafinha já foi obtida no chat (item 1, antes mesmo de escrever o
    comentário), não há necessidade de uma parada intermediária adicional:
-   a issue já pode seguir direto para a fila de execução.
+   a issue já pode seguir direto para a fila de execução. **Hotfix: não mova** —
+   registre a reprovação e a decisão de Rafinha e deixe a Hotfix em
+   `Análise Final - Claude`; ele decide e executa a próxima transição.
 5. Apague `.claude/execution-state/{CHAVE}.md` se existir — o comentário
    já registra a pendência e a decisão de forma permanente.
 
@@ -394,10 +513,14 @@ documentação faltante:
 - ❌ Nunca deixar passar `qa-develop-aprovado` ausente como se fosse
   detalhe — é o que trava a release semanas depois, no gate G10, quando
   ninguém mais lembra desta issue.
-- ❌ Nunca reprovar uma issue pelos pontos 8–13 quando ela foi trabalhada
-  antes da vigência do contrato correspondente (branches por épico, ou
-  branches temporárias/ledger de Correções 27/09) — registre a observação
-  e siga.
+- ❌ Nunca reprovar uma issue por regra que não valia no momento da execução
+  (vigência) — registre a observação e siga. Nunca implementar auditoria
+  condicionada a "issue antiga × nova" para a Revisão do workflow 2.
+- ❌ **Nunca mover uma Hotfix de coluna**, nem quando aprovada.
+- ❌ Nunca tratar `Excepcionada` como `Satisfeita`, nem exigir evidência de etapa
+  corretamente marcada `Não aplicável` ou `Excepcionada`.
+- ❌ Nunca escrever, reorganizar ou arquivar `ai-memory/` diretamente
+  (delegar à `ai-memory-manager`).
 - ❌ Nunca pular a identificação do projeto/Jira quando não estiver claro
   pelo contexto.
 - ❌ Nunca escrever o comentário de reprovação sem antes perguntar a

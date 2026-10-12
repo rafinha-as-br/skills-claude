@@ -1,6 +1,6 @@
 ---
 name: workflow-development-flow
-description: "Skill mãe do Workflow Rafinha-Claude — referência consultável sobre a lista canônica de 12 colunas (A fazer, Decisão - Rafinha, Design de produto - Rafinha, Ready, Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Análise Final - Rafinha, Documentar, Análise Final - Claude, Concluído), o princípio de escopo operacional explícito (Épico, lista de issues ou coluna inteira confirmada — nenhuma skill executora roda às cegas), a descrição padronizada da issue em 9 seções (seção 17), a camada de Design de Produto e o gate `requires-design` com Design Package em `.claude/design-packages/<ISSUE-KEY>/`, os 7 tipos oficiais de ticket (Epic, Implementação, Correção, Bug, Refatoração Técnica, Documentação, Validação Humana) que substituíram o campo customizado `Tipo`, a matriz oficial de labels mantida no Confluence (a label `needs-manual-decision` saiu do contrato, substituída pela coluna `Decisão - Rafinha` e pela descrição padronizada), os 15 gates operacionais (14: topologia de Epic ausente na Integração; 15: autorização humana de merge no Modo B, distinta da confirmação de modo/escopo) e a proibição de fallback silencioso, a hierarquia Épico → Issue → Subtask e a verificação de subtarefas antes de movimentação crítica, as camadas de validação, a integração GitHub Issues ↔ Jira ↔ Pull Request, o MODELO DE BRANCHES (seção 16) — branch da issue e branch de épico como ARTEFATOS TEMPORÁRIOS (histórico permanente é commit + PR + Jira, não a branch viva), a branch de épico GARANTIDA AUTOMATICAMENTE pela jira-issue-executor quando a issue pertence a um Epic (não mais opcional/só-sob-comando), a gramática de nome com sufixo de tentativa `{tipo}/<ISSUE-KEY>-claude[.<tentativa>]` (contador lido de comentário estruturado no Jira, nunca de contar branches), a limpeza automática de branches só no sucesso (Modo B e C), develop, release/current e main, mais os três modos da Integração (A: issue→épico — agora também aceita chave de EPIC como escopo, processando todas as issues do Epic em Integração com leitura idempotente PR+label —, B: épico→develop — agora cria seu PRÓPRIO PR de promoção e exige autorização humana distinta —, C: issue→develop), a regra de que o modo nunca é inferido, e o ciclo das duas labels de estado `integrado-epico` e `qa-develop-aprovado` —, o ciclo separado de Release & Versionamento (contratos completos em `references/release-lifecycle.md`), a Validação Humana Agregada (seção 12) e o Execution State (seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, qual gate se aplica, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'como funciona o gate de design', 'quais labels são oficiais', 'como funciona o ciclo de release', ou qualquer dúvida sobre o workflow."
+description: "Skill mãe do Workflow Rafinha-Claude — referência consultável e índice das fontes contratuais: a lista canônica de 13 etapas (A fazer, Decisão - Rafinha, Design de produto - Rafinha, Preparação técnica - Claude, Ready, Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Análise Final - Rafinha, Documentar, Análise Final - Claude, Concluído), a arquitetura de CONTRATOS (Workflow, Tipo, Política, Etapa → Contrato Efetivo do Ticket, e Contrato das skills = contrato + operação técnica), o princípio de escopo operacional explícito (issue, lista de issues, Epic ou coluna de um Epic específico — nunca coluna inteira; nenhuma skill executora roda às cegas), a descrição padronizada da issue em 9 seções (seção 17), a camada de Design de Produto e o gate `requires-design` com Design Package em `.claude/design-packages/<ISSUE-KEY>/` (no repositório afetado, em multi-repo), os 8 tipos oficiais de ticket (Epic, Implementação, Correção, Bug, Refatoração Técnica, Documentação, Validação Humana nativa, Hotfix), a matriz oficial de labels mantida no Confluence, os 15 gates operacionais e a proibição de fallback silencioso, a hierarquia Épico → Issue → Subtask, as camadas de validação, a integração GitHub Issues ↔ Jira ↔ Pull Request, a etapa Preparação técnica e seu atestado (PRONTA / BLOQUEADA / AGUARDANDO DECISÃO TÉCNICA) — que também PREPARA a branch de Epic —, o tipo Hotfix com fast-track na descrição, branch `hotfix/<ISSUE-KEY>` e Modo C automático (transições de board só de Rafinha), o MODELO DE BRANCHES (seção 16: branches temporárias, gramática de tentativa `{tipo}/<ISSUE-KEY>-claude[.<tentativa>]`, os três modos da Integração A/B/C e as labels de estado `integrado-epico` e `qa-develop-aprovado`), as camadas de contexto (`context/`), AI Memory e Workspace multi-repo (seção 20), o ciclo separado de Release & Versionamento (`references/release-lifecycle.md`), a Validação Humana Agregada (seção 12) e o Execution State (seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, qual contrato/gate/política se aplica, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'como funciona a Preparação técnica', 'o que é uma Hotfix', 'quais labels são oficiais', 'como funciona o ciclo de release', ou qualquer dúvida sobre o workflow."
 ---
 
 # Fluxo de Desenvolvimento — Skill Mãe (Rafinha + Claude)
@@ -10,25 +10,33 @@ description: "Skill mãe do Workflow Rafinha-Claude — referência consultável
 Esta é a **skill mãe** do workflow de desenvolvimento, revisão, integração,
 QA e documentação de Rafinha e Claude. Ela guarda o vocabulário e o mapa do
 processo que todas as demais skills do pipeline (`jira-sprint-intake-executor`,
-`jira-issue-decision-resolver`, `jira-issue-creator`, `jira-issue-executor`,
+`jira-issue-decision-resolver`, `jira-technical-preparation-executor`,
+`jira-hotfix-creator`, `jira-issue-creator`, `jira-issue-executor`,
 `jira-integration-executor`, `jira-qa-executor`, `jira-doc-executor`,
 `jira-human-validation-executor`, `jira-review-executor`,
-`workflow-incident-capture-executor`, `product-doc-writer`,
-`tech-doc-writer`, `screen-doc-writer`, `user-doc-writer`,
-`workflow-doc-writer`, `jira-release-executor`)
+`workflow-incident-capture-executor`, `engineering-context-manager`,
+`ai-memory-manager`, `product-doc-writer`, `tech-doc-writer`,
+`screen-doc-writer`, `user-doc-writer`, `workflow-doc-writer`,
+`doc-pendency-resolver`, `flutter-development-standards`,
+`jira-release-executor`)
 referenciam quando precisam entender em qual etapa uma issue está, o que
 vem antes ou depois, o que uma etapa deve produzir, qual gate se aplica, ou
 o que fazer diante de incerteza sobre o fluxo — incluindo o ciclo separado
 de Release & Versionamento (seção 10), a camada de Validação Humana
 Agregada (seção 12), o Execution State (seção 13), a camada de Design de
-Produto (seção 14), o vocabulário de labels (seção 15) e a descrição
-padronizada da issue (seção 17).
+Produto (seção 14), o vocabulário de labels (seção 15), a descrição
+padronizada da issue (seção 17), a arquitetura de contratos (seção 18), a
+Preparação técnica e a Hotfix (seção 19) e as camadas de contexto, AI Memory e
+Workspace (seção 20).
 
-> **Estado do contrato: `preparado`.** Este documento descreve o contrato de
-> destino. O Jira ainda não foi configurado — a configuração é manual, feita
-> por Rafinha, em sessão separada. Enquanto o estado for `preparado`, estas
-> skills vivem na branch `feat/pacote-1-design-labels-gates` e não operam a
-> partir de `master`. O merge para `master` é o corte de vigência.
+> **Revisão do workflow 2 em vigor.** O fluxo tem **13 etapas** e as regras
+> vivem em camadas contratuais (seção 18). A configuração real do Jira (status
+> `Preparação técnica - Claude`, tipos nativos `Hotfix` e `Validação Humana`,
+> Topologia por produto, Workspace dos produtos multi-repo) é manual, de
+> Rafinha, fora das skills. Enquanto o Jira não estiver reconfigurado, as
+> skills bloqueiam por informação ausente (`references/contrato-workflow.md`,
+> B.3) — nunca por fallback. Não existe convivência com o contrato anterior:
+> o workflow novo é a única referência para novas execuções.
 
 **Esta skill nunca executa ação nenhuma sozinha** — não cria, não move, não
 comenta e não transiciona issues no Jira; não escreve página no Confluence;
@@ -174,19 +182,25 @@ Válidos para todas as etapas, sem exceção:
 11. **Nenhuma skill executora roda às cegas — toda execução operacional
     exige escopo explícito.** O Jira indica o estado da issue; Rafinha
     autoriza o escopo; a skill só executa quando estado e escopo forem
-    compatíveis. Escopo explícito é sempre uma destas três formas:
-    - **Épico** — somente issues do épico informado;
+    compatíveis. Escopo explícito é sempre uma destas formas:
+    - **Issue individual** — uma única issue explicitamente determinada;
     - **Lista de issues** — somente os códigos informados;
-    - **Coluna inteira confirmada** — somente quando Rafinha autorizar
-      explicitamente que é para processar a coluna toda.
+    - **Epic** — issues do Epic informado, selecionadas conforme a operação;
+    - **Coluna de um Epic específico** — issues de um Epic determinado que
+      estejam numa coluna específica.
+
+    **Não existe escopo "coluna inteira".** Issues sem Epic só entram por
+    issue individual ou lista explícita. Resolvido o conjunto, a skill o
+    apresenta para confirmação e o escopo fica **fechado** para aquela
+    execução (`references/contrato-workflow.md`, B.2).
 
     Estar na coluna correta **não** autoriza uma issue fora do escopo. Estar
     no escopo, mas em estado incompatível, **também não** autoriza execução.
     Toda skill executora do pipeline (`jira-issue-executor`,
     `jira-integration-executor`, `jira-qa-executor`, `jira-doc-executor`,
-    `jira-human-validation-executor`, `jira-review-executor`) confirma o
-    escopo com Rafinha antes de buscar issues, quando ele ainda não o
-    deixou explícito no próprio comando.
+    `jira-human-validation-executor`, `jira-review-executor`) e a
+    `jira-technical-preparation-executor` confirmam o escopo com Rafinha antes de buscar issues, quando ele
+    ainda não o deixou explícito no próprio comando.
 
 **Extensão à camada de pipeline:** o princípio 2 se aplica também à
 validação por GitHub Actions (seção 6) — falha na pipeline é bloqueio de
@@ -202,7 +216,7 @@ A natureza de uma issue é o **tipo nativo do ticket no Jira**.
 > deve lê-lo. Se uma skill encontrar o campo, ela o ignora — o tipo do ticket é
 > a única fonte.
 
-### 3.1 Os 7 tipos
+### 3.1 Os 8 tipos
 
 | Tipo | Natureza | Prefixo de branch |
 |---|---|---|
@@ -212,9 +226,29 @@ A natureza de uma issue é o **tipo nativo do ticket no Jira**.
 | **Bug** | Defeito real do produto | `fix/` |
 | **Refatoração Técnica** | Melhoria estrutural sem mudança funcional planejada | `refactor/` |
 | **Documentação** | Cria/atualiza documentação | sem branch por padrão; `docs/` só se versionada em Git |
-| **Validação Humana** | Aceite manual de Rafinha | não gera branch de código |
+| **Validação Humana** | Aceite manual de Rafinha. **Tipo nativo oficial do Jira**: não existe mais fallback para `Tarefa` — se o projeto não tiver o tipo, a skill bloqueia por informação ausente (seção 12.3) | não gera branch de código |
+| **Hotfix** | Trabalho emergencial que não pode esperar o ciclo normal de preparação (seção 19) | `hotfix/<ISSUE-KEY>`, base e destino sempre `develop` |
 
 O tipo **QA/Teste não existe**. QA é etapa do workflow, não tipo de ticket.
+
+**O Contrato de Tipo compõe, não concentra.** Cada tipo define suas obrigações
+(informações importantes, branch, Definition of Done, evidências, testes,
+documentação, validação humana), que entram no Contrato Efetivo da issue
+(seção 18) e continuam sujeitas às regras globais. O **Definition of Done do
+tipo descreve condições para o trabalho ser considerado concluído no workflow,
+mas não atribui todas à skill que implementa código**: "código implementado"
+é de `Fazer - Claude`; "PR/merge válido" envolve implementação e Integração;
+"QA aprovado" é de `QA - Claude`; "aceite funcional" é humano
+(`Análise Final - Rafinha`); "documentação atualizada" pode ser satisfeita em
+`Documentar`; "auditoria final consistente" é de `Análise Final - Claude`.
+Nenhuma skill concentra o DoD inteiro.
+
+**Hotfix.** Criada pela `jira-issue-creator` a partir de payload qualificado
+pela `jira-hotfix-creator`; nasce **diretamente em `Fazer - Claude`**;
+integração por **Modo C** resolvida pelo tipo; **nenhuma skill move** uma Hotfix
+entre colunas (só Rafinha). Fast-track na descrição, com obrigações
+`Satisfeita` / `Não aplicável` / `Excepcionada`. Ver seção 19 e
+`references/preparacao-e-hotfix.md`.
 
 ### 3.2 Correção não é Bug
 
@@ -297,7 +331,9 @@ Decisão - Rafinha                (só quando há pendência de decisão real)
         ↓
 Design de produto - Rafinha      (só quando requires-design)
         ↓
-Ready
+Preparação técnica - Claude      (gate técnico automatizado — todo fluxo normal passa por aqui)
+        ↓
+Ready                            (issue normal com Preparação PRONTA)
         ↓
 Fazer - Claude
         ↓
@@ -321,33 +357,44 @@ Concluído
 > Jira, e o contrato segue o Jira. É `QA - Claude`, com espaços ao redor do
 > hífen.
 
-**Três mudanças em relação ao fluxo anterior:**
+**O fluxo tem 13 etapas.** Pontos que o definem:
 
-1. Entram `Decisão - Rafinha` (maturação humana de pendências, seção 5.2) e
-   `Ready` (fila de issues prontas, seção 5.4) — o workflow passa de 10 para
-   12 colunas.
+1. `Preparação técnica - Claude` (seção 5.13) é o último gate preparatório do
+   fluxo normal. `Ready` deixa de ser "fila de issues maduras" e passa a
+   significar **trabalho normal efetivamente pronto**: decisões resolvidas +
+   design resolvido quando aplicável + Preparação técnica `PRONTA`.
 2. `Documentar` continua **depois** de `Análise Final - Rafinha`. A
    documentação descreve o estado **aceito**, não apenas o testado.
-3. `Fazer - Claude` passa a receber **somente** issues que já saíram de
-   `Ready` — não é mais lugar para fechar decisão de produto, regra de
-   negócio ou escopo (ver o Gate de Pendência na seção 5.5).
+3. `Fazer - Claude` recebe **somente** issues que já saíram de `Ready` (ou uma
+   Hotfix qualificada, seção 19) — não é lugar para fechar decisão de produto,
+   regra de negócio, escopo, nem para descobrir requisito técnico previsível,
+   dependência conhecível, design obrigatório ausente ou topologia Git não
+   preparada (ver Gate de Pendência na seção 5.5).
 
 **O eixo de entrada.** Da `A fazer`, o destino depende do que a maturação
-(`jira-sprint-intake-executor`) encontrar:
+(`jira-sprint-intake-executor`) encontrar. **Issue normal nunca vai direto de
+`A fazer` para `Ready`:**
 
 ```text
 A fazer
   → Decisão - Rafinha            (pendência de decisão real e relevante)
   → Design de produto - Rafinha  (requires-design confirmada, sem pendência)
-  → Ready                        (caso excepcional: pronta, sem design, sem pendência)
+  → Preparação técnica - Claude  (funcionalmente madura, sem os gates anteriores)
 ```
 
 `Decisão - Rafinha`, depois de resolvida
 (`jira-issue-decision-resolver`), segue para `Design de produto - Rafinha`
-(quando aplicável) ou direto para `Ready`. `Design de produto - Rafinha`,
-depois de concluída, segue manualmente para `Ready`. A transição
-`Ready → Fazer - Claude` é manual, feita por Rafinha — nenhuma skill varre
-`Ready` para empurrar issues adiante.
+(quando `requires-design` está confirmada) ou para
+`Preparação técnica - Claude`. `Design de produto - Rafinha`, depois de
+concluída, segue para `Preparação técnica - Claude`. Só a Preparação técnica
+com resultado `PRONTA` leva a `Ready`. A transição `Ready → Fazer - Claude`
+representa a **autorização de implementação** e é manual, feita por Rafinha —
+nenhuma skill varre `Ready` para empurrar issues adiante.
+
+**Exceção — Hotfix.** Uma Hotfix qualificada nasce em `Fazer - Claude` e não
+passa por `Ready`; as obrigações das etapas puladas permanecem rastreáveis no
+fast-track. Depois da criação, **nenhuma skill move uma Hotfix entre colunas**
+(seção 19).
 
 **Backlog** continua existindo como etapa pré-sprint, sem mudança.
 
@@ -376,10 +423,11 @@ cada issue, o próximo destino:
   (escopo, regra de negócio, comportamento, critério de aceite);
 - `Design de produto - Rafinha`, quando a issue tem `requires-design`
   confirmada e não há pendência de decisão;
-- `Ready`, **só no caso excepcional** em que a issue já está claramente
-  pronta, sem design e sem incerteza relevante.
+- `Preparação técnica - Claude`, quando a issue está funcionalmente madura e
+  não exige os gates anteriores.
 
-Ela amadurece e explicita o escopo existente, mas **não** pode alterar a
+Ela **nunca** envia issue normal direto para `Ready` nem para
+`Fazer - Claude`. Ela amadurece e explicita o escopo existente, mas **não** pode alterar a
 intenção original do épico ou da issue, nem criar regra de negócio, nem
 substituir a `jira-issue-decision-resolver`.
 
@@ -399,7 +447,8 @@ Ao fechar as pendências, ela:
 - atualiza a descrição (remove pendências resolvidas, preenche **Decisões
   registradas**);
 - move a issue para `Design de produto - Rafinha` (quando exige design) ou
-  direto para `Ready` (quando não exige).
+  para `Preparação técnica - Claude` (quando não exige) — nunca direto para
+  `Ready`.
 
 Ela **não** implementa, não cria PR, não faz QA, não documenta, não cria
 issues e não decide sozinha sem Rafinha. Decisão durável de regra de
@@ -409,8 +458,12 @@ certo — a resolução da issue não substitui a documentação futura.
 `requires-design` também pode ser confirmada aqui, além do momento da
 criação — sempre manualmente por Rafinha, nunca inferida.
 
+Decisão **técnica** descoberta depois, na Preparação técnica, **não** volta a
+esta coluna: permanece na Preparação técnica, onde Rafinha decide em conversa
+(seção 5.13).
+
 **Resultado esperado:** `Pronto para Design de produto - Rafinha` ou
-`Pronto para Ready`
+`Pronto para Preparação técnica - Claude`
 
 ### 5.3 Design de produto - Rafinha (manual)
 
@@ -437,23 +490,33 @@ já está aprovado — por construção, não por veredito.
 o design precisa virar decisão explícita de Rafinha e ser refletido na issue
 antes da implementação.
 
-**Resultado esperado:** `Pronto para Ready`
+A aprovação visual **não substitui** a verificação operacional do Design
+Package, que pertence à Preparação técnica (seção 5.13).
+
+**Resultado esperado:** `Pronto para Preparação técnica - Claude`
 
 ### 5.4 Ready
 
-> **Objetivo:** ser a fila de issues maduras, decididas e prontas para
-> implementação.
+> **Objetivo:** representar trabalho **normal** que concluiu todos os gates
+> preparatórios aplicáveis e não possui blocker técnico conhecido que impeça a
+> execução.
 
-Uma issue nesta coluna não pode ter pendências de decisão abertas e, quando
-aplicável, já passou pelo design manual. Nenhuma skill varre `Ready` —
-chegar até aqui e transitar para `Fazer - Claude` é:
-- excepcional, direto da `A fazer`, quando a `jira-sprint-intake-executor`
-  já a encontra claramente pronta, sem design e sem incerteza relevante;
-- pela `jira-issue-decision-resolver`, depois de resolver as pendências;
-- manual, por Rafinha, depois do design.
+```text
+decisões resolvidas
++ design resolvido quando aplicável
++ Preparação técnica = PRONTA
+= Ready
+```
 
-A transição `Ready → Fazer - Claude` é **manual, feita por Rafinha** — mesmo
-padrão de `Design de produto - Rafinha → Ready`.
+`Ready` não é uma nova etapa de análise e **não executa novo preflight**. Uma
+issue normal só chega aqui vinda de `Preparação técnica - Claude` com atestado
+`PRONTA` (nunca de `A fazer`, `Decisão` ou `Design` diretamente). Nenhuma skill
+varre `Ready`. A transição `Ready → Fazer - Claude` representa a **autorização
+de implementação**, é **manual, feita por Rafinha**.
+
+O `jira-issue-executor` pode fazer apenas verificações defensivas mínimas sobre
+uma issue vinda de `Ready`; **Hotfix é exceção própria** e não precisa passar por
+`Ready`.
 
 **Resultado esperado:** `Pronto para Fazer - Claude`
 
@@ -470,6 +533,14 @@ em vez de implementar com decisão pendente — `Fazer - Claude` não é lugar
 para fechar decisão de produto, regra de negócio ou escopo. É defesa em
 profundidade: a issue não devia ter saído de `Ready` com pendência aberta,
 mas o gate cobre o caso de isso ter acontecido de qualquer forma.
+
+**Prontidão técnica vinda da Preparação.** Para issue normal proveniente de
+`Ready`, o executor **assume** que a Preparação técnica concluiu (atestado
+`PRONTA` na issue) e faz só verificações defensivas mínimas — não reconstrói o
+preflight. Atestado obrigatório ausente numa issue normal que veio de `Ready` é
+**quebra de fluxo**: a execução para e reporta. A **branch de Epic não é criada
+aqui**: ela é preparada pela Preparação técnica; o executor cria somente a
+branch de trabalho da própria implementação (seção 16).
 
 **Gate de Design — antes de qualquer linha de código.** Se a issue tem
 `requires-design`, a skill procura `.claude/design-packages/<ISSUE-KEY>/`. Se
@@ -542,11 +613,18 @@ Modo B: branch do épico  → develop
 Modo C: branch da issue  → develop
 ```
 
-> ❗ **O modo nunca é inferido.** Rafinha informa o modo, ou a skill para e
-> pergunta — mesmo quando a estrutura da issue, do épico e das branches
-> parece indicar um caminho óbvio. A escolha do modo pertence a Rafinha, não
-> à automação. Antes de qualquer merge, a skill imprime o resumo operacional
-> (modo, issues, épico, origem, destino, operação, riscos).
+> ❗ **O modo nunca é inferido por julgamento subjetivo.** Rafinha informa o
+> modo, ou a skill para e pergunta — mesmo quando a estrutura da issue, do
+> épico e das branches parece indicar um caminho óbvio. **Única exceção:** quando
+> o Contrato Efetivo produz uma consequência única — `Tipo = Hotfix` determina
+> **Modo C** (integração direta em `develop`) e a skill não pede escolha de modo.
+> Antes de qualquer merge, a skill imprime o resumo operacional (modo, issues,
+> épico, origem, destino, operação, riscos).
+
+**Multi-repo.** Quando a política de topologia multi-repo está ativa, integrar o
+código inclui integrar a **composição do Workspace** (gitlinks, commit de
+composição, promoção `workspace/*`) como uma única operação lógica sob a
+`jira-integration-executor` (seção 20).
 
 Responsabilidades comuns aos três modos, nesta ordem (pipeline antes de
 conflito, conflito antes do merge):
@@ -580,6 +658,10 @@ atribuí-lo: a skill para, registra e pede decisão, sem mover coluna nenhuma.
 
 A integração não declara que o aplicativo inteiro está livre de problemas —
 isso é o QA.
+
+**Hotfix.** Após o Modo C, a skill registra o resultado e as evidências e
+**mantém a Hotfix em `Integração`** — não envia para `QA - Claude` nem para
+nenhuma outra coluna.
 
 **Resultado esperado:** `Pronto para QA - Claude` (modos B e C) ou
 `Integrado no épico, aguardando promoção` (modo A)
@@ -710,6 +792,66 @@ Rafinha interrompe a conclusão e solicita a decisão.
 ### 5.12 Concluído
 
 Estado terminal da issue. Nenhuma ação adicional é esperada nesta coluna.
+A issue só chega aqui quando as obrigações aplicáveis do Contrato Efetivo estão
+resolvidas em estado compatível com conclusão.
+
+### 5.13 Preparação técnica - Claude
+
+> **Objetivo:** determinar e preparar a prontidão técnica **antes** de `Ready`.
+> Pergunta central: existem condições técnicas conhecidas e suficientes para que
+> esta issue seja executada agora, sem que o executor precise descobrir ou
+> preparar problemas previsíveis durante a implementação?
+
+**Natureza:** gate técnico **automatizado**. **Capacidade:**
+`jira-technical-preparation-executor`. Posição no fluxo: depois de
+`A fazer` / `Decisão - Rafinha` / `Design de produto - Rafinha` (conforme
+aplicável) e antes de `Ready`.
+
+Verifica, conforme aplicável: dependências técnicas e sua disponibilidade;
+disponibilidade de código; Design Package (disponibilidade operacional do
+material já aprovado — não reavalia qualidade visual); infraestrutura e ambiente
+previsíveis; topologia Git e branches obrigatórias (**prepara a branch de Epic**
+e, em multi-repo, as do Workspace); blockers diretos e propagados; decisões
+técnicas; trabalho derivado.
+
+**Atestado.** Toda execução relevante deixa um **novo comentário estruturado**
+na própria issue (`## Preparação Técnica — Atestado`) com resultado
+`PRONTA` | `BLOQUEADA` | `AGUARDANDO DECISÃO TÉCNICA`:
+
+- `PRONTA` → pode avançar para `Ready`;
+- `BLOQUEADA` / `AGUARDANDO DECISÃO TÉCNICA` → permanece em
+  `Preparação técnica - Claude`.
+
+Decisão técnica não determinística é levada diretamente a Rafinha, em conversa,
+e **não** move a issue para `Decisão - Rafinha`. Trabalho técnico ausente nunca
+é implementado aqui: reutiliza issue existente ou delega a criação à
+`jira-issue-creator` (e a `jira-hotfix-creator` quando houver urgência
+compatível). Contrato completo, template do atestado e classificação dos
+achados: `references/preparacao-e-hotfix.md`.
+
+**Resultado esperado:** `Pronto para Ready` (atestado `PRONTA`)
+
+### 5.14 Hotfix nas etapas
+
+Hotfix é exceção contratual ao caminho preparatório normal. Depois da criação
+direta em `Fazer - Claude`, **nenhuma skill movimenta a Hotfix** entre colunas:
+quando Rafinha a posiciona numa etapa, a capacidade da etapa executa só sua
+responsabilidade, registra resultado e evidências, **mantém a Hotfix na mesma
+coluna** e Rafinha decide a próxima.
+
+| Hotfix em | Capacidade | Faz | Depois |
+|---|---|---|---|
+| `Fazer - Claude` | `jira-issue-executor` | implementa em `hotfix/<KEY>` a partir de `develop`, testa, abre PR | permanece |
+| `Integração` | `jira-integration-executor` | resolve Modo C e integra em `develop` | permanece |
+| `QA - Claude` | `jira-qa-executor` | registra Aprovado / Reprovado / Inconclusivo | permanece |
+| `Análise Final - Rafinha` | `jira-human-validation-executor` (se aplicável) | registra o veredito humano | permanece |
+| `Documentar` | `jira-doc-executor` | executa o plano documental aplicável | permanece |
+| `Análise Final - Claude` | `jira-review-executor` | audita e atesta | permanece |
+
+QA aprovado não move; QA reprovado não devolve a `Fazer - Claude`;
+documentação concluída não envia a review; review aprovado não leva a
+`Concluído`. Em cada etapa, a obrigação pode ser `Satisfeita`, `Não aplicável`
+ou `Excepcionada` conforme o fast-track válido.
 
 ---
 
@@ -786,7 +928,7 @@ Existem dois tipos de gate, e eles respondem perguntas diferentes.
 A fazer
     ↓
 (pendência real? → Decisão - Rafinha; requires-design sem pendência? →
- Design de produto - Rafinha; claramente pronta? → Ready)
+ Design de produto - Rafinha; funcionalmente madura? → Preparação técnica - Claude)
     ↓
 Decisão - Rafinha
     ↓
@@ -796,9 +938,13 @@ Design de produto - Rafinha
     ↓
 Design Package exportado e salvo em .claude/design-packages/<ISSUE-KEY>/
     ↓
+Preparação técnica - Claude
+    ↓
+Atestado PRONTA (dependências, design, ambiente, Git/branches, blockers, decisões técnicas)
+    ↓
 Ready
     ↓
-Movida manualmente por Rafinha
+Movida manualmente por Rafinha (autorização de implementação)
     ↓
 Fazer - Claude
     ↓
@@ -860,9 +1006,17 @@ entrada delas.
 | 10 | Integração de épico | Issue obrigatória do escopo sem `integrado-epico` na promoção | `jira-integration-executor` |
 | 11 | Subtarefa | Subtarefa obrigatória pendente antes de mover a issue pai para `QA - Claude` | `jira-integration-executor` |
 | 12 | Pendência de decisão | Seção **Pendências de decisão** não vazia numa issue em `Fazer - Claude` | `jira-issue-executor` |
-| 13 | Escopo operacional | Escopo (Épico, lista de issues ou coluna confirmada) não confirmado por Rafinha antes da varredura | `jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`, `jira-doc-executor`, `jira-human-validation-executor`, `jira-review-executor` |
-| 14 | Topologia de Epic | Issue chega ao Modo A sem a branch do Epic preparada pela `jira-issue-executor` | `jira-integration-executor` |
+| 13 | Escopo operacional | Escopo (issue, lista de issues, Epic ou coluna de um Epic específico) não confirmado por Rafinha antes da varredura. **Não existe escopo "coluna inteira"** | `jira-technical-preparation-executor`, `jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`, `jira-doc-executor`, `jira-human-validation-executor`, `jira-review-executor` |
+| 14 | Topologia de Epic | Issue chega ao Modo A sem a branch do Epic preparada pela `jira-technical-preparation-executor` (que cria a topologia obrigatória; a Integração apenas verifica) | `jira-integration-executor` |
 | 15 | Autorização humana de merge (Modo B) | PRs de promoção verdes e aptos, mas Rafinha ainda não autorizou o merge — distinta da confirmação de modo/escopo | `jira-integration-executor` |
+
+> **Catálogo, não lista central.** Os gates concretos são definidos pelos
+> contratos de origem (Tipo, Política, Etapa); esta tabela é o **índice** deles,
+> com o dono contratual. O Contrato do Workflow define só a semântica global de
+> bloqueio e satisfação (`references/contrato-workflow.md`, Blocos B e C). Esta
+> revisão **não criou gates numerados novos**: atestado `PRONTA` ausente em issue
+> normal vinda de `Ready` é *quebra de fluxo* do Contrato de Etapa (seção 5.4/5.13),
+> e informação obrigatória ausente é tratada pelo Bloco B.3 (bloqueio + incidente).
 
 > O gate **G10 de elegibilidade de release** (todo commit do intervalo
 > `release/current..develop` precisa rastrear para issue com
@@ -875,6 +1029,11 @@ entrada delas.
 > **Quando o contrato esperado não é encontrado, a skill para e reporta.**
 > Ela nunca adivinha, nunca assume o valor mais comum e nunca volta a ler o
 > contrato antigo.
+
+Informação obrigatória ausente, insuficiente ou impossível de validar é também
+**incidente do workflow**: registrar pelo `workflow-incident-capture-executor` e
+bloquear apenas o alvo/operação dependente (`references/contrato-workflow.md`,
+B.3).
 
 Um gate que "deixa passar com um aviso" não é gate. Se a execução continua, a
 informação não era obrigatória — e então não deveria ser gate.
@@ -896,7 +1055,8 @@ não significa nada.
 | A fazer | "Esta issue está pronta para entrar no fluxo?" |
 | Decisão - Rafinha | "As incertezas relevantes desta issue já foram resolvidas por Rafinha?" |
 | Design de produto - Rafinha | "O design está adequado para ser implementado?" |
-| Ready | "Esta issue está madura, decidida e (quando aplicável) desenhada?" |
+| Preparação técnica - Claude | "Existem condições técnicas conhecidas e suficientes para executar esta issue agora, sem o executor descobrir problemas previsíveis?" |
+| Ready | "Esta issue normal está decidida, desenhada quando aplicável e tecnicamente preparada (atestado PRONTA)?" |
 | Fazer - Claude | "Consigo implementar a issue e produzir evidências de que a mudança funciona?" |
 | Análise - Rafinha | "A implementação está tecnicamente e funcionalmente correta?" |
 | Integração | "Essa mudança consegue conviver com o restante do sistema, validada por um ambiente independente?" |
@@ -910,7 +1070,7 @@ não significa nada.
 ## 10. Release & Versionamento
 
 Camada dedicada à entrega do produto em versões, mantida **completamente
-separada** do workflow de issue (seções 4–5).
+separada** das 13 etapas do workflow de issue (seções 4–5).
 
 > 📄 **Referência completa:** `references/release-lifecycle.md` — contratos do
 > manifesto, do Release Request, da Release Action, do Runtime Package, da
@@ -938,8 +1098,9 @@ unidade técnica de armazenamento; **componente** é a unidade versionável.
 
 Um projeto pode ser **monorepo** (um repositório, vários componentes) ou
 **multi-repo** (vários repositórios, cada um com seus componentes, reunidos numa
-pasta mãe local que não é Git). A topologia é **declarada** no manifesto
-`.release/project.yml`, nunca inferida.
+pasta mãe local; produtos que adotam o Workspace Git (seção 20) não têm essa
+relação redefinida por esta atualização — ver `references/release-lifecycle.md`).
+A topologia é **declarada** no manifesto `.release/project.yml`, nunca inferida.
 
 ### 10.3 Dois níveis de versão
 
@@ -1104,6 +1265,10 @@ sobre dificuldade de raciocínio e risco técnico, não sobre volume.
 | QA complexo | Sonnet | XHigh |
 | Documentação | Sonnet | Medium |
 | Auditoria final | Opus | High |
+| Preparação técnica (rotineira) | Sonnet | High |
+| Preparação técnica com decisão técnica complexa ou conflito entre épicos | Opus | High |
+| Qualificação de Hotfix | Sonnet | High |
+| Governança de `context/` e de `ai-memory/` | Sonnet | Medium |
 | Triagem e maturação de issue (intake) | Sonnet | Medium |
 | Resolução de decisão em conversa (decision resolver) | Sonnet | Medium |
 | Captura de incidente operacional | Sonnet | Medium |
@@ -1236,7 +1401,7 @@ Onde ela vive:
 
 | Aspecto | Convenção |
 |---|---|
-| Tipo (Jira) | `Validação Humana` onde o tipo existir; senão, `Tarefa` |
+| Tipo (Jira) | `Validação Humana`, **tipo nativo oficial** do projeto. Sem fallback para `Tarefa`: se o projeto não tiver o tipo, a skill bloqueia por informação ausente |
 | Identificação por máquina | label (categoria) `validacao-humana` — **nunca** o tipo |
 | Título | `Validação Humana — <fluxo funcional>` |
 | Chave | a do próprio projeto (`CPS-121`); não existe projeto `VAL` |
@@ -1304,16 +1469,17 @@ Regras que não podem ser violadas:
 
 A issue do tipo `Validação Humana` nasce em `Análise Final - Rafinha` e vai
 **direto para `Concluído`**. Ela **não** passa por `Documentar` nem por
-`Análise Final - Claude`.
+`Análise Final - Claude`. A identificação operacional da validação continua
+sendo pela label `validacao-humana`, não pelo tipo.
 
 **Por quê.** Uma validação é um registro de aceite, não uma entrega de
 produto. Não há o que documentar sobre ela, e a auditoria final audita as
 issues agregadas, não o ticket de aceite.
 
 **Consequência operacional.** A `jira-doc-executor` **ignora** issues com a
-label `validacao-humana` ao varrer `Documentar`. É por isso que a
-identificação é por label e não por tipo — o filtro precisa funcionar mesmo
-em projeto onde o tipo não foi criado.
+label `validacao-humana` ao varrer `Documentar`. A identificação operacional é
+por label, e o tipo nativo é pré-requisito do projeto (sem ele, a criação de
+validação bloqueia — não há fallback).
 
 **Consequência no Jira.** Precisa existir transição direta de
 `Análise Final - Rafinha` para `Concluído`.
@@ -1484,6 +1650,15 @@ execução.
 Nunca registrar credencial, token, senha ou qualquer segredo no arquivo —
 só texto operacional (estado, próxima ação, decisões, bloqueios).
 
+### 13.8 Execution State ≠ AI Memory
+
+O Execution State **não** foi substituído nem fundido com a AI Memory
+(seção 20). Execution State = ponto de retomada de **uma execução** (local,
+sobrescrito, apagado ao mover a issue). AI Memory (`ai-memory/`, governada pela
+`ai-memory-manager`) = continuidade operacional, handoff, histórico estruturado
+de atuação, QA técnico detalhado e análise posterior dos agentes, persistida em
+Git. As duas camadas têm finalidades distintas e coexistem.
+
 ---
 
 ## 14. Camada de Design de Produto
@@ -1523,6 +1698,14 @@ implementação, ela **não** significa que a issue ainda aguarda design.
 | Persistência | Não precisa ser preservado como histórico permanente |
 | Escopo | Local à máquina onde a implementação roda |
 | ZIP | Meio de **transporte**. O conteúdo **extraído** é a referência |
+
+**Em multi-repo**, o Design Package **não fica no Workspace**: permanece
+local e gitignored no repositório afetado
+(`repo-afetado/.claude/design-packages/<ISSUE-KEY>/`); se mais de um repositório
+tem material de design relevante, cada um pode ter o seu. A Preparação técnica
+valida o pacote aplicável quando `requires-design` está ativa. Em **Hotfix**, a
+obrigação de design pode ser `Não aplicável` ou `Excepcionada`
+(`references/politicas.md`).
 
 **Sem documento auxiliar obrigatório.** Não é preciso gerar
 `implementation-contract.md` nem equivalente. A rastreabilidade entre design
@@ -1663,15 +1846,19 @@ release/current               estabilização da próxima release (persistente)
   ↑
 develop                       integração do produto
   ↑
-epic/<EPIC-KEY>-<nome>        agrupamento técnico de um épico (opcional)
+epic/<EPIC-KEY>-<nome>        agrupamento técnico de um épico
   ↑
 {tipo}/<ISSUE-KEY>-claude     trabalho de uma issue
+
+hotfix/<ISSUE-KEY>            trabalho de uma Hotfix: nasce de develop, volta para develop
+                              (nunca usa branch de Epic)
 ```
 
 | Branch | Representa | Criada por |
 |---|---|---|
 | `{tipo}/<ISSUE-KEY>-claude[.<tentativa>]` | Trabalho de uma issue, numa tentativa específica | `jira-issue-executor` |
-| `epic/<EPIC-KEY>-<nome>` | Agrupamento técnico de um épico | `jira-issue-executor`, **garantida automaticamente quando necessário** |
+| `epic/<EPIC-KEY>-<nome>` | Agrupamento técnico de um épico | `jira-technical-preparation-executor` (preparação estrutural determinística, antes de `Ready`) |
+| `hotfix/<ISSUE-KEY>` | Trabalho de uma Hotfix (base e destino `develop`) | `jira-issue-executor` |
 | `develop` | Integração do produto | — |
 | `release/current` | Estabilização da próxima release | `jira-release-executor` |
 | `main` | Produção/publicado, quando o projeto usa assim | — |
@@ -1692,7 +1879,7 @@ O número representa quantas reimplementações já ocorreram. Ele vem de um
 remotas ou PRs — e branches deletadas **não** fazem o contador voltar a
 zero. Ver `jira-issue-executor`, passo 5.2 e passo 7.
 
-### 16.2 Branches são artefatos temporários — a branch de épico é garantida, não opcional
+### 16.2 Branches são artefatos temporários — a branch de épico é preparada, não opcional
 
 ```text
 O histórico permanente é commit + Pull Request + Jira.
@@ -1704,13 +1891,16 @@ depois de cumprir o papel.
 comando explícito, e uma issue de épico sem branch integrava direto na
 `develop` "por design". Agora:
 
-> ❗ **Uma issue pertencente a um Epic deve chegar à primeira Integração com
-> a topologia Git já preparada.** A `jira-issue-executor` garante/cria a
-> branch do Epic automaticamente quando necessário (a partir da `develop`
-> atualizada), como parte do fluxo normal de `Fazer - Claude` — não é mais
-> preciso um comando separado para isso. A `jira-integration-executor`
-> **nunca** cria branch de épico; se uma issue chegar ao Modo A sem essa
-> topologia, é inconsistência upstream, e a Integração bloqueia (Gate 14).
+> ❗ **Uma issue pertencente a um Epic chega a `Ready` com a topologia Git já
+> preparada.** A criação da branch do Epic pertence à etapa
+> `Preparação técnica - Claude` (`jira-technical-preparation-executor`): se a
+> branch obrigatória não existe, a Preparação a cria a partir da `develop`
+> atualizada, publica quando faz parte da preparação normal e registra a
+> evidência no atestado. O `jira-issue-executor` **nunca** cria branch de Epic —
+> só consome a topologia preparada e cria a branch de trabalho da própria
+> implementação. A `jira-integration-executor` também **nunca** cria branch de
+> Epic; se uma issue chegar ao Modo A sem essa topologia, é inconsistência
+> upstream, e a Integração bloqueia (Gate 14).
 
 A origem da branch do épico é registrada em comentário nele, com o commit
 da `develop` de onde nasceu e a data — é o que permite à Integração validar
@@ -1729,26 +1919,42 @@ Modo B e Modo C.
 > evidência (PR, commit, comentário) é.
 
 **Reprovação de issue de Epic já promovido.** Se o QA reprova uma issue
-cujo Epic já foi promovido (branch já excluída), a `jira-issue-executor`
-recria a branch do Epic a partir da `develop` atual — nunca reaproveita a
-antiga — e a issue ganha uma branch nova com o próximo `.N`. O ciclo volta a
-ser Epic → Modo A → Modo B. Ver `jira-issue-executor` e `jira-qa-executor`.
+cujo Epic já foi promovido (branch já excluída), o `jira-issue-executor`
+**bloqueia** a nova implementação e orienta o retorno da issue à
+`Preparação técnica - Claude`. A `jira-technical-preparation-executor` recria a
+branch do Epic a partir da `develop` vigente — nunca reaproveita a antiga —,
+revalida a prontidão e só então libera novo `Ready`. Depois disso a issue ganha
+uma branch nova com o próximo `.N` e o ciclo volta a ser Epic → Modo A →
+Modo B. O executor nunca recria branch de Epic. Ver `jira-issue-executor` e
+`jira-qa-executor`.
+
+**Hotfix.** `hotfix/<ISSUE-KEY>`: base sempre `develop`, destino final sempre
+`develop`, nunca branch de Epic; o vínculo com Epic é organizacional e não altera
+o fluxo Git. Integração por Modo C resolvido pelo tipo. Em multi-repo, a
+composição temporária usa `workspace/hotfix/<ISSUE-KEY>` (seção 20).
+
+**Workspace (multi-repo).** Produtos multi-repo acrescentam branches de
+composição `workspace/develop`, `workspace/epic/<EPIC-KEY>`,
+`workspace/issue/<ISSUE-KEY>` (só issue normal **sem** Epic) e
+`workspace/hotfix/<ISSUE-KEY>`. Os prefixos de branch dos repositórios
+componentes não mudam. Ver seção 20.
 
 ### 16.3 A base da branch da issue
 
 | Situação | Branch base | Destino do PR |
 |---|---|---|
-| Issue de épico | `epic/<EPIC-KEY>-<nome>` (garantida automaticamente antes desta issue chegar à Integração) | a branch do épico |
+| Issue de épico | `epic/<EPIC-KEY>-<nome>` (preparada pela Preparação técnica antes de `Ready`) | a branch do épico |
 | Issue sem épico | `develop` | `develop` |
+| Hotfix | `develop` (branch `hotfix/<ISSUE-KEY>`) | `develop` |
 
 ```text
 base da branch da issue = destino do PR = destino que a Integração valida
 ```
 
-Os três são o mesmo valor. A `jira-issue-executor` escolhe a base — criando
-a branch do épico primeiro, se ainda não existir — e abre o PR contra ela;
-a `jira-integration-executor` valida que bate com o modo, e **nunca cria a
-branch do épico ela mesma**. A base escolhida, junto com o número da
+Os três são o mesmo valor. A `jira-issue-executor` usa a base preparada (a
+branch do épico já existe, criada na Preparação técnica; se não existir, ele
+bloqueia) e abre o PR contra ela; a `jira-integration-executor` valida que bate
+com o modo, e **nunca cria a branch do épico ela mesma**. A base escolhida, junto com o número da
 tentativa, é **registrada** no Execution State e no comentário da issue,
 para a validação não depender de arqueologia de histórico.
 
@@ -1871,6 +2077,90 @@ Seção sem conteúdo real usa "Nenhuma" — mesma convenção do Execution Stat
 
 ---
 
+## 18. Contratos do workflow
+
+As regras do workflow vivem em **camadas contratuais**. Esta skill é o **índice**
+consultivo: aponta a fonte de cada camada e **não mantém uma segunda definição
+concorrente**.
+
+| Camada | Para que serve | Fonte |
+|---|---|---|
+| 1. Contrato do Workflow | Regras universais: autoridades, escopo, informação ausente, gates, satisfação, composição, vigência | `references/contrato-workflow.md` |
+| 2. Contrato de Tipo de Ticket | Obrigações inerentes à natureza do ticket (os 8 tipos) | seção 3 |
+| 3. Contrato de Política | Regras condicionais ativadas por labels/condições (plataforma, QA, design, risco, documentação, topologia, fast-track) | `references/politicas.md` |
+| 4. Contrato de Etapa | O que cada uma das 13 etapas recebe, exige e entrega | seções 4, 5 (incl. 5.13 e 5.14) e 8 |
+| 5. Contrato Efetivo do Ticket | Composição das camadas acima para uma issue; procedimento "Passo 0" das skills | `references/contrato-efetivo.md` |
+| 6. Contrato das skills | Interface contratual de cada capacidade (autoridades, obrigações, limites, delegações) = **contrato + operação técnica** | `references/contrato-skills.md` e o bloco `## Contrato da skill` de cada `SKILL.md` |
+
+**Fórmula.** `Workflow + Tipo + Políticas + Etapa (+ exceções) = Contrato
+Efetivo` (o que a *issue* exige). `Contrato Efetivo + Contrato da skill +
+Escopo operacional = capacidade autorizada na execução`. O Contrato da skill não
+é camada do Contrato Efetivo.
+
+**Regras de uso:**
+- toda skill do fluxo executa o **Passo 0** (resolver contrato) antes de agir;
+- o Contrato Efetivo é uma estrutura **lógica derivada**: não há arquivo, campo
+  Jira nem serviço que o materialize;
+- conflito entre regras sem declaração explícita de composição é decidido por
+  Rafinha (nunca por precedência implícita);
+- Confluence é a autoridade normativa; `SKILL.md` demonstra o implementado;
+  divergência é *drift* e é reconciliada, não mascarada;
+- uma mudança é **contratual** quando altera o que a skill pode/deve fazer,
+  decidir, mutar, atestar, transicionar ou as condições que respeita;
+- a Revisão do workflow 2 não tem convivência com o contrato anterior nem
+  migração de issues existentes (`contrato-workflow.md`, Bloco E).
+
+---
+
+## 19. Preparação técnica e Hotfix
+
+Resumo; o contrato completo (template do atestado, classificação dos achados,
+fast-track, estados das obrigações) está em `references/preparacao-e-hotfix.md`.
+
+**Preparação técnica - Claude** (seção 5.13): gate técnico automatizado antes de
+`Ready`; `jira-technical-preparation-executor`; atestado estruturado como novo
+comentário a cada execução (`PRONTA` | `BLOQUEADA` | `AGUARDANDO DECISÃO
+TÉCNICA`); cria a branch de Epic e a topologia obrigatória; classifica achados
+(determinístico, impedimento operacional, trabalho técnico ausente, decisão
+técnica); nunca implementa; decisão técnica é perguntada a Rafinha sem mover a
+issue para `Decisão - Rafinha`; trabalho ausente → reutiliza issue existente ou
+delega à `jira-issue-creator`.
+
+**Hotfix** (tipo oficial): trabalho emergencial que não pode esperar o ciclo
+normal. `jira-hotfix-creator` qualifica e prepara (nunca cria o ticket);
+`jira-issue-creator` materializa **direto em `Fazer - Claude`**; fast-track
+integralmente na **descrição**; obrigações `Satisfeita` ≠ `Não aplicável` ≠
+`Excepcionada` (Rafinha é a autoridade final sobre exceções); branch
+`hotfix/<ISSUE-KEY>`, base e destino `develop`, nunca Epic; **Modo C**
+automático; **Rafinha controla todas as transições de coluna** (seção 5.14);
+`requires-design` pode resultar em `Não aplicável` ou `Excepcionada`; rigor
+técnico (testes, validação, escopo, integração controlada) não é reduzido.
+
+---
+
+## 20. Contexto de engenharia, AI Memory e Workspace
+
+Resumo; estrutura, formatos, ciclos de vida e fluxos completos em
+`references/contexto-memoria-workspace.md`.
+
+- **`context/`** — realidade técnica atual e durável (o *porquê* que o código
+  não mostra). Governada pela `engineering-context-manager`. Leitura simples
+  direta; localizar/avaliar chamando a skill; criar/alterar/reorganizar/remover
+  só por ela. `CLAUDE.md` é só bootstrap/router.
+- **`ai-memory/`** — continuidade operacional e handoff (`active/` → `history/`,
+  criação sob demanda). Governada pela `ai-memory-manager`; leitura direta,
+  mutação centralizada. Não é fonte de verdade de Jira, Git ou produto.
+- **Execution State** continua sendo outra camada (seção 13).
+- **Workspace multi-repo** — repositório Git superior com Git Submodules;
+  versiona gitlinks (composição exata do produto), `context/` e `ai-memory/`.
+  Branches `workspace/develop|epic|issue|hotfix`. Bootstrap **manual** de
+  Rafinha. Um agente ativo por Epic. A composição/gitlinks produzida por uma
+  integração é da `jira-integration-executor`.
+- **Topologia** (mono ou multi-repo) é Política, declarada no campo **Topologia**
+  da página de Controle de workflow do produto (Confluence).
+
+---
+
 ## Quando Rafinha aciona esta skill diretamente
 
 Perguntas do tipo:
@@ -1911,8 +2201,14 @@ Perguntas do tipo:
 - Qualquer dúvida sobre nomenclatura de colunas, ordem das etapas, gates,
   ou regra de bloqueio de avanço.
 - "O que é a coluna `Decisão - Rafinha`?" / "Quando uma issue vai pra lá em
-  vez de `Ready`?"
+  vez de seguir para a Preparação técnica?"
 - "Quem move issue de `Ready` para `Fazer - Claude`?"
+- "O que é a `Preparação técnica - Claude`?" / "O que é o atestado PRONTA?"
+- "Quando algo é Hotfix?" / "Quem move uma Hotfix entre colunas?" / "O que é
+  `Excepcionada`?"
+- "O que é o Contrato Efetivo?" / "Qual a diferença entre contrato da issue e
+  contrato da skill?"
+- "O que é `context/`?" / "O que é `ai-memory/`?" / "Quem cria o Workspace?"
 - "Por que essa execução parou pedindo escopo?" / "O que conta como escopo
   explícito?"
 - "O que vai em cada seção da descrição padronizada da issue?"

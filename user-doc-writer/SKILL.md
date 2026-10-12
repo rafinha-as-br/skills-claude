@@ -76,6 +76,45 @@ de repetir. Quem monta o conjunto é a `jira-doc-executor`.
 
 ---
 
+## Contrato da skill
+
+### Finalidade
+Escrever documentação de usuário final para **tarefas que atravessam mais de uma
+tela**, em formato de guia ponta a ponta.
+
+### Escopo e acionamento
+Pode ser acionada diretamente, por issue de Documentação com `user-doc`, ou pela
+`jira-doc-executor`.
+
+### Autoridade
+- **Decisão.** Determina a estrutura operacional do guia a partir das páginas de tela
+  e da explicação confirmada. **Não** decide comportamento do produto nem cria passos
+  que não estejam documentados/confirmados.
+- **Mutação.** Cria/atualiza a página `Guia - <tarefa>` no Confluence.
+- **Atestação.** Atesta que o guia foi consolidado a partir das páginas de tela e
+  fontes recebidas. **Não** atesta a UI por navegação própria.
+- **Transição.** Nenhuma.
+
+### Entradas, obrigações e saída
+Entradas: tarefa; páginas `screen-doc:user` das telas envolvidas; regras/casos de uso
+relacionados quando necessários; explicação de Rafinha; mapa de documentação/página-
+mãe. Obrigações: linkar páginas de tela em vez de repetir campo por campo; escrever do
+ponto de vista do usuário; sem jargão técnico; tom de estado atual; declarar
+dependência quando uma tela ainda não tem página publicada; encaminhar lacunas ao
+`doc-pendency-resolver`. Saída: guia de usuário final criado/atualizado, cobrindo a
+tarefa ponta a ponta e referenciando as páginas de tela sem duplicá-las.
+
+### Limites e delegações
+Não navega a UI; não cria guia para tarefa restrita a uma única tela quando a página
+da tela já cobre; não inventa FAQ/template inexistente; não decide regra de negócio.
+Dependências: `screen-doc-writer`; `doc-pendency-resolver`.
+
+> Defaults herdados (silêncio não concede autoridade, acesso técnico não é
+> autoridade, delegação não transfere autoridade etc.):
+> `workflow-development-flow/references/contrato-skills.md`.
+
+---
+
 ## Model Policy
 
 Modelo padrão: Sonnet

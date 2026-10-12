@@ -1,6 +1,6 @@
 ---
 name: jira-doc-executor
-description: "Processar, uma a uma, as issues que estão na coluna \"Documentar\" da sprint atual de qualquer projeto Jira que Rafinha indicar. Usar quando ele disser \"roda a coluna Documentar do projeto X\", \"atualiza a documentação das issues aceitas\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. A coluna Documentar fica DEPOIS de \"Análise Final - Rafinha\" e ANTES de \"Análise Final - Claude\": a issue que chega aqui já foi testada no QA e já foi ACEITA por Rafinha, então a documentação descreve o estado aceito, não apenas o testado. IGNORA obrigatoriamente issues com a label `validacao-humana`. É a ORQUESTRADORA da documentação: nunca escreve conteúdo, monta um CONJUNTO DE DELEGAÇÕES por issue entre os cinco writers (product-doc-writer, tech-doc-writer, screen-doc-writer, user-doc-writer, workflow-doc-writer), porque documentar é trabalho composto — uma issue que muda uma tela pode atualizar a página do módulo, a página da tela e o guia de usuário ao mesmo tempo. TRILHA A (issue do tipo Documentação): a label documental declara o writer, pela tabela de roteamento da workflow-development-flow §3.3 — sem label de trilha, pergunta e nunca infere pelo conteúdo; `qa-doc` não tem writer e para. TRILHA B (issue de código — Implementação, Correção, Bug, Refatoração Técnica): análise de impacto writer por writer, declarando quais se aplicam E quais foram pulados e por quê — nenhum writer é pulado em silêncio. Imprime o plano do conjunto antes de delegar, e delega em ordem (produto → técnico → tela → usuário), porque o guia linka páginas de tela que precisam existir antes. Qual página é a afetada nunca é adivinhado — sempre confirmado com Rafinha quando não houver um único candidato claro. Depois de delegar, move a issue para \"Análise Final - Claude\"."
+description: "Processar, uma a uma, as issues que estão na coluna \"Documentar\" da sprint atual de qualquer projeto Jira que Rafinha indicar. Usar quando ele disser \"roda a coluna Documentar do projeto X\", \"atualiza a documentação das issues aceitas\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. A coluna Documentar fica DEPOIS de \"Análise Final - Rafinha\" e ANTES de \"Análise Final - Claude\": a issue que chega aqui já foi testada no QA e já foi ACEITA por Rafinha, então a documentação descreve o estado aceito, não apenas o testado. IGNORA obrigatoriamente issues com a label `validacao-humana`. É a ORQUESTRADORA da documentação: nunca escreve conteúdo, monta um CONJUNTO DE DELEGAÇÕES por issue entre os cinco writers (product-doc-writer, tech-doc-writer, screen-doc-writer, user-doc-writer, workflow-doc-writer), porque documentar é trabalho composto — uma issue que muda uma tela pode atualizar a página do módulo, a página da tela e o guia de usuário ao mesmo tempo. TRILHA A (issue do tipo Documentação): a label documental declara o writer, pela tabela de roteamento da workflow-development-flow §3.3 — sem label de trilha, pergunta e nunca infere pelo conteúdo; `qa-doc` não tem writer e para. TRILHA B (issue de código — Implementação, Correção, Bug, Refatoração Técnica): análise de impacto writer por writer, declarando quais se aplicam E quais foram pulados e por quê — nenhum writer é pulado em silêncio. Imprime o plano do conjunto antes de delegar, e delega em ordem (produto → técnico → tela → usuário), porque o guia linka páginas de tela que precisam existir antes. Qual página é a afetada nunca é adivinhado — sempre confirmado com Rafinha quando não houver um único candidato claro. Depois de delegar, move a issue para \"Análise Final - Claude\". Escopo explícito: issue, lista, Epic ou coluna de um Epic específico (nunca coluna inteira). HOTFIX: executa o plano documental aplicável (conforme o fast-track: obrigação documental `Satisfeita`, `Não aplicável` ou `Excepcionada`) e registra o resultado, mas NÃO MOVE a issue — ela permanece em `Documentar` e Rafinha decide a próxima coluna; a descrição e a rastreabilidade da própria Hotfix no Jira continuam obrigatórias."
 ---
 
 # Executor de Documentação — Coluna "Documentar" (Jira genérico)
@@ -52,6 +52,63 @@ Referência completa do modelo: `plano-pacote-3.md`, decisão D3.
 
 ---
 
+## Contrato da skill
+
+### Finalidade
+Orquestrar a etapa `Documentar`, determinando e executando o conjunto necessário de
+delegações entre os cinco writers.
+
+### Escopo e acionamento
+Opera em `Documentar` dentro de projeto e escopo explícitos (issue, lista, Epic ou
+coluna de um Epic específico). **Ignora** issues com `validacao-humana`.
+
+### Autoridade
+- **Decisão.** Para issues de produto/código, decide quais writers **se aplicam ou
+  não** com base no impacto, sempre com motivo explícito. Para issue do tipo
+  Documentação, a trilha declarada por label determina o writer; **a skill não
+  inventa a trilha**.
+- **Mutação.** Mantém Execution State local, registra plano e resultado no Jira e
+  delega a escrita aos writers. **Não escreve conteúdo de página.**
+- **Atestação.** Atesta que o plano de documentação foi executado e que cada writer
+  foi aplicado ou dispensado com justificativa. Não atesta conteúdo fora do retorno
+  dos writers.
+- **Transição.** *Fluxo normal:* com plano cumprido, move `Documentar` →
+  `Análise Final - Claude`; em bloqueio documental, não move. ***Hotfix:* executa o
+  plano documental aplicável e registra seu resultado, mas mantém a issue em
+  `Documentar`.** Rafinha decide e realiza manualmente a próxima transição.
+
+### Entradas e pré-condições
+Projeto; escopo explícito; issue aceita; descrição e comentários de implementação/
+QA; trilhas documentais quando declaradas; mapa de documentação do produto. Em
+Hotfix, o fast-track (documentação `necessária` / `dispensada` / `realizada
+posteriormente`).
+
+### Obrigações
+Avaliar os cinco writers; nenhum writer sai do plano sem motivo; executar na ordem
+definida quando houver dependências; nunca adivinhar página-mãe; bloquear trilha sem
+writer válido (`qa-doc`); registrar o comentário `Documentação Claude` com o plano
+cumprido. Em Hotfix, não exigir nem dispensar por conta própria a etapa documental:
+siga o fast-track (`Satisfeita` / `Não aplicável` / `Excepcionada`), mantendo a
+rastreabilidade da Hotfix no Jira.
+
+### Evidências, saída e limites
+O Jira registra o plano e a conclusão; as páginas permanecem no Confluence. Saída:
+plano executado, comentário `Documentação Claude` e issue pronta para
+`Análise Final - Claude` (quando não há bloqueio e não é Hotfix). **Limites:** nunca
+escreve conteúdo; nunca implementa código; nunca infere modo de `screen-doc-writer`;
+nunca varre sem escopo; nunca trata delegação como conclusão antes do retorno do
+writer; nunca move Hotfix.
+
+### Delegações
+`product-doc-writer` → `tech-doc-writer` → `screen-doc-writer` → `user-doc-writer`
+→ `workflow-doc-writer`, conforme aplicabilidade.
+
+> Passo 0 de toda execução: resolver o Contrato Efetivo
+> (`workflow-development-flow/references/contrato-efetivo.md`). Defaults herdados:
+> `workflow-development-flow/references/contrato-skills.md`.
+
+---
+
 ## Model Policy
 
 Modelo padrão: Sonnet
@@ -94,9 +151,9 @@ seção 13, para o mecanismo completo.
 
 **Gate de escopo (workflow-development-flow, princípio 11).** Antes de
 buscar qualquer issue, confirme o escopo explícito com Rafinha, se ele
-ainda não o deixou claro no comando: Épico, lista de issues, ou coluna
-inteira confirmada. Estar na coluna correta não autoriza uma issue fora do
-escopo confirmado.
+ainda não o deixou claro no comando: issue individual, lista de issues, Epic ou
+coluna de um Epic específico — **nunca coluna inteira**. Estar na coluna correta
+não autoriza uma issue fora do escopo confirmado.
 
 Busque, na sprint atual do projeto indicado, as issues do escopo confirmado
 na coluna **"Documentar"**. Processe-as uma de cada vez.
@@ -248,9 +305,14 @@ Publique um comentário na issue com:
 
 ### 6. Mover a issue
 
-Sempre para **"Análise Final - Claude"**, independentemente de ter havido
-delegação ou não — **exceto** a issue `qa-doc` sem destino (passo 1), que
-fica parada para decisão de Rafinha. Apague
+**Issue normal:** sempre para **"Análise Final - Claude"**, independentemente de
+ter havido delegação ou não — **exceto** a issue `qa-doc` sem destino (passo 1),
+que fica parada para decisão de Rafinha.
+
+**Hotfix: não mova.** Registre o comentário `Documentação Claude` (o plano
+aplicável do fast-track e o resultado) e mantenha a Hotfix em `Documentar`;
+Rafinha decide a próxima coluna. Se o fast-track resolveu a documentação como
+`Não aplicável` ou `Excepcionada`, registre isso em vez de inventar um plano. Apague
 `.claude/execution-state/{CHAVE}.md` se existir — o comentário no Jira e as
 páginas do Confluence já são o registro permanente a partir daqui.
 

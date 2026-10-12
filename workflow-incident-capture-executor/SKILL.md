@@ -24,6 +24,54 @@ tal.
 
 ---
 
+## Contrato da skill
+
+### Finalidade
+Capturar rapidamente uma incongruência operacional do workflow em arquivo local para
+análise posterior, sem corrigi-la. É também o **mecanismo oficial de captura de
+incidentes** do workflow: toda skill que encontrar **informação obrigatória ausente,
+insuficiente ou impossível de validar** (depois de consultar as fontes oficiais
+competentes) aciona esta skill para registrar o incidente
+(`workflow-development-flow/references/contrato-workflow.md`, B.3).
+
+### Escopo e acionamento
+Acionada durante outra execução quando uma regra, gate, skill ou evidência apresenta
+comportamento inesperado, lacuna contratual, ou informação obrigatória ausente.
+
+### Autoridade
+- **Decisão.** Identifica e descreve objetivamente a divergência entre o esperado e o
+  observado. **Não** decide causa raiz, prioridade, correção ou nova regra.
+- **Mutação.** Cria o arquivo local `.claude/workflow-incidents/<arquivo>.md`. Na
+  primeira execução do projeto, garante que `.claude/workflow-incidents/` esteja no
+  `.gitignore` — a **única** mutação auxiliar de setup prevista. **Não** tem autoridade
+  sobre Jira, Confluence, Notion, GitHub, branches, PRs ou código de produto.
+- **Atestação.** Atesta apenas que o incidente foi capturado com o contexto/evidências
+  observados. Não atesta diagnóstico ou correção.
+- **Transição.** Nenhuma.
+
+### Entradas, obrigações e saída
+Entradas: projeto; contexto operacional observado; regra esperada; evidências
+disponíveis; skill/issue/branch/etapa quando observáveis. Obrigações: separar fato
+observado de hipótese; citar o contrato esperado; registrar `Não observado` para
+contexto ausente; registrar evidências; apontar conflito/lacuna sem propor correção
+como decisão; registrar impacto potencial sem priorizar; informar o caminho do arquivo
+e permitir a retomada do trabalho principal. No caso de **informação obrigatória
+ausente**, o registro identifica: a informação ausente/insuficiente; por que era
+obrigatória; qual contrato/gate/condição a exigia; as fontes consultadas e o resultado
+de cada consulta; a issue/etapa/skill afetada; a parte da execução bloqueada;
+evidências. Saída: incidente em arquivo local, sem qualquer correção ou decisão de
+workflow acoplada.
+
+### Limites
+Nunca corrige o incidente; nunca altera sistemas externos; nunca cria/move issue;
+nunca decide nova regra; nunca inventa contexto/evidência.
+
+> Defaults herdados (silêncio não concede autoridade, acesso técnico não é
+> autoridade, delegação não transfere autoridade etc.):
+> `workflow-development-flow/references/contrato-skills.md`.
+
+---
+
 ## Model Policy
 
 Modelo padrão: Sonnet

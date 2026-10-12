@@ -1,6 +1,6 @@
 ---
 name: jira-qa-executor
-description: "Executar QA funcional/visual, uma issue de cada vez, das issues que estão na coluna \"QA - Claude\" da sprint atual de qualquer projeto Jira que Rafinha indicar. Usar quando ele disser \"roda a coluna QA - Claude do projeto X\", \"testa as issues do jira X\", \"faz o QA do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Antes de buscar issues, confirma o escopo explícito (Épico, lista de issues, ou coluna inteira confirmada — workflow-development-flow, princípio 11); sem escopo confirmado, não roda às cegas. Sem projeto informado, pergunte antes de prosseguir. A PLATAFORMA ESCOLHE O EXECUTOR e o PROTOCOLO ESCOLHE A ESTRATÉGIA: Flutter Web usa Claude in Chrome (Chrome real, não o navegador embutido do Claude Code); Flutter Android usa Maestro (MCP preferencial, fallback CLI) contra um Android Emulator, subido sob demanda pela própria skill; e as labels de protocolo (functional-qa, visual-qa, regression-qa, e2e-qa, smoke-qa, manual-qa, maestro) definem a estratégia dentro do executor. Sem label de plataforma na issue, a skill BLOQUEIA e pergunta — o antigo fallback silencioso para Web foi removido do contrato. Não julga se o design está certo ou errado como decisão de produto: isso é manual de Rafinha, e issue reprovada volta para \"Fazer - Claude\", nunca para \"Design de produto - Rafinha\". Defeito real fora do escopo da issue é DELEGADO para jira-issue-creator, nunca criado como Bug por esta skill — e ajuste visual de algo já entregue vira Correção com correcao-ui, não Bug. Considera as labels de contexto intermittent, reproducible, regression, needs-evidence, high-risk e do-not-expand-scope. Gera/seleciona casos de teste, executa os fluxos de verdade, coleta evidências, registra resultados no AIO Tests e move a issue aprovada para \"Análise Final - Rafinha\". É A ÚNICA SKILL QUE APLICA `qa-develop-aprovado` e A ÚNICA QUE REMOVE `integrado-epico`, no mesmo gesto do veredito: aprovada recebe `qa-develop-aprovado` e perde `integrado-epico`; reprovada apenas perde `integrado-epico`, porque a label descreve um estado que acabou quando o épico foi promovido; inconclusiva por infraestrutura NÃO MEXE EM LABEL NENHUMA, porque sem veredito nada mudou. O lote que chega pode ser um épico inteiro promovido pelo Modo B da jira-integration-executor — nesse caso cada issue mantém evidência própria e recebe veredito individual, o conjunto é registrado no épico, e uma issue reprovada não bloqueia a aprovação das demais. Esta skill NUNCA corrige código, nunca implementa funcionalidades, nunca valida um épico como bloco único, e só tem permissão de commit/push para arquivos de teste Maestro (`.maestro/**`) — nunca para código do projeto."
+description: "Executar QA funcional/visual, uma issue de cada vez, das issues que estão na coluna \"QA - Claude\" da sprint atual de qualquer projeto Jira que Rafinha indicar. Usar quando ele disser \"roda a coluna QA - Claude do projeto X\", \"testa as issues do jira X\", \"faz o QA do projeto Y\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Antes de buscar issues, confirma o escopo explícito (issue, lista de issues, Epic ou coluna de um Epic específico — nunca coluna inteira — workflow-development-flow, princípio 11); sem escopo confirmado, não roda às cegas. Sem projeto informado, pergunte antes de prosseguir. A PLATAFORMA ESCOLHE O EXECUTOR e o PROTOCOLO ESCOLHE A ESTRATÉGIA: Flutter Web usa Claude in Chrome (Chrome real, não o navegador embutido do Claude Code); Flutter Android usa Maestro (MCP preferencial, fallback CLI) contra um Android Emulator, subido sob demanda pela própria skill; e as labels de protocolo (functional-qa, visual-qa, regression-qa, e2e-qa, smoke-qa, manual-qa, maestro) definem a estratégia dentro do executor. Sem label de plataforma na issue, a skill BLOQUEIA e pergunta — o antigo fallback silencioso para Web foi removido do contrato. Não julga se o design está certo ou errado como decisão de produto: isso é manual de Rafinha, e issue reprovada volta para \"Fazer - Claude\", nunca para \"Design de produto - Rafinha\". Defeito real fora do escopo da issue é DELEGADO para jira-issue-creator, nunca criado como Bug por esta skill — e ajuste visual de algo já entregue vira Correção com correcao-ui, não Bug. Considera as labels de contexto intermittent, reproducible, regression, needs-evidence, high-risk e do-not-expand-scope. Gera/seleciona casos de teste, executa os fluxos de verdade, coleta evidências, registra resultados no AIO Tests e move a issue aprovada para \"Análise Final - Rafinha\". É A ÚNICA SKILL QUE APLICA `qa-develop-aprovado` e A ÚNICA QUE REMOVE `integrado-epico`, no mesmo gesto do veredito: aprovada recebe `qa-develop-aprovado` e perde `integrado-epico`; reprovada apenas perde `integrado-epico`, porque a label descreve um estado que acabou quando o épico foi promovido; inconclusiva por infraestrutura NÃO MEXE EM LABEL NENHUMA, porque sem veredito nada mudou. O lote que chega pode ser um épico inteiro promovido pelo Modo B da jira-integration-executor — nesse caso cada issue mantém evidência própria e recebe veredito individual, o conjunto é registrado no épico, e uma issue reprovada não bloqueia a aprovação das demais. Esta skill NUNCA corrige código, nunca implementa funcionalidades, nunca valida um épico como bloco único, e só tem permissão de commit/push para arquivos de teste Maestro (`.maestro/**`) — nunca para código do projeto. HOTFIX: executa o QA e registra o veredito (Aprovado / Reprovado / Inconclusivo) mas NÃO MOVE a issue — ela permanece em `QA - Claude` e Rafinha decide a próxima coluna (QA reprovado não devolve a Fazer - Claude, QA aprovado não avança). Reprovação de issue de Epic já promovido: devolve a issue a `Fazer - Claude` com o comentário fixo, e o jira-issue-executor bloqueia até a Preparação técnica recriar a branch do Epic (a skill nunca sugere integração direta). Lê AI Memory quando útil ao teste e DELEGA à ai-memory-manager o cenário técnico que falhou, passos, evidências, causa provável e handoff (nunca escreve `ai-memory/`; só commita `.maestro/**`)."
 ---
 
 # Executor de QA — Coluna "QA - Claude" (Jira genérico)
@@ -26,6 +26,14 @@ Seu trabalho é:
 7. registrar os resultados no AIO Tests;
 8. comentar o resultado no Jira com a frase fixa correspondente;
 9. mover a issue para o próximo estado.
+
+Leia `ai-memory/` da issue/Epic diretamente quando houver contexto técnico útil ao
+teste (cenário já falhado, passos relevantes) — leitura simples é direta. Quando a
+reprovação ou uma descoberta tiver valor de continuidade, **delegue** à
+`ai-memory-manager` (você não escreve `ai-memory/`): cenário técnico que falhou,
+passos relevantes, evidências, causa provável quando conhecida,
+arquivos/repositórios possivelmente relacionados e handoff para a correção. O Jira
+continua com o resultado operacional; a AI Memory guarda o detalhe técnico.
 
 Consulte a skill `workflow-development-flow` para dúvidas sobre como esta
 etapa se encaixa no fluxo geral do pipeline.
@@ -67,6 +75,69 @@ enquanto, e ele acompanha toda a implementação de perto. Isso não muda o
 que precisa ser registrado no comentário (resultado dos casos, link do
 Cycle/Run), mas muda como: declare os fatos direto ao ponto, sem explicar
 conceitos ou justificar convenções que ele já domina.
+
+---
+
+## Contrato da skill
+
+### Finalidade
+Executar QA funcional/visual real sobre o estado já integrado em `develop`,
+registrar evidências e emitir o veredito técnico de QA.
+
+### Escopo e acionamento
+Opera sobre issues em `QA - Claude` pertencentes ao escopo explícito confirmado
+(issue, lista, Epic ou coluna de um Epic específico — nunca coluna inteira).
+
+### Autoridade
+- **Decisão.** Define casos e regressões a partir do contrato da issue; seleciona o
+  executor pela plataforma; determina o veredito **Aprovado, Reprovado ou
+  Inconclusivo** com base em testes executados. **Não** decide se o design é
+  adequado nem se o produto merece aceite humano.
+- **Mutação.** Registra casos/runs no AIO Tests; comenta no Jira; aplica
+  `qa-develop-aprovado`; remove `integrado-epico`; move issues; mantém flows em
+  `.maestro/**`. A **única mutação versionada** permitida é commit/push direto de
+  arquivos `.maestro/**`.
+- **Atestação.** É a autoridade de atestação do **resultado de QA** sobre o estado
+  testado. `qa-develop-aprovado` só pode ser aplicada por esta skill, após QA real
+  aprovado em `develop`.
+- **Transição.** *Fluxo normal:* Aprovado → `Análise Final - Rafinha`; Reprovado →
+  `Fazer - Claude`; Inconclusivo por infraestrutura → não move. ***Hotfix:*
+  Aprovado, Reprovado e Inconclusivo apenas registram o veredito — a Hotfix
+  permanece em `QA - Claude`.** A próxima coluna da Hotfix é escolhida e aplicada
+  manualmente por Rafinha.
+
+### Entradas e pré-condições
+Escopo explícito; integração concluída; `develop` atualizada; label de plataforma
+quando necessária; protocolo de QA aplicável; AIO Tests disponível/token válido;
+ambiente e executor adequados.
+
+### Obrigações
+Executar testes de verdade (nunca aprovar por leitura de código); usar plataforma
+para escolher o executor e protocolo para a estratégia; distinguir falha funcional
+de infraestrutura; coletar evidências; registrar no AIO Tests; preservar evidência
+individual por issue em lotes de Epic; **ler AI Memory** quando houver contexto
+técnico útil ao teste; quando houver falha, descoberta ou handoff com valor de
+continuidade, **delegar à `ai-memory-manager`** os detalhes operacionais úteis à
+próxima tentativa; aplicar/remover labels operacionais conforme o veredito; usar
+frases fixas no comentário Jira.
+
+### Evidências, saída e limites
+AIO Tests é a fonte primária do detalhamento; o Jira mantém o veredito operacional,
+links e mudanças de estado. Saída: veredito sustentado por execução real e
+evidências, com labels e transição tratadas conforme o resultado. **Limites:** nunca
+corrige código; nunca cria Bug diretamente (delega à `jira-issue-creator`); nunca
+infere plataforma; nunca julga decisão de design; nunca aplica aprovação sem
+execução real; nunca altera labels operacionais em resultado inconclusivo; nunca
+commita fora de `.maestro/**` por autoridade própria — alterações de AI Memory são
+delegadas à `ai-memory-manager`.
+
+### Delegações
+Defeito real fora do escopo → `jira-issue-creator`; cenário técnico que falhou e
+handoff → `ai-memory-manager`.
+
+> Passo 0 de toda execução: resolver o Contrato Efetivo
+> (`workflow-development-flow/references/contrato-efetivo.md`). Defaults herdados:
+> `workflow-development-flow/references/contrato-skills.md`.
 
 ---
 
@@ -213,10 +284,11 @@ contrário, pergunte a Rafinha explicitamente antes de prosseguir.
 ### 1.1 Escopo desta execução (workflow-development-flow, princípio 11)
 
 Antes de buscar qualquer issue na coluna `QA - Claude`, confirme o escopo
-explícito com Rafinha, se ele ainda não o deixou claro no comando: Épico,
-lista de issues, ou coluna inteira confirmada. Estar na coluna correta não
-autoriza uma issue fora do escopo confirmado — não rode a busca sem essa
-confirmação.
+explícito com Rafinha, se ele ainda não o deixou claro no comando: issue
+individual, lista de issues, Epic ou coluna de um Epic específico — **nunca coluna
+inteira**. Resolvido o conjunto, apresente-o para confirmação; depois disso o
+escopo está fechado. Estar na coluna correta não autoriza uma issue fora do escopo
+confirmado — não rode a busca sem essa confirmação.
 
 ### 2. Token de acesso do AIO Tests configurado
 
@@ -716,26 +788,26 @@ leria uma label verdadeira sobre um estado que não existe mais.
 É o caso normal da integração direta (Modo C). Não há o que remover —
 aplique só `qa-develop-aprovado` na aprovação e siga.
 
-### Correção de issue reprovada que veio de épico (Correções 27/09)
+### Correção de issue reprovada que veio de épico
 
-**Isto substitui a regra anterior.** Antes, esta correção integrava direto
-na `develop` pelo Modo C, porque a branch do épico "já tinha cumprido o
-papel". Isso mudou: a branch do épico foi **excluída** depois da promoção
-(limpeza automática do Modo B), mas o ciclo correto **não** é integração
-direta — é reabrir o Epic.
+A branch do épico foi **excluída** depois da promoção (limpeza automática do
+Modo B), mas o ciclo correto **não** é integração direta — é reabrir o Epic.
 
 Ao reprovar, esta skill só devolve a issue para `Fazer - Claude` com o
-comentário fixo (`Teste de QA - Claude falharam`) e o motivo, normalmente.
-É a `jira-issue-executor`, ao processar essa correção, quem:
+comentário fixo (`Teste de QA - Claude falharam`) e o motivo, normalmente. Depois
+disso, o caminho é:
 
-1. recria a branch do Epic a partir da `develop` atual (a antiga não é
-   reaproveitada);
-2. cria a nova branch da issue com o próximo sufixo `.N`;
-3. leva a issue de volta pelo ciclo completo Epic → Modo A → Modo B.
+1. o `jira-issue-executor` **bloqueia** a nova implementação ao não encontrar a
+   branch do Epic e orienta Rafinha a devolver a issue a
+   `Preparação técnica - Claude`;
+2. a `jira-technical-preparation-executor` recria a branch do Epic a partir da
+   `develop` vigente, revalida a prontidão e libera novo `Ready`;
+3. o `jira-issue-executor` cria a nova branch da issue com o próximo sufixo `.N` e
+   a issue segue o ciclo completo Epic → Modo A → Modo B.
 
 Esta skill não decide isso — só reporta a reprovação como sempre fez. Não
 sugira integração direta (Modo C) para uma issue que pertence a um Epic; o
-caminho correto agora é sempre a reintegração via Epic.
+caminho correto é sempre a reintegração via Epic.
 
 ---
 
@@ -778,6 +850,11 @@ Diretrizes:
 * **Aprovada** → "Análise Final - Rafinha", com `qa-develop-aprovado`
   aplicada e `integrado-epico` removida.
 * **Reprovada** → "Fazer - Claude", com `integrado-epico` removida.
+* **Hotfix (qualquer veredito)** → **não move.** Aplique as labels operacionais
+  conforme o veredito (`qa-develop-aprovado` só na aprovação real), registre o
+  veredito e as evidências, e deixe a Hotfix em `QA - Claude`: QA aprovado não
+  avança e QA reprovado **não** devolve a `Fazer - Claude`. Rafinha decide a
+  próxima coluna.
 * **Inconclusiva por infraestrutura** → **não move** e **não mexe em
   label**. Informe Rafinha e aguarde decisão — nunca mova para "Análise
   Final - Rafinha" nem para "Fazer - Claude" quando não houver condições de
@@ -793,6 +870,10 @@ Sempre que a issue for movida (aprovada ou reprovada), apague
 
 * ❌ Nunca corrigir, ajustar ou "consertar rapidinho" código encontrado
   quebrado — isso é sempre trabalho da `jira-issue-executor`.
+* ❌ **Nunca mover uma Hotfix de coluna**, qualquer que seja o veredito.
+* ❌ Nunca escrever em `ai-memory/` — delegar à `ai-memory-manager`; seu único
+  commit continua sendo de `.maestro/**`.
+* ❌ Nunca varrer a coluna `QA - Claude` inteira sem Epic/lista/issue explícitos.
 * ❌ Nunca aplicar `qa-develop-aprovado` sem ter executado o QA de fato
   sobre a `develop` — a label é a pré-condição que a release lê para decidir
   o que pode ser promovido, não um carimbo de passagem.
@@ -875,6 +956,8 @@ resumo consolidado, por exemplo:
   - [ISSUE-3] (mobile): 1 caso novo (flow Maestro criado em
     .maestro/<area>/<cenario>.yaml, commitado e enviado direto para
     develop), aprovado → movida para "Análise Final - Rafinha" (Cycle: [link])
+  - [HOTFIX-1] (Web): QA aprovado → veredito registrado, `qa-develop-aprovado`
+    aplicada; **permanece em "QA - Claude"** (Rafinha decide a próxima coluna)
 ⚠️ Issues puladas por ambiguidade (sem critério de aceite claro, plataforma
   sem executor ativo, etc.): [lista ou "nenhuma"]
 ```

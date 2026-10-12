@@ -1,6 +1,6 @@
 ---
 name: jira-issue-creator
-description: "Criar uma issue (ou subtask) no Jira a partir de uma necessidade mencionada por Rafinha — seja no meio de uma mensagem sobre outro assunto, seja em um pedido dedicado, seja a partir de uma GitHub Issue apontada por ele (link ou número) como origem do trabalho. Usar sempre que Rafinha disser algo como \"cria uma issue para isso\", \"vira uma issue no Jira\", \"registra isso como issue/ticket\", apontar uma GitHub Issue para virar issue do Jira, ou mencionar explicitamente que algo deve virar uma issue/ticket em qualquer ponto da conversa, mesmo que o resto da mensagem seja sobre outro tópico. Decide a hierarquia (Issue vs. Subtask, consultando workflow-development-flow em caso de dúvida) e o tipo oficial do ticket — Implementação, Correção, Bug, Refatoração Técnica, Documentação ou Epic — que substituiu o campo customizado `Tipo`, agora fora do contrato. Propõe apenas labels da matriz oficial mantida no Confluence, nunca inventa label, e exige label de trilha documental (rn-doc, module-doc, screen-doc, component-doc, …) em issue do tipo Documentação. Pode SUGERIR `requires-design` no rascunho, marcada como sugestão, mas nunca aplica essa label sozinha — ela é confirmada manualmente por Rafinha. Propõe a intenção de plataforma (web/mobile), que a jira-issue-executor confirma depois. Cria a issue em `A fazer`, a coluna de entrada bruta do board, ou no backlog — nunca direto em `Fazer - Claude`, `Design de produto - Rafinha`, `Decisão - Rafinha` ou `Ready`. Escreve sempre a descrição padronizada de 9 seções definida em `workflow-development-flow` §17 (Objetivo, Contexto, Escopo, Fora do escopo, Regras de negócio, Critérios de aceite, Pendências de decisão, Decisões registradas, Orientação para implementação) — nunca o formato antigo de Contexto/Objetivo. Esta skill APENAS cria a issue — nunca implementa código, documentação ou qualquer outra coisa relacionada ao conteúdo da issue."
+description: "Criar uma issue (ou subtask) no Jira a partir de uma necessidade mencionada por Rafinha — seja no meio de uma mensagem sobre outro assunto, seja em um pedido dedicado, seja a partir de uma GitHub Issue apontada por ele (link ou número) como origem do trabalho — OU a partir de um payload já preparado por capacidade autorizada: trabalho técnico ausente originado pela jira-technical-preparation-executor, ou Hotfix qualificada pela jira-hotfix-creator. Usar sempre que Rafinha disser algo como \"cria uma issue para isso\", \"vira uma issue no Jira\", \"registra isso como issue/ticket\", apontar uma GitHub Issue para virar issue do Jira, ou mencionar explicitamente que algo deve virar uma issue/ticket em qualquer ponto da conversa, mesmo que o resto da mensagem seja sobre outro tópico. Decide a hierarquia (Issue vs. Subtask, consultando workflow-development-flow em caso de dúvida) e o tipo oficial do ticket — Implementação, Correção, Bug, Refatoração Técnica, Documentação, Epic ou Hotfix (Validação Humana é criada pela jira-human-validation-executor) — que substituiu o campo customizado `Tipo`, agora fora do contrato. Propõe apenas labels da matriz oficial mantida no Confluence, nunca inventa label, e exige label de trilha documental (rn-doc, module-doc, screen-doc, component-doc, …) em issue do tipo Documentação. Pode SUGERIR `requires-design` no rascunho, marcada como sugestão, mas nunca aplica essa label sozinha — ela é confirmada manualmente por Rafinha. Propõe a intenção de plataforma (web/mobile), que a jira-issue-executor confirma depois. Cria a issue em `A fazer`, a coluna de entrada bruta do board, ou no backlog — nunca direto em `Preparação técnica - Claude`, `Design de produto - Rafinha`, `Decisão - Rafinha` ou `Ready`. ÚNICA exceção contratual: uma Hotfix qualificada pela jira-hotfix-creator, com fast-track autorizado, nasce DIRETAMENTE em `Fazer - Claude` — a skill apenas materializa esse destino determinado pelo contrato, nunca o escolhe. Escreve sempre a descrição padronizada de 9 seções definida em `workflow-development-flow` §17 (Objetivo, Contexto, Escopo, Fora do escopo, Regras de negócio, Critérios de aceite, Pendências de decisão, Decisões registradas, Orientação para implementação) — e, para Hotfix, preserva integralmente a descrição/fast-track preparada pela jira-hotfix-creator. Não cria issue duplicada quando a Preparação técnica informou issue equivalente já reutilizada. Esta skill APENAS cria a issue — nunca implementa código, documentação ou qualquer outra coisa relacionada ao conteúdo da issue."
 ---
 
 # Criador de Issues — Jira genérico
@@ -43,6 +43,68 @@ label. Ver `workflow-development-flow`, seções 3 e 15.
 **Labels vêm da matriz oficial.** A fonte de verdade é a página *Vocabulário
 operacional de labels* no Confluence (espaço CS1). Você propõe labels dela;
 **nunca inventa**.
+
+---
+
+## Contrato da skill
+
+### Finalidade
+Transformar uma necessidade relatada por Rafinha (ou um payload qualificado por
+capacidade autorizada) em uma issue ou Subtask corretamente criada no Jira, sem
+executar o trabalho criado.
+
+### Escopo e acionamento
+Atua **somente na criação de tickets**. Origens aceitas: contexto do chat, GitHub
+Issue, Validação Humana, **Preparação Técnica** (trabalho técnico ausente) e
+**payload de Hotfix qualificado pela `jira-hotfix-creator`**.
+
+### Autoridade
+- **Decisão.** Aplica os critérios oficiais para propor hierarquia, tipo e labels.
+  Quando a classificação não é determinística, pergunta. **Não** inventa tipo,
+  label, requisito ou decisão de produto.
+- **Mutação.** Cria a issue/Subtask aprovada, preenchendo título, descrição, tipo
+  oficial, labels, links e o destino inicial determinado pelos contratos
+  aplicáveis. **Não** altera código nem documentação e não executa a issue
+  criada. Pode receber payload preparado pela `jira-technical-preparation-executor`
+  e pela `jira-hotfix-creator`, **sem herdar autoridade adicional** dessas skills.
+- **Atestação.** Atesta que o ticket foi criado conforme o rascunho aprovado e o
+  vocabulário vigente.
+- **Transição.** **Não move tickets existentes.** Regra geral: ticket novo nasce em
+  `A fazer` ou backlog, conforme decisão aprovada. **Exceção contratual:** Hotfix
+  qualificada pela `jira-hotfix-creator`, com fast-track autorizado, nasce
+  diretamente em `Fazer - Claude`. A skill não escolhe arbitrariamente esse
+  destino; apenas materializa a consequência determinada pelo Contrato de Tipo /
+  Contrato Efetivo.
+
+### Entradas e pré-condições
+Projeto/Jira; necessidade relatada ou payload preparado; contexto já fornecido;
+origem do trabalho quando derivado de Preparação Técnica; contexto/fast-track
+preparado pela `jira-hotfix-creator` quando Hotfix; pai, quando Subtask;
+confirmação/autorização exigida pelo fluxo antes da criação.
+
+### Obrigações
+Usar a descrição padrão aplicável ao tipo; **para Hotfix, preservar
+integralmente a descrição/fast-track** preparado; escolher apenas tipos oficiais;
+usar somente labels documentadas; exigir trilha documental para tipo Documentação;
+tratar `requires-design` conforme o Contrato Efetivo, sem inventar confirmação ou
+exceção; preservar a origem (GitHub, Validação Humana, Preparação Técnica ou
+Hotfix); evitar duplicação quando a Preparação Técnica informar issue equivalente
+já reutilizada; apresentar/validar o rascunho conforme a regra aplicável.
+
+### Evidências, saída e limites
+A issue criada no Jira é o registro oficial; links de origem são preservados nos
+campos/relacionamentos previstos. Saída: ticket criado no destino inicial aprovado
+e resumo. Limites: nunca cria sem a autorização exigida; nunca cria Subtask
+órfã; nunca inventa label; nunca cria diretamente em etapa posterior por escolha
+própria (a única criação fora de `A fazer`/backlog é a Hotfix validamente
+qualificada, em `Fazer - Claude`); nunca implementa código ou documentação; nunca
+cria ticket novo quando houver trabalho equivalente já reutilizado pela Preparação
+Técnica; nunca cria ticket novo para problema que já pertence ao escopo de issue
+existente numa reprovação.
+
+> Passo 0 de toda execução: resolver o Contrato Efetivo
+> (`workflow-development-flow/references/contrato-efetivo.md`). Defaults herdados:
+> `workflow-development-flow/references/contrato-skills.md`.
 
 ---
 
@@ -97,6 +159,24 @@ chave da Validação Humana — ao criar a issue (passo 7), grave um link
 depois, na `Análise Final - Claude`, se todos os problemas levantados por
 aquela validação foram tratados.
 
+**Gatilho de origem — Preparação Técnica.** Se a necessidade vem da
+`jira-technical-preparation-executor` (trabalho técnico ausente), você recebe o
+tipo semanticamente classificado por ela e o contexto preparado. Preserve na
+descrição do trabalho derivado: a **issue de origem**; a **origem na Preparação
+Técnica**; o trabalho necessário; o motivo; a dependência/blocker; o impacto; o
+contexto técnico; as evidências — e crie o link nativo de dependência com a issue
+de origem quando aplicável. Se ela informar que já existe issue equivalente
+(reutilizada), **não crie outra**. Você valida o tipo contra os contratos (sem
+whitelist artificial de tipos), mas não herda autoridade da Preparação Técnica.
+
+**Gatilho de origem — Hotfix.** Se o payload vem da `jira-hotfix-creator`, ele já
+traz o tipo `Hotfix`, a descrição completa com **fast-track**, o destino inicial
+`Fazer - Claude` e a autorização de Rafinha registrada. Verifique que o payload
+está completo (todas as seções do fast-track, autorização registrada) — payload
+incompleto volta para a `jira-hotfix-creator`, você não o completa. Preserve a
+descrição **integralmente**. A chave `<ISSUE-KEY>` das branches só existe depois da
+criação: informe-a no resumo.
+
 Nunca crie issue nova para um problema classificado como **pertencente ao
 escopo original** de uma issue já existente — nesse caso a issue original
 é reaberta pela `jira-human-validation-executor`, e criar uma issue nova
@@ -143,7 +223,7 @@ Subtask, pergunte a Rafinha em vez de decidir sozinho.
 
 ### 3. Inferir o tipo do item no Jira
 
-O **tipo nativo do ticket é a natureza da issue**. Escolha entre os 7 tipos
+O **tipo nativo do ticket é a natureza da issue**. Escolha entre os 8 tipos
 oficiais — nenhum outro é válido:
 
 | Tipo | Quando usar |
@@ -155,6 +235,7 @@ oficiais — nenhum outro é válido:
 | **Refatoração Técnica** | Melhoria estrutural sem mudança funcional planejada |
 | **Documentação** | Cria/atualiza documentação |
 | **Validação Humana** | Aceite manual de Rafinha (criada pela `jira-human-validation-executor`, não aqui) |
+| **Hotfix** | Trabalho emergencial que não pode esperar o ciclo normal. **Só a partir de payload qualificado pela `jira-hotfix-creator`**; alta prioridade sozinha não é Hotfix |
 
 **Correção ≠ Bug.** Correção ajusta algo já entregue sem que isso seja
 necessariamente defeito: ajuste visual de UI já implementada, copy,
@@ -210,7 +291,7 @@ Monte um rascunho completo, sem ainda criar nada no Jira:
 
 ```
 📝 Rascunho da issue — [projeto]
-Tipo: [Implementação | Correção | Bug | Refatoração Técnica | Documentação | Epic]
+Tipo: [Implementação | Correção | Bug | Refatoração Técnica | Documentação | Epic | Hotfix (payload da jira-hotfix-creator)]
 Hierarquia: [Issue | Subtask] — [Issue pai / Épico pai, se aplicável]
 Título: [título objetivo]
 
@@ -239,7 +320,7 @@ Trilha documental: [só para tipo Documentação — rn-doc | module-doc | ...]
 Plataforma (intenção): [web | mobile | ... — a confirmar na implementação]
 requires-design: [SUGESTÃO — precisa da sua confirmação | não se aplica]
 Destino: [Backlog | A fazer] — [quem definiu e por quê]
-Origem: [GitHub Issue #N (link) | Validação Humana CHAVE (cenário reprovado) | Chat]
+Origem: [GitHub Issue #N (link) | Validação Humana CHAVE (cenário reprovado) | Preparação Técnica CHAVE (trabalho ausente) | Hotfix (jira-hotfix-creator) | Chat]
 ```
 
 > **A seção Pendências de decisão não é decoração.** Se, ao montar o
@@ -267,16 +348,24 @@ no escopo/objetivo da sprint atual do projeto:
 backlog continua existindo como etapa pré-sprint — os dois coexistem. `A
 fazer` não é fila autorizada para envio direto a `Fazer - Claude`.
 
-A issue **nunca** é criada direto em `Fazer - Claude`, `Design de produto -
-Rafinha`, `Decisão - Rafinha` ou `Ready`. Quem decide o próximo passo a
-partir de `A fazer` é a `jira-sprint-intake-executor` (ou, na ausência de
-pendência e sem design necessário, o próprio julgamento de Rafinha):
+A issue **nunca** é criada direto em `Preparação técnica - Claude`, `Design de
+produto - Rafinha`, `Decisão - Rafinha`, `Ready` ou `Fazer - Claude` por escolha
+própria. Quem decide o próximo passo a partir de `A fazer` é a
+`jira-sprint-intake-executor`:
 
 ```text
 A fazer → Decisão - Rafinha            (pendência real registrada — ver Pendências de decisão)
 A fazer → Design de produto - Rafinha  (requires-design confirmada, sem pendência)
-A fazer → Ready                        (caso excepcional: pronta, sem design, sem pendência)
+A fazer → Preparação técnica - Claude  (funcionalmente madura, sem os gates anteriores)
 ```
+
+> ⚠️ **Única exceção contratual — Hotfix.** Uma Hotfix qualificada pela
+> `jira-hotfix-creator`, com fast-track autorizado por Rafinha, nasce
+> **diretamente em `Fazer - Claude`**. Você não escolhe esse destino: ele é a
+> consequência determinada pelo Contrato de Tipo. Criar em `Fazer - Claude` não
+> apaga as obrigações das etapas anteriores — o fast-track da descrição registra
+> como cada uma foi tratada. Depois da criação, nenhuma skill move a Hotfix:
+> Rafinha controla toda transição.
 
 Esta skill não decide entre essas três — só cria em `A fazer` ou backlog e
 deixa a seção **Pendências de decisão** da descrição refletindo o que já
@@ -289,7 +378,7 @@ Somente após a aprovação do rascunho, crie a issue no Jira (via Atlassian
 Rovo) com:
 - Título e descrição **padronizada de 9 seções** (workflow-development-flow
   §17) conforme aprovado — nunca só Contexto/Objetivo.
-- **Tipo oficial** correto (um dos 7 — passo 3).
+- **Tipo oficial** correto (um dos 8 — passo 3).
 - Labels aprovadas, **todas da matriz oficial**.
 - `requires-design` **somente se Rafinha confirmou explicitamente** no
   rascunho. Na dúvida, não aplique.
@@ -332,9 +421,15 @@ breve do que foi registrado.
 - ❌ Nunca usar label de produto/módulo/feature que não esteja declarada na
   página de Controle de workflow daquele produto.
 - ❌ Nunca criar issue do tipo Documentação sem label de trilha documental.
-- ❌ Nunca criar a issue direto em `Fazer - Claude`, `Design de produto -
-  Rafinha`, `Decisão - Rafinha` ou `Ready` — o destino é sempre `A fazer` ou
-  backlog.
+- ❌ Nunca criar a issue direto em `Preparação técnica - Claude`, `Design de
+  produto - Rafinha`, `Decisão - Rafinha`, `Ready` ou `Fazer - Claude` — o
+  destino é sempre `A fazer` ou backlog. **Única exceção:** Hotfix validamente
+  qualificada pela `jira-hotfix-creator`, que nasce em `Fazer - Claude`.
+- ❌ Nunca criar Hotfix sem payload qualificado pela `jira-hotfix-creator`, nem
+  alterar ou resumir o fast-track dela — a descrição é preservada integralmente.
+- ❌ Nunca mover uma Hotfix depois de criada; toda transição é de Rafinha.
+- ❌ Nunca criar issue duplicada de trabalho que a Preparação técnica já informou
+  como reutilizado.
 - ❌ Nunca usar o formato antigo de descrição (só Contexto/Objetivo) — a
   descrição padronizada de 9 seções (workflow-development-flow §17) é
   obrigatória em toda issue criada.

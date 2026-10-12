@@ -26,6 +26,45 @@ Qualquer skill futura que escreva páginas formais no Confluence de Rafinha
 também passa por aqui. **Esta camada é transversal** — ela não pertence a
 uma família de documentação, ela serve todas.
 
+## Contrato da skill
+
+### Finalidade
+Resolver, em conversa com Rafinha, incertezas que impedem uma skill de documentação de
+preencher uma informação com segurança.
+
+### Escopo e acionamento
+Camada transversal chamada pelos cinco writers. Não produz página formal de forma
+autônoma.
+
+### Autoridade
+- **Decisão.** Formula alternativas, recomenda tecnicamente uma opção e explica
+  trade-offs. **Não decide a resposta final:** Rafinha escolhe uma alternativa ou
+  determina que o ponto permaneça pendente.
+- **Mutação.** Nenhuma mutação externa própria em Jira, Confluence, código ou Git. O
+  writer anfitrião realiza a escrita depois da resolução.
+- **Atestação.** Apenas devolve ao writer a resposta/decisão explicitamente obtida na
+  conversa. Não transforma inferência em confirmação.
+- **Transição.** Nenhuma.
+
+### Entradas, obrigações e saída
+Entradas: ponto exato de informação faltante; contexto da página/trilha; alternativas
+plausíveis; skill anfitriã. Obrigações: perguntar antes de uma pendência ser
+publicada; oferecer opções concretas; incluir sempre a alternativa de manter como
+pendência; explicar trade-offs não óbvios; agrupar apenas perguntas relacionadas;
+repetir/reformular a pergunta quando a resposta não encaixar nas opções. Saída:
+resposta confirmada para escrita ou autorização explícita para registrar pendência.
+
+### Limites
+Nunca inventa resposta; nunca marca pendência sem perguntar; nunca decide que a lacuna
+é irrelevante; nunca transforma gap já confirmado em nova dúvida; nunca escreve página
+sozinho.
+
+> Defaults herdados (silêncio não concede autoridade, acesso técnico não é
+> autoridade, delegação não transfere autoridade etc.):
+> `workflow-development-flow/references/contrato-skills.md`.
+
+---
+
 ## Por que esta skill existe
 
 Documentação de regra de negócio ou de módulo vira fonte de verdade para quem

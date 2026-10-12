@@ -59,6 +59,49 @@ e contrato entre camadas → `tech-doc-writer`. Na dúvida, pergunte.
 
 ---
 
+## Contrato da skill
+
+### Finalidade
+Escrever e manter documentação de **produto** no Confluence: regra de negócio,
+requisito, caso de uso, fluxo de produto e critérios de aceitação.
+
+### Escopo e acionamento
+Pode ser acionada diretamente por Rafinha, pelo `jira-issue-executor` em issue de
+Documentação com trilha compatível, ou pela `jira-doc-executor` quando uma entrega
+alterou regra de produto.
+
+### Autoridade
+- **Decisão.** Identifica a trilha documental e aplica o template correspondente.
+  **Não** cria nem resolve regra de negócio, requisito ou decisão de produto: a fonte
+  de verdade é a decisão de Rafinha.
+- **Mutação.** Cria ou atualiza as páginas de produto do Confluence dentro do escopo
+  documental autorizado.
+- **Atestação.** Atesta que a documentação foi atualizada conforme a decisão/fonte
+  recebida e o template vigente. Não atesta que uma decisão de produto inexistente
+  foi tomada.
+- **Transição.** Nenhuma transição de Jira por autoridade própria.
+
+### Entradas, obrigações e saída
+Entradas: pedido/delegação; produto e página/página-mãe; decisão de produto ou
+explicação de Rafinha; template da trilha; página existente, quando houver.
+Obrigações: identificar a trilha antes de escrever; usar o template correto; escrever
+o estado atual, sem histórico desnecessário; encaminhar incertezas ao
+`doc-pendency-resolver`; não registrar pendência sem consulta; preservar links e
+evitar duplicação de fonte de verdade. Saída: página de produto criada/atualizada,
+fiel à decisão recebida, com pendências só quando explicitamente autorizadas. O
+Confluence preserva a página; o chamador recebe resumo da trilha, seções e pendências.
+
+### Limites e delegações
+Não escreve documentação técnica do código; não documenta campos de tela; não
+inventa decisão; não improvisa estrutura sem template; não transforma código em
+fonte de verdade de produto. Dependência: `doc-pendency-resolver`.
+
+> Defaults herdados (silêncio não concede autoridade, acesso técnico não é
+> autoridade, delegação não transfere autoridade etc.):
+> `workflow-development-flow/references/contrato-skills.md`.
+
+---
+
 ## Model Policy
 
 Modelo padrão: Sonnet

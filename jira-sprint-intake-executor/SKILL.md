@@ -1,6 +1,6 @@
 ---
 name: jira-sprint-intake-executor
-description: "Amadurecer o escopo informado por Rafinha (um épico, uma lista de issues soltas, ou um conjunto de trabalho) na coluna \"A fazer\" de qualquer projeto Jira, preparando cada issue para o próximo passo real do fluxo — nunca a implementação em si. Usar quando Rafinha disser \"amadurece o épico X\", \"prepara essas issues pra sprint\", \"organiza o backlog de Y antes de eu decidir\", ou pedir para revisar/organizar issues em \"A fazer\" antes de entrarem em produção. Apesar do nome, roda no início OU durante a sprint — não é um gatilho fixo de início de ciclo. SEMPRE exige escopo explícito de Rafinha (Épico, lista de issues, ou confirmação de que é a coluna inteira) — workflow-development-flow, princípio 11. Para cada issue do escopo: lê a descrição padronizada de 9 seções (workflow-development-flow §17), explicita informações já presentes, identifica lacunas reais, registra pendências de decisão na seção correspondente, sugere issues faltantes (nunca as cria — isso é jira-issue-creator) e decide o próximo destino: `Decisão - Rafinha` (pendência real), `Design de produto - Rafinha` (requires-design confirmada, sem pendência) ou, EXCEPCIONALMENTE, `Ready` (issue já claramente pronta, sem design e sem incerteza relevante). NUNCA move para `Fazer - Claude` diretamente. Pode amadurecer, organizar e explicitar o escopo já existente, mas NUNCA altera a intenção original do épico ou da issue, não cria regra de negócio, não escolhe entre alternativas de produto, não define prioridade, não substitui a jira-issue-decision-resolver e não cria issues. Nunca implementa código, nunca faz QA, nunca documenta, nunca move issue para além de Decisão-Rafinha/Design de produto-Rafinha/Ready."
+description: "Amadurecer o escopo informado por Rafinha (um Epic, uma lista de issues soltas, ou a coluna \"A fazer\" de um Epic específico) em \"A fazer\" de qualquer projeto Jira, preparando cada issue para o próximo passo real do fluxo — nunca a implementação em si. Usar quando Rafinha disser \"amadurece o épico X\", \"prepara essas issues pra sprint\", \"organiza o backlog de Y antes de eu decidir\", ou pedir para revisar/organizar issues em \"A fazer\" antes de entrarem em produção. Apesar do nome, roda no início OU durante a sprint — não é um gatilho fixo de início de ciclo. SEMPRE exige escopo explícito de Rafinha (issue, lista de issues, Epic ou coluna de um Epic específico — nunca coluna inteira) — workflow-development-flow, princípio 11. Para cada issue do escopo: lê a descrição padronizada de 9 seções (workflow-development-flow §17), explicita informações já presentes, identifica lacunas reais, registra pendências de decisão na seção correspondente, sugere issues faltantes (nunca as cria — isso é jira-issue-creator) e decide o próximo destino: `Decisão - Rafinha` (pendência real), `Design de produto - Rafinha` (requires-design confirmada, sem pendência) ou `Preparação técnica - Claude` (funcionalmente madura, sem os gates anteriores). Issue normal NUNCA vai direto para `Ready` nem para `Fazer - Claude`. Pode amadurecer, organizar e explicitar o escopo já existente, mas NUNCA altera a intenção original do épico ou da issue, não cria regra de negócio, não escolhe entre alternativas de produto, não define prioridade, não substitui a jira-issue-decision-resolver e não cria issues. Nunca implementa código, nunca faz QA, nunca documenta, nunca move issue para além de Decisão-Rafinha/Design de produto-Rafinha/Preparação técnica-Claude."
 ---
 
 # Executor de Intake de Sprint — Coluna "A fazer" (Jira genérico)
@@ -25,6 +25,57 @@ que realmente falta — sem inventar conteúdo que não estava lá.
 Consulte `workflow-development-flow` sempre que tiver dúvida sobre a
 hierarquia Épico/Issue/Subtask, a descrição padronizada (§17) ou o
 princípio de escopo explícito (11).
+
+---
+
+## Contrato da skill
+
+### Finalidade
+Amadurecer issues em `A fazer` dentro de um escopo confirmado e encaminhá-las ao
+próximo ponto real do fluxo, sem implementar.
+
+### Escopo e acionamento
+Opera apenas sobre issues em `A fazer` pertencentes ao escopo explícito informado
+por Rafinha: issue, lista de issues, Epic ou coluna `A fazer` de um Epic
+específico. Não existe "coluna inteira".
+
+### Autoridade
+- **Decisão.** Decide, com critérios documentados, se a issue segue para
+  `Decisão - Rafinha`, `Design de produto - Rafinha` ou
+  `Preparação técnica - Claude`. Pode organizar e explicitar conteúdo já
+  existente. **Não** altera a intenção original nem decide regra de negócio.
+- **Mutação.** Atualiza a descrição padronizada, registra pendências, comenta o
+  amadurecimento e move a issue para um dos destinos autorizados.
+- **Atestação.** Atesta que a issue foi analisada e classificada quanto à
+  maturidade operacional. **Não** atesta que pendência humana foi resolvida nem
+  que a issue está implementada.
+- **Transição.** `A fazer` → `Decisão - Rafinha` | `Design de produto - Rafinha` |
+  `Preparação técnica - Claude`. **Issue normal não vai direto para `Ready`.
+  Nunca para `Fazer - Claude`.**
+
+### Entradas e pré-condições
+Projeto/Jira correto; escopo explícito; issue completa (descrição, comentários,
+tipo, labels, hierarquia); fontes oficiais quando necessárias para resolver
+informação verificável.
+
+### Obrigações
+Interpretar a hierarquia; completar a descrição padronizada sem inventar
+informação; registrar só pendências que realmente exigem decisão; sugerir
+trabalho adicional sem criar issue; não aplicar `requires-design`; registrar o
+que foi amadurecido e o destino escolhido.
+
+### Evidências, saída e limites
+O Jira preserva descrição, comentário e transição. Saída: issue amadurecida e
+roteada. Limites: não implementa, não faz QA, não escreve documentação, não cria
+issue, não altera intenção original, não processa coluna fora do escopo.
+
+### Delegações
+Nova issue necessária → `jira-issue-creator`. Decisão humana →
+`jira-issue-decision-resolver`. Prontidão técnica → `jira-technical-preparation-executor`.
+
+> Passo 0 de toda execução: resolver o Contrato Efetivo
+> (`workflow-development-flow/references/contrato-efetivo.md`). Defaults herdados:
+> `workflow-development-flow/references/contrato-skills.md`.
 
 ---
 
@@ -55,13 +106,18 @@ contrário, pergunte a Rafinha explicitamente antes de prosseguir.
 
 ### 2. Escopo explícito (workflow-development-flow, princípio 11)
 
-Esta skill **nunca varre `A fazer` inteira por padrão**. Confirme com
-Rafinha, antes de buscar qualquer issue, qual das três formas de escopo se
-aplica:
-1. **Épico** — todas as issues daquele épico que estão em `A fazer`;
+Esta skill **nunca varre `A fazer` inteira**. Confirme com Rafinha, antes de
+buscar qualquer issue, qual forma de escopo se aplica:
+1. **Issue individual** — uma issue explicitamente determinada;
 2. **Lista de issues** — só os códigos informados;
-3. **Coluna inteira confirmada** — só quando Rafinha autorizar
-   explicitamente processar toda a `A fazer` do projeto.
+3. **Epic** — todas as issues daquele Epic que estão em `A fazer`;
+4. **Coluna de um Epic específico** — as issues daquele Epic que estão em
+   `A fazer`.
+
+**Não existe escopo "coluna inteira".** Issues sem Epic só entram por issue
+individual ou lista explícita. Resolvido o conjunto, apresente-o para
+confirmação; depois disso o escopo está fechado e descoberta posterior não o
+amplia.
 
 Se Rafinha já informou o escopo no próprio pedido ("amadurece o épico
 PROJ-40"), não pergunte de novo — só confirme se restar ambiguidade real
@@ -126,19 +182,19 @@ Tem pendência de decisão real registrada no passo 4?
 Não tem pendência, mas tem requires-design confirmada?
   → Design de produto - Rafinha
 
-Não tem pendência, não precisa de design, e está claramente pronta
-para ser implementada sem ambiguidade?
-  → Ready (caso excepcional)
+Não tem pendência e não precisa de design (está funcionalmente madura)?
+  → Preparação técnica - Claude
 ```
 
-> ❗ **Nunca mova para `Fazer - Claude` diretamente.** Mesmo uma issue
-> claramente pronta passa por `Ready` — não existe atalho de `A fazer` para
-> `Fazer - Claude`.
+> ❗ **Nunca mova para `Ready` nem para `Fazer - Claude` diretamente.** Mesmo uma
+> issue claramente pronta passa pela `Preparação técnica - Claude`: só ela, com
+> atestado `PRONTA`, leva a `Ready`. Maturar funcionalmente não é verificar
+> disponibilidade técnica — você pode *registrar* requisitos técnicos descritos
+> na issue, mas verificar se existem de fato é da Preparação técnica.
 
-> ⚠️ **Na dúvida entre `Decisão - Rafinha` e `Ready`, prefira `Decisão -
-> Rafinha`.** Uma pendência real não identificada custa mais caro depois
-> (issue chega a `Fazer - Claude` incompleta) do que uma passagem extra por
-> uma coluna manual.
+> ⚠️ **Na dúvida entre `Decisão - Rafinha` e `Preparação técnica - Claude`,
+> prefira `Decisão - Rafinha`.** Uma pendência real não identificada custa mais
+> caro depois do que uma passagem extra por uma coluna manual.
 
 `requires-design` só é aplicada por Rafinha — você pode observar que a issue
 parece precisar de design e comentar isso, mas a confirmação explícita
@@ -159,7 +215,7 @@ Depois de processar todas as issues do escopo, apresente um resumo:
 📋 Issues processadas: [quantidade]
   - [ISSUE-1] → Decisão - Rafinha (2 pendências registradas: ...)
   - [ISSUE-2] → Design de produto - Rafinha (requires-design já confirmada)
-  - [ISSUE-3] → Ready (excepcional: pronta, sem design, sem pendência)
+  - [ISSUE-3] → Preparação técnica - Claude (madura: sem design, sem pendência)
 💡 Issues sugeridas (não criadas): [lista ou "nenhuma"]
 ⚠️ Ambiguidades que impediram maturação total: [lista ou "nenhuma"]
 ```
@@ -169,10 +225,10 @@ Depois de processar todas as issues do escopo, apresente um resumo:
 ## O que NÃO fazer
 
 - ❌ Nunca varrer `A fazer` sem confirmar o escopo explícito primeiro
-  (Épico, lista, ou coluna confirmada).
-- ❌ Nunca mover uma issue direto para `Fazer - Claude` — o destino máximo
-  desta skill é `Decisão - Rafinha`, `Design de produto - Rafinha` ou
-  `Ready`.
+  (issue, lista, Epic ou coluna de um Epic específico — nunca coluna inteira).
+- ❌ Nunca mover uma issue direto para `Ready` ou `Fazer - Claude` — o destino
+  máximo desta skill é `Decisão - Rafinha`, `Design de produto - Rafinha` ou
+  `Preparação técnica - Claude`.
 - ❌ Nunca alterar a intenção original do épico ou da issue — reorganizar e
   explicitar não é o mesmo que reinterpretar.
 - ❌ Nunca criar regra de negócio, escolher entre alternativas de produto ou

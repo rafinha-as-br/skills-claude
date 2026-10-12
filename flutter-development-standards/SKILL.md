@@ -33,6 +33,51 @@ código Flutter/Dart neste contexto:
 
 ---
 
+## Contrato da skill
+
+### Finalidade
+Fornecer o contrato técnico de arquitetura e boas práticas Flutter/Dart usado na
+implementação e revisão de código.
+
+### Escopo e acionamento
+Consumida em código novo, revisão, decisões técnicas de arquitetura e issues com
+Design System/IDs canônicos.
+
+### Autoridade
+- **Decisão.** Avalia a conformidade do código com as regras técnicas e identifica
+  violações; pode propor correções. Quando uma regra conflitar com decisão explícita de
+  Rafinha para o projeto, aponta o conflito **antes** de aplicar a regra.
+- **Mutação.** **Não concede autoridade de mutação por si só.** Quando consumida por uma
+  skill executora com autoridade sobre o código, orienta as alterações dentro daquele
+  escopo.
+- **Atestação.** Atesta conformidade ou aponta violações das seções aplicáveis. A seção
+  de testes funciona como gate técnico: comportamento alterado sem teste correspondente
+  não está pronto.
+- **Transição.** Nenhuma transição de Jira.
+
+### Entradas, obrigações e saída
+Entradas: código ou mudança técnica a avaliar; contexto do projeto; decisões
+arquiteturais já aprovadas que possam limitar/especializar o padrão; Design Package e
+IDs canônicos quando aplicáveis; escopo da skill executora que a consome. Obrigações:
+aplicar arquitetura/camadas, widgets, estado, dados, async, formulários, navegação,
+performance, testes, legibilidade, organização, lint/segurança, acessibilidade e Design
+System; reutilizar componente antes de criar; respeitar IDs canônicos; reportar ID
+inexistente em vez de criar em silêncio; tratar `candidate` como não oficial; exigir
+testes proporcionais ao comportamento alterado. Evidências: código, testes, análise
+estática e achados de revisão. Saída: avaliação técnica rastreável, com conformidades e
+violações.
+
+### Limites
+Não substitui decisões específicas já aprovadas para o projeto; não cria sigla
+canônica; não oficializa componente candidato; não concede escopo ou autoridade
+adicional a quem a consome.
+
+> Defaults herdados (silêncio não concede autoridade, acesso técnico não é
+> autoridade, delegação não transfere autoridade etc.):
+> `workflow-development-flow/references/contrato-skills.md`.
+
+---
+
 ## 1. Arquitetura & Camadas
 
 - **Caminho único de leitura/escrita**: toda operação que persiste ou busca

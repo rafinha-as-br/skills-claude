@@ -18,7 +18,7 @@ dentro e obrigadas por fora, pelo que está definido aqui.
 
 > **Issue workflow e Release workflow não são a mesma coisa.**
 
-- **Issue workflow** (as 12 colunas) → processo de conclusão de uma unidade de
+- **Issue workflow** (as 13 etapas) → processo de conclusão de uma unidade de
   mudança. Termina em `Concluído`.
 - **Release workflow** (este arquivo) → processo de entrega do produto. Agrupa
   várias issues concluídas numa versão publicada.
@@ -113,6 +113,13 @@ Projeto                         Projeto
 O manifesto declara qual é a topologia (`topology: monorepo | multi_repo`), e é
 isso que determina os caminhos de execução. **Nunca inferir topologia** olhando
 a estrutura de pastas.
+
+> **Produtos com Workspace Git (Revisão do workflow 2).** A política de topologia
+> multi-repo introduz um Workspace Git superior (`contexto-memoria-workspace.md`,
+> seção 4). Esta atualização **não redefine** onde ficam o manifesto e o
+> `.release/` desses produtos nem a relação entre o Workspace e a pasta mãe
+> abaixo — regras de release não afetadas permanecem como estão. O texto desta
+> seção descreve a pasta mãe local do ciclo de Release.
 
 Em multi-repo, os repositórios ficam reunidos numa **pasta mãe local** que:
 
@@ -942,7 +949,7 @@ que pode carregar artifacts como assets.
 | **G7 Distribuição** | Rafinha | Release completa sem Runtime Package funcional quando `required: true`, ou FINAL sem execução real fora da IDE |
 | **G8 Promoção** | orchestrator | FINAL que promove um rc, com repositório fora dos commits daquele rc |
 | **G9 Registro** | skill | Fix Versions, Confluence e cópia do Drive não atualizados |
-| **G10 Elegibilidade** | skill | `develop` contém commit que não rastreia para issue com `qa-develop-aprovado` (§22) |
+| **G10 Elegibilidade** | skill | `develop` contém commit que não rastreia para issue com a obrigação de QA elegível — `qa-develop-aprovado` quando o QA é aplicável e foi satisfeito, ou `Não aplicável` / `Excepcionada` rastreável (§22) |
 
 > Os números dos gates são **identificadores, não ordem de execução**. G10 é o
 > mais recente a entrar no ciclo, mas roda cedo: antes da promoção
@@ -973,7 +980,8 @@ inteira está apta, ou a promoção para.
 
 1. Todas as issues obrigatórias do épico foram integradas na `develop`.
 2. Todas foram testadas em `QA - Claude` **sobre a `develop`**.
-3. Todas possuem a label `qa-develop-aprovado`.
+3. Todas possuem a label `qa-develop-aprovado` (ou têm a obrigação de QA
+   resolvida como `Não aplicável` / `Excepcionada` com rastreabilidade, ver G10).
 4. Não existem issues obrigatórias do épico pendentes de QA, correção ou
    decisão.
 
@@ -995,10 +1003,11 @@ origens diferentes, e o G10 precisa reconhecer as duas:
 
    CAMINHO 1 — merge direto de issue
      branch = {tipo}/<ISSUE-KEY>-claude[.<tentativa>]
+              ou hotfix/<ISSUE-KEY>        (Hotfix — Modo C direto em develop)
      (convenção mantida pela jira-issue-executor; o sufixo de tentativa
      não muda a chave extraída)
      extrair a chave da issue do nome da branch
-     verificar a presença de `qa-develop-aprovado` nessa issue
+     resolver a elegibilidade de QA da issue pelo Contrato Efetivo (abaixo)
 
    CAMINHO 2 — merge agregador de Epic
      branch = epic/<EPIC-KEY>-<nome>
@@ -1011,16 +1020,18 @@ origens diferentes, e o G10 precisa reconhecer as duas:
      como índice auxiliar para localizar essas issues — nunca como prova
      técnica única; se ledger e Git/GitHub discordarem, Git/GitHub
      prevalece, e a divergência é achado a reportar
-     obter as chaves das issues e verificar `qa-develop-aprovado` em
-     CADA UMA individualmente
+     obter as chaves das issues e resolver a elegibilidade de QA de
+     CADA UMA individualmente (mesma regra do caminho 1)
 
 3. BLOQUEAR se:
      - commit sem chave extraível e sem Epic identificável (inclui
        commit direto na develop)
-     - chave (caminho 1) sem `qa-develop-aprovado`
+     - chave (caminho 1) com QA aplicável e sem `qa-develop-aprovado`,
+       ou com a obrigação de QA Pendente / Não satisfeita / Não verificável
      - chave que não resolve para issue existente
      - qualquer issue do caminho 2 sem rastreamento possível, ou sem
-       `qa-develop-aprovado`
+       elegibilidade de QA (mesma regra do caminho 1)
+     - obrigação Excepcionada sem autorização rastreável completa
 4. Registrar o mapeamento commit → issue(s) → label no bloco `eligibility`
    do Release Request (§8), citando o caminho usado, aprovado ou bloqueado
 ```
@@ -1030,6 +1041,20 @@ origens diferentes, e o G10 precisa reconhecer as duas:
 > branch remota ainda existir. Um merge de Epic continua rastreável mesmo
 > com a branch do Epic já excluída, porque o PR mergeado permanece no
 > GitHub.
+
+**Elegibilidade de QA por estado da obrigação (Revisão do workflow 2).** O G10
+não equivale a "toda issue tem a label": ele lê o estado da obrigação de QA no
+Contrato Efetivo (`contrato-workflow.md`, Bloco C):
+
+| Estado da obrigação de QA | Efeito no G10 |
+|---|---|
+| `Satisfeita` | elegível; exige `qa-develop-aprovado` (aplicada só pela `jira-qa-executor` após QA real aprovado em `develop`) |
+| `Não aplicável` | elegível; **não** exige a label e **não** a fabrica; não é exceção |
+| `Excepcionada` | elegível **somente** com autorização rastreável (obrigação, motivo, contexto — fast-track); **não** fabrica a label; só esta exige autorização de exceção |
+| `Pendente`, `Não satisfeita`, `Não verificável` | **bloqueia** a promoção |
+
+A distinção `Não aplicável` × `Excepcionada` é preservada no bloco `eligibility`
+do Release Request.
 
 **Commit direto na `develop`, sem Pull Request, bloqueia a promoção.** É
 deliberado: um commit sem PR é, por construção, um commit que não passou por

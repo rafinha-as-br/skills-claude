@@ -55,6 +55,61 @@ real durante a checagem de drift (passo 3), nunca para escrever.
 
 ---
 
+## Contrato da skill
+
+### Finalidade
+Manter a documentação oficial do próprio Workflow Rafinha-Claude no Confluence,
+incluindo fichas de skills, páginas do pipeline e documentação de release.
+
+### Escopo e acionamento
+Atua sob pedido de Rafinha, pelas trilhas `workflow-doc`, `skill-doc` e `release-doc`,
+por delegação da `jira-doc-executor` e em gates de release via `jira-release-executor`.
+
+### Autoridade
+- **Decisão.** Determina **drift factual** entre a documentação normativa e o
+  comportamento operacional implementado. Para fichas de skill, a regra é: o
+  **Confluence** define normativamente como a skill *deve* se comportar; o
+  **`SKILL.md`** demonstra como ela *está* implementada; **divergência entre os dois é
+  drift, não uma regra automática de precedência.** Quando a divergência é apenas
+  descritiva/técnica e **não** altera autoridade, obrigação, gate, evidência,
+  transição, satisfação ou outro comportamento normativo, a documentação pode ser
+  sincronizada com o comportamento real. Quando a divergência é **contratual**, a skill
+  **não altera silenciosamente o Confluence para fazer o comportamento atual parecer
+  correto**: identifica o drift e reconcilia a implementação com o contrato aprovado
+  ou encaminha a divergência para decisão quando a intenção normativa não estiver
+  definida. Não cria regra de workflow que as fontes aprovadas não definem.
+- **Mutação.** Cria/atualiza páginas de workflow e release no Confluence dentro do
+  escopo delegado.
+- **Atestação.** Atesta que verificou drift e informa **sem divergência** ou quais
+  divergências foram corrigidas; confirma a atualização das páginas exigidas pelo
+  ciclo de release.
+- **Transição.** Nenhuma transição de Jira por autoridade própria.
+
+### Entradas, obrigações e saída
+Entradas: fonte operacional correspondente (`SKILL.md`, board, manifestos, Actions,
+decisões oficiais, artefatos de release); trilha e página alvo; acesso ao repositório
+quando necessário. Obrigações: rastrear cada afirmação à fonte; identificar e
+classificar o drift Confluence × `SKILL.md` (sincronizar automaticamente só diferenças
+descritivas/técnicas compatíveis com o contrato; tratar divergências contratuais como
+necessidade de reconciliação da implementação); copiar `release-manifest.yml`
+literalmente quando o contrato de release exigir; registrar o resultado mesmo sem
+drift; declarar a ausência de acesso em vez de reconstruir de memória. Saída:
+documentação criada/atualizada/auditada com resultado explícito de drift — sincronização
+descritiva compatível **ou** necessidade de reconciliação contratual; nunca mascarar a
+diferença.
+
+### Limites e delegações
+Não altera `SKILL.md` como efeito implícito da documentação; não inventa regra; não
+reescreve manifesto de release em segunda versão; não transforma opinião em fonte
+normativa. Dependências: `jira-release-executor`, `jira-doc-executor`,
+`doc-pendency-resolver`.
+
+> Defaults herdados (silêncio não concede autoridade, acesso técnico não é
+> autoridade, delegação não transfere autoridade etc.):
+> `workflow-development-flow/references/contrato-skills.md`.
+
+---
+
 ## Model Policy
 
 Modelo padrão: Sonnet
@@ -110,13 +165,21 @@ Esta etapa é exclusiva de **ficha de skill**. Compare o `SKILL.md` real
 (lido no passo 2) com o conteúdo atual da página do Confluence, seção por
 seção do template:
 
-- **`SKILL.md` diz algo que a ficha não diz, ou diz diferente** → a ficha
-  está desatualizada. Corrija a ficha para bater com o `SKILL.md` **sem
-  perguntar** — isso não é uma incerteza sua, é um fato verificável por
-  leitura direta do arquivo. O `SKILL.md` é o que executa; a ficha só
-  documenta.
-- **A ficha descreve um comportamento que nenhuma parte do `SKILL.md`
-  sustenta** → mesma regra: a ficha está errada, corrija.
+Classifique cada divergência antes de agir (Confluence define o que *deve* ser;
+`SKILL.md` demonstra o que *é*):
+
+- **Divergência descritiva/técnica compatível com o contrato** — `SKILL.md` diz algo
+  que a ficha não diz, ou a ficha descreve um detalhe técnico que o `SKILL.md` não
+  sustenta, **sem** tocar autoridade, obrigação, gate, evidência, transição,
+  satisfação ou política → a ficha está desatualizada: sincronize-a com o `SKILL.md`
+  **sem perguntar** (é um fato verificável por leitura direta).
+- **Divergência contratual** — a diferença toca autoridade, obrigação, gate,
+  evidência, transição, satisfação, política ou outro comportamento normativo → é
+  **drift contratual**. **Não** altere o Confluence para fazer o comportamento atual
+  parecer correto, e **não** declare o `SKILL.md` correto só porque ele executa.
+  Reporte o drift e reconcilie a implementação com o contrato aprovado, ou encaminhe
+  a divergência para decisão quando a intenção normativa não estiver clara
+  (`doc-pendency-resolver`/Rafinha).
 - **Você não consegue determinar com clareza o que o `SKILL.md` realmente
   faz numa parte específica** (texto ambíguo, contraditório) → isso não é
   drift a corrigir sozinho — invoque o `doc-pendency-resolver` antes de
@@ -175,9 +238,10 @@ Crie ou atualize a página no Confluence (`createConfluencePage` ou
 
 - ❌ Nunca escreva uma ficha de skill de memória de uma execução anterior —
   leia o `SKILL.md` real (passo 2) toda vez.
-- ❌ Nunca deixe uma divergência encontrada na checagem de drift sem
-  corrigir "para não incomodar" — divergência entre ficha e `SKILL.md` é
-  exatamente o que esta skill existe para eliminar.
+- ❌ Nunca deixe uma divergência encontrada na checagem de drift sem tratamento
+  "para não incomodar" — descritiva compatível: sincronize; contratual: reporte e
+  reconcilie. Nunca ajuste silenciosamente o Confluence para justificar o
+  comportamento implementado.
 - ❌ Nunca trate uma ambiguidade real do `SKILL.md` como se fosse drift
   óbvio — se você não consegue determinar o comportamento com clareza, isso
   é uma pergunta via `doc-pendency-resolver`, não uma correção silenciosa.

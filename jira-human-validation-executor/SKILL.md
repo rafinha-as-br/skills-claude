@@ -1,6 +1,6 @@
 ---
 name: jira-human-validation-executor
-description: "Executar a camada de Validação Humana Agregada do Workflow Rafinha-Claude: varrer a coluna \"Análise Final - Rafinha\" da sprint atual de qualquer projeto Jira que Rafinha indicar, agrupar as issues por comportamento funcional e criar issues do tipo \"Validação Humana\" contendo só os cenários que realmente exigem observação humana; e, depois que Rafinha executar esses cenários, registrar o veredito dele, classificar reprovações e rotear as issues. Usar quando ele disser \"gera as validações humanas do projeto X\", \"roda a varredura de validação humana\", \"agrupa as issues da Análise Final\", \"registra o resultado da validação\", ou mencionar Validação Humana em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. As issues chegam nesta coluna vindas do QA e ainda NÃO documentadas: `Documentar` agora fica depois da aceitação. Quando a validação é aprovada, as issues agregadas seguem para \"Documentar\" e a própria Validação Humana vai direto para \"Concluído\", pulando \"Documentar\" e \"Análise Final - Claude\". Identifica, filtra e audita validações SEMPRE pela label `validacao-humana`, nunca pelo tipo do ticket, e tipifica os cenários com as labels acceptance-check, visual-check, business-flow-check, copy-check e usability-check. Não usa o campo customizado `tipo`, que saiu do contrato, e não aplica `validacao-aprovada`, que também saiu. Esta skill NUNCA executa a validação no lugar de Rafinha, nunca aprova por conta própria, nunca implementa código ou documentação, e nunca repete como cenário humano algo que a jira-qa-executor já automatizou."
+description: "Executar a camada de Validação Humana Agregada do Workflow Rafinha-Claude: varrer a coluna \"Análise Final - Rafinha\" da sprint atual de qualquer projeto Jira que Rafinha indicar, agrupar as issues por comportamento funcional e criar issues do tipo \"Validação Humana\" contendo só os cenários que realmente exigem observação humana; e, depois que Rafinha executar esses cenários, registrar o veredito dele, classificar reprovações e rotear as issues. Usar quando ele disser \"gera as validações humanas do projeto X\", \"roda a varredura de validação humana\", \"agrupa as issues da Análise Final\", \"registra o resultado da validação\", ou mencionar Validação Humana em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. As issues chegam nesta coluna vindas do QA e ainda NÃO documentadas: `Documentar` agora fica depois da aceitação. Quando a validação é aprovada, as issues agregadas seguem para \"Documentar\" e a própria Validação Humana vai direto para \"Concluído\", pulando \"Documentar\" e \"Análise Final - Claude\". Identifica, filtra e audita validações SEMPRE pela label `validacao-humana`, nunca pelo tipo do ticket, e tipifica os cenários com as labels acceptance-check, visual-check, business-flow-check, copy-check e usability-check. Não usa o campo customizado `tipo`, que saiu do contrato, e não aplica `validacao-aprovada`, que também saiu. Esta skill NUNCA executa a validação no lugar de Rafinha, nunca aprova por conta própria, nunca implementa código ou documentação, e nunca repete como cenário humano algo que a jira-qa-executor já automatizou. Tipo nativo `Validação Humana` é pré-requisito do projeto: sem fallback para `Tarefa` — se o tipo não existir, bloqueia por informação ausente (a identificação operacional continua sendo pela label). Escopo explícito: issue, lista, Epic ou coluna de um Epic específico em `Análise Final - Rafinha` (nunca coluna inteira). HOTFIX: registra o veredito humano e as evidências, mas NUNCA move a Hotfix — qualquer que seja o veredito, Rafinha executa a transição."
 ---
 
 # Executor de Validação Humana — coluna "Análise Final - Rafinha" (Jira genérico)
@@ -36,6 +36,64 @@ para a própria organização. Os cenários que você escreve são lidos por ele
 e só por ele — escreva direto ao ponto, sem explicar conceitos que ele
 domina. O que a descrição precisa entregar é o que ele **não** tem na
 cabeça: qual fluxo abrir, com que pré-condição, e o que observar.
+
+---
+
+## Contrato da skill
+
+### Finalidade
+Preparar a aceitação humana de um lote de issues e registrar no Jira o veredito
+efetivamente dado por Rafinha.
+
+### Escopo e acionamento
+Dois modos explícitos: **GERAR** e **REGISTRAR**. Atua apenas sobre escopo
+confirmado em `Análise Final - Rafinha` (issue, lista, Epic ou coluna de um Epic
+específico — nunca coluna inteira).
+
+### Autoridade
+- **Decisão.** Analisa observabilidade, agrupa issues por comportamento funcional e
+  propõe cenários; pode **propor** a classificação de uma reprovação.
+  **Rafinha decide o veredito e a classificação final da reprovação.**
+- **Mutação.** Após aprovação da proposta, cria issues de Validação Humana, labels,
+  links `Relates` e comentários. No modo REGISTRAR, registra o veredito e move as
+  validações/issues agregadas conforme a decisão humana.
+- **Atestação.** **Não possui autoridade para atestar o aceite humano.** Registra a
+  atestação emitida por Rafinha e preserva sua evidência operacional.
+- **Transição.** *Fluxo normal, com veredito de Rafinha:* validação aprovada →
+  validação para `Concluído`, issues agregadas para `Documentar`; reprovação →
+  somente as issues responsáveis retornam para `Fazer - Claude` após classificação
+  humana; bloqueada → nada se move; reprovação parcial → as demais issues seguem
+  para `Documentar`. ***Hotfix:* a skill registra o veredito humano e as evidências,
+  mas não movimenta a Hotfix**, independentemente de aprovação, reprovação,
+  bloqueio ou reprovação parcial; Rafinha executa manualmente qualquer transição
+  posterior.
+
+### Entradas e pré-condições
+Projeto e escopo; modo GERAR/REGISTRAR; contexto completo de implementação,
+integração e QA; no REGISTRAR, veredito explícito de Rafinha; **tipo nativo
+`Validação Humana` existente no projeto**.
+
+### Obrigações
+Agrupar por comportamento, não por proximidade de chave; não repetir no humano o que
+o QA já cobriu sem motivo; justificar cada cenário; limitar a cinco cenários por
+validação; apresentar proposta antes de criar; identificar Validação Humana pela
+label `validacao-humana`; usar frases fixas; nunca deixar issue sair da etapa sem
+validação correspondente.
+
+### Evidências, saída e limites
+O Jira registra validações, links, comentários, tentativas e veredito humano. Saída
+(GERAR): proposta aprovada e Validação Humana estruturada; (REGISTRAR): veredito
+registrado e issues roteadas. **Limites:** nunca valida em nome de Rafinha; nunca
+corrige código ou documentação; nunca decide sozinho escopo original × problema novo;
+nunca devolve para Design; nunca agrega projetos diferentes; nunca cria Subtask por
+reprovação; nunca move Hotfix.
+
+### Delegações
+Problema novo → `jira-issue-creator`.
+
+> Passo 0 de toda execução: resolver o Contrato Efetivo
+> (`workflow-development-flow/references/contrato-efetivo.md`). Defaults herdados:
+> `workflow-development-flow/references/contrato-skills.md`.
 
 ---
 
@@ -138,7 +196,7 @@ a Rafinha antes de prosseguir.
 
 | Elemento | Valor |
 |---|---|
-| Tipo (Jira) | `Validação Humana` quando o projeto tiver esse tipo; senão, `Tarefa` |
+| Tipo (Jira) | `Validação Humana` — **tipo nativo oficial**, pré-requisito do projeto. Sem fallback para `Tarefa`: se o projeto não tiver o tipo, **bloqueie** por informação obrigatória ausente e registre incidente |
 | Título | `Validação Humana — <fluxo funcional>` |
 | Labels (categorias) | `validacao-humana` sempre; `validacao-reprovada` / `validacao-bloqueada` conforme o estado; labels de cenário conforme o foco |
 | Links | `Relates` para **cada** issue de implementação agregada |
@@ -187,13 +245,13 @@ nunca pelo tipo.
 > `Concluído`. Se ela não existir no projeto, reporte a Rafinha em vez de
 > mover a validação por um caminho alternativo.
 
-> **Regra crítica sobre o tipo.** A label `validacao-humana` é o contrato
-> legível por máquina: é por ela que esta skill, a `jira-review-executor` e
-> qualquer consulta futura identificam uma Validação Humana. **Nunca
-> identifique, filtre ou audite uma Validação Humana pelo tipo de issue.**
-> O tipo é conveniência de board e pode não existir num projeto novo —
-> resolva-o em tempo de execução e caia para `Tarefa` sem avisar. A label,
-> não.
+> **Regra crítica sobre o tipo.** O tipo `Validação Humana` é nativo e
+> obrigatório no projeto — a criação **bloqueia** se ele não existir (não há
+> fallback silencioso para `Tarefa`). Mesmo assim, a **identificação
+> operacional** continua sendo pela label `validacao-humana`: é por ela que esta
+> skill, a `jira-review-executor` e qualquer consulta futura identificam uma
+> Validação Humana. **Nunca identifique, filtre ou audite uma Validação Humana
+> pelo tipo de issue.**
 
 > **Não existe chave `VAL-001`.** A Validação Humana é uma issue do próprio
 > projeto e recebe a chave normal dele (`CPS-121`, `GEOPRAG-104`). Uma
@@ -256,9 +314,9 @@ Nunca altere essas frases.
 
 **Gate de escopo (workflow-development-flow, princípio 11).** Antes de
 buscar qualquer issue, confirme o escopo explícito com Rafinha, se ele
-ainda não o deixou claro no comando: Épico, lista de issues, ou coluna
-inteira confirmada. Estar na coluna correta não autoriza uma issue fora do
-escopo confirmado.
+ainda não o deixou claro no comando: issue individual, lista de issues, Epic ou
+coluna de um Epic específico — **nunca coluna inteira**. Estar na coluna correta
+não autoriza uma issue fora do escopo confirmado.
 
 Busque, na sprint atual do projeto indicado, as issues do escopo confirmado
 na coluna **"Análise Final - Rafinha"**.
@@ -446,6 +504,9 @@ Todos os cenários passaram:
    resuma o que foi observado.
 2. Mova a **Validação Humana** para `Concluído`.
 3. Mova **todas as issues agregadas** para `Documentar` — elas ainda precisam ser documentadas antes da auditoria final.
+   **Exceção — Hotfix:** se uma issue agregada é uma Hotfix, registre o veredito e
+   as evidências, mas **não a mova**; ela permanece onde está e Rafinha decide a
+   próxima coluna.
 
 ### 3. Reprovada
 
@@ -522,6 +583,9 @@ reprovação (ver `workflow-development-flow`, seção 1).
 
 - ❌ Nunca executar a validação, nem aprovar, nem preencher o resultado em
   nome de Rafinha — a aceitação do produto é dele, integralmente.
+- ❌ **Nunca mover uma Hotfix de coluna**, qualquer que seja o veredito.
+- ❌ Nunca criar a Validação Humana com outro tipo (`Tarefa` etc.) quando o tipo
+  nativo não existe — bloqueie e reporte.
 - ❌ Nunca implementar ou corrigir código, nem escrever documentação — isso
   é `jira-issue-executor` e as skills de escrita.
 - ❌ Nunca repetir como cenário humano um passo que a `jira-qa-executor` já

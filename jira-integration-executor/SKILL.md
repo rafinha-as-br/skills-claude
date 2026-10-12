@@ -1,6 +1,6 @@
 ---
 name: "jira-integration-executor"
-description: "Executar a etapa \"Integração\" do Workflow Rafinha-Claude — mergear de verdade código aprovado, em três modos explícitos: Modo A (branch da issue → branch do épico, ou — Correções 27/09 — branch de TODO UM EPIC quando a chave informada for um Epic, processando todas as issues dele que estão em Integração), Modo B (branch do épico → develop, promovendo o épico inteiro — agora responsável por CRIAR SEU PRÓPRIO PR de promoção quando necessário, e exigindo AUTORIZAÇÃO HUMANA EXPLÍCITA, distinta da confirmação de modo/escopo, só depois de todos os PRs verdes e aptos) e Modo C (branch da issue → develop, integração direta). Usar quando Rafinha disser \"roda a Integração do projeto X\", \"modo A - CPS-131\" (Epic ou issue), \"processa a coluna Integração\", \"promove o épico Y para develop\", \"faz o merge das issues aprovadas\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. A SKILL NUNCA INFERE O MODO: Rafinha informa o modo, ou a skill para e pergunta. Quando a chave do Modo A é um Epic, o escopo efetivo é issues-do-Epic ∩ issues-em-Integração, com leitura idempotente por PR+label (Gate 14 bloqueia se a topologia do Epic não foi preparada). Antes de qualquer merge, imprime o resumo operacional e só prossegue com confirmação. Sequência comum aos três modos: confirma PR existente (Modos A/C — esta skill NUNCA abre PR para eles) → verifica GitHub Actions (bloqueia avanço se falhar) → reconcilia com a branch de destino por merge, nunca rebase → merge real → smoke test mínimo → registra evidência estruturada (ledger) que sobrevive à exclusão da branch. No Modo A aplica `integrado-epico` e NÃO move a issue de coluna. No Modo B: cria o PR epic→develop se não existir (única exceção à regra \"nunca abre PR\"), exige Gate 15 (autorização humana de merge, após pipelines verdes) — resposta negativa de Rafinha NÃO é falha técnica, apenas encerra sem mergear —, exige `integrado-epico` em todas as issues obrigatórias, valida critérios de aptidão, e só então move o lote para QA - Claude. Suporta Epic multi-repositório: uma autorização humana única para N PRs (um por repo); issue só sai de Integração quando todos os repos aplicáveis mergearam. Depois do sucesso de B ou C, EXCLUI as branches que já cumpriram o papel (épico e/ou issue) — histórico permanente fica em commits/PRs/Jira, nunca na branch viva. `Links para merge` da issue NUNCA é sobrescrito pelo PR de promoção do épico. Verifica subtarefas antes de mover para QA - Claude. Nunca usa git push --force nem rebase. Nunca commita Execution State. Herda as regras de segurança de jira-issue-executor."
+description: "Executar a etapa \"Integração\" do Workflow Rafinha-Claude — mergear de verdade código aprovado, em três modos: Modo A (branch da issue → branch do épico, ou — quando a chave informada for um Epic — branch de TODO UM EPIC, processando todas as issues dele que estão em Integração), Modo B (branch do épico → develop, promovendo o épico inteiro — responsável por CRIAR SEU PRÓPRIO PR de promoção quando necessário, e exigindo AUTORIZAÇÃO HUMANA EXPLÍCITA, distinta da confirmação de modo/escopo, só depois de todos os PRs verdes e aptos) e Modo C (branch da issue → develop, integração direta). Usar quando Rafinha disser \"roda a Integração do projeto X\", \"modo A - CPS-131\" (Epic ou issue), \"processa a Integração do épico Y\", \"promove o épico Y para develop\", \"faz o merge das issues aprovadas\", ou mencionar essa coluna em contexto de Jira/Atlassian Rovo. Sem projeto informado, pergunte antes de prosseguir. SEMPRE exige escopo explícito (issue, lista, Epic ou coluna de um Epic específico — nunca coluna inteira). O MODO NUNCA É INFERIDO POR JULGAMENTO SUBJETIVO: Rafinha informa o modo, ou a skill para e pergunta — ÚNICA exceção: quando o Contrato Efetivo determina o modo de forma unívoca, o que acontece com Tipo = HOTFIX (Modo C direto em develop, sem pedir o modo). Hotfix: após integrar, registra resultado e evidências e MANTÉM a Hotfix em `Integração` — não move para QA nem para outra coluna (só Rafinha). Quando a chave do Modo A é um Epic, o escopo efetivo é issues-do-Epic ∩ issues-em-Integração, com leitura idempotente por PR+label (Gate 14 bloqueia se a topologia do Epic — branch de Epic preparada pela jira-technical-preparation-executor — não existe; esta skill NUNCA cria branch de Epic nem o Workspace). Em produto MULTI-REPO (política de topologia), integrar o código inclui a COMPOSIÇÃO do Workspace como uma única operação lógica: obtém os commits efetivamente integrados, atualiza os gitlinks na branch correta (`workspace/epic|issue|hotfix`), cria o commit de composição, promove para `workspace/develop` e valida a composição — nunca aponta gitlink normal para commit ainda isolado em branch de implementação. Antes de qualquer merge, imprime o resumo operacional e só prossegue com confirmação. Sequência comum: confirma PR existente (Modos A/C — esta skill NUNCA abre PR para eles) → verifica GitHub Actions (bloqueia avanço se falhar) → reconcilia com a branch de destino por merge, nunca rebase → merge real → smoke test mínimo → registra evidência estruturada (ledger) que sobrevive à exclusão da branch. No Modo A aplica `integrado-epico` e NÃO move a issue de coluna. No Modo B: cria o PR epic→develop se não existir (única exceção à regra \"nunca abre PR\"), exige Gate 15 (autorização humana de merge) — resposta negativa de Rafinha NÃO é falha técnica —, exige `integrado-epico` em todas as issues obrigatórias, valida critérios de aptidão, e só então move o lote para QA - Claude. Suporta Epic multi-repositório: uma autorização humana única para N PRs. Depois do sucesso de B ou C, EXCLUI as branches que já cumpriram o papel. `Links para merge` da issue NUNCA é sobrescrito pelo PR de promoção. Verifica subtarefas antes de mover para QA - Claude. Lê AI Memory quando relevante e DELEGA à ai-memory-manager resultado de integração, conflito relevante ou handoff (nunca escreve `ai-memory/`); não governa `context/`. Nunca usa git push --force nem rebase. Nunca commita Execution State. Herda as regras de segurança de jira-issue-executor."
 ---
 
 # Executor de Integração — Coluna "Integração" (Jira genérico)
@@ -41,6 +41,87 @@ ou equivalente para interação com Pull Requests e GitHub Actions.
 
 ---
 
+## Contrato da skill
+
+### Finalidade
+Executar a etapa `Integração` e realizar os merges autorizados segundo um dos três
+modos oficiais.
+
+### Escopo e acionamento
+Opera apenas com **modo e escopo explícitos** (issue, lista, Epic ou coluna de um
+Epic específico). Modos: **A** issue/Epic → branch do Epic; **B** branch do Epic →
+`develop`; **C** issue → `develop`.
+
+### Autoridade
+- **Decisão.** Avalia objetivamente PR, pipeline, conflitos, critérios de aptidão
+  e smoke test; resolve **conflitos mecânicos**. **Não** escolhe modo por
+  inferência subjetiva e **não** autoriza o merge do Modo B sem a autoridade
+  prevista. **Pode**, porém, resolver automaticamente o modo quando o Contrato
+  Efetivo o determinar de forma unívoca — como **Hotfix, que determina Modo C**.
+- **Mutação.** Reconcilia branches por merge, realiza merges, faz push normal,
+  aplica `integrado-epico`, **cria PR de promoção somente no Modo B**, registra o
+  ledger, limpa branches após sucesso e atualiza o Jira. Quando a **política de
+  topologia multi-repo** está ativa, pode também: atualizar gitlinks do Workspace
+  para commits efetivamente integrados; criar commits de composição; atualizar
+  `workspace/epic/<EPIC-KEY>`, `workspace/issue/<ISSUE-KEY>` ou
+  `workspace/hotfix/<ISSUE-KEY>` conforme o modo; integrar/promover a branch de
+  composição; consolidar `workspace/develop` quando a integração correspondente
+  estiver concluída nos repositórios envolvidos. **Essa autoridade existe somente
+  como parte de uma operação de integração autorizada.**
+- **Atestação.** Atesta que uma integração ocorreu, qual modo foi usado, que
+  PR/pipeline/smoke foram verificados e quais merges foram realizados. **Não**
+  atesta QA funcional nem aceite do produto.
+- **Transição.** *Fluxo normal:* Modo A — a issue **permanece** em `Integração`;
+  Modos B/C bem-sucedidos — move para `QA - Claude`; conflito semântico em A/C —
+  tratamento/retorno conforme contrato, sem resolvê-lo autonomamente; Modo B com
+  conflito semântico — não move o lote até decisão de Rafinha. ***Hotfix:*** o modo
+  é resolvido deterministicamente como **Modo C**; integra diretamente em
+  `develop`; registra resultado e evidências; **não move** a Hotfix para
+  `QA - Claude` nem para qualquer outra coluna — ela permanece em `Integração` até
+  movimentação manual de Rafinha.
+
+### Entradas e pré-condições
+Projeto e repositório corretos; escopo confirmado; modo informado/confirmado **ou**
+deterministicamente resolvido pelo Contrato Efetivo; origem e destino reais; PR
+válido; pipeline aplicável; estado Git seguro; topologia de Epic quando aplicável
+(**preparada pela `jira-technical-preparation-executor`**); para Hotfix, Tipo e
+fast-track válidos e composição multi-repo correspondente quando aplicável.
+
+### Obrigações
+Imprimir resumo operacional antes de merge; revalidar PR e pipeline; respeitar os
+gates de integração vigentes (Gates 9, 10, 11, 14, 15); verificar subtarefas antes
+de QA quando aplicável; manter idempotência no Modo A; promover Epic completo por
+padrão no Modo B; **no multi-repo, tratar integração dos repositórios e atualização
+da composição do Workspace como uma única operação lógica** (seção "Composição do
+Workspace"); nunca avançar gitlink normal para commit que ainda não esteja integrado
+no nível correspondente; Hotfix aplica Modo C direto em `develop` sem passar por
+branch de Epic; ler AI Memory quando houver contexto operacional relevante;
+**delegar à `ai-memory-manager`** resultado de integração, conflito relevante ou
+handoff com valor de continuidade; registrar ledger por modo; preservar `Links para
+merge` como PR individual; limpar branches somente no sucesso completo.
+
+### Evidências, saída e limites
+Git/GitHub são a evidência primária de PR, checks e merge; o Jira mantém o ledger e
+as labels de estado. Saída: integração executada ou bloqueio formalmente registrado,
+com modo, escopo, evidências Git/GitHub e ledger Jira coerentes. **Limites:** nunca
+escolhe modo por inferência subjetiva; **nunca cria branch de Epic**; **nunca cria o
+Workspace inicial**; nunca assume governança de `context/`; nunca escreve AI Memory
+(delega); nunca altera gitlinks fora de uma integração autorizada; nunca aponta
+gitlink normal para commit isolado em branch de implementação; nunca usa rebase ou
+push forçado; nunca mergeia com pipeline falhando; nunca abre PR em A/C; nunca
+aplica `qa-develop-aprovado`; nunca executa Modo B sem autorização humana final;
+nunca resolve conflito semântico sozinha; nunca move Hotfix.
+
+### Delegações
+AI Memory → `ai-memory-manager`; normalização de `context/` → `engineering-context-manager`;
+branch de Epic ausente → Preparação técnica; Hotfix de volta → Rafinha decide.
+
+> Passo 0 de toda execução: resolver o Contrato Efetivo
+> (`workflow-development-flow/references/contrato-efetivo.md`) e confirmar a topologia
+> do produto. Defaults herdados: `workflow-development-flow/references/contrato-skills.md`.
+
+---
+
 ## Model Policy
 
 Modelo padrão: Sonnet
@@ -76,6 +157,7 @@ Modo C: branch da issue  → develop
 | **A** | A issue pertence a um épico **com branch ativa**; ou a chave informada **é o próprio Epic** — nesse caso o escopo é todas as issues dele em `Integração` | Recebe `integrado-epico`. **Não muda de coluna** — fica em `Integração` |
 | **B** | Promoção do épico inteiro para a `develop` | Todo o lote do escopo vai para `QA - Claude` |
 | **C** | A issue não pertence a épico com branch ativa, ou Rafinha determinou integração direta | Vai para `QA - Claude` |
+| **C (Hotfix)** | `Tipo = Hotfix` — Modo C **resolvido pelo Contrato Efetivo**, direto em `develop`, sem escolha de modo e sem branch de Epic | **Permanece em `Integração`** (nenhuma skill move uma Hotfix) |
 
 ### Modelo de branches
 
@@ -89,17 +171,23 @@ epic/<EPIC-KEY>-<nome-do-epico>
 
 **Branches são artefatos temporários (Correções 27/09).** O histórico
 permanente é commit + Pull Request + Jira — não a branch viva. A branch do
-épico é **garantida automaticamente** pela `jira-issue-executor` antes de
-qualquer issue dele chegar à primeira Integração (deixou de ser opcional/
-só-sob-comando); esta skill **nunca a cria**. Depois de um Modo B ou C
+épico é **preparada** pela `jira-technical-preparation-executor` antes de
+qualquer issue dele chegar a `Ready` (e portanto antes da primeira Integração);
+esta skill **nunca a cria**. Depois de um Modo B ou C
 bem-sucedido, as branches que já cumpriram o papel são **excluídas** — ver
 **Limpeza de branches**, abaixo. A branch de issue pode carregar um sufixo
 de tentativa (`.1`, `.2`, …) quando for uma reimplementação — ver
 `workflow-development-flow` §16.1.
 
-### O modo nunca é inferido
+### O modo nunca é inferido por julgamento subjetivo
 
-> **A escolha do modo pertence a Rafinha, não à automação.**
+> **A escolha do modo pertence a Rafinha, não à automação** — com **uma única
+> exceção**: quando o Contrato Efetivo produz uma consequência única, a skill a
+> aplica sem pedir confirmação redundante. É o caso de **`Tipo = Hotfix`**
+> (base `develop` + destino `develop` → **Modo C**): a skill não pergunta o modo,
+> mas continua imprimindo o resumo operacional e exigindo o escopo explícito.
+> Isso resolve *como* a integração é executada; **não** autoriza movimentar a
+> Hotfix no board.
 
 1. A skill **nunca** assume automaticamente o modo de integração.
 2. O modo é informado explicitamente por Rafinha, ou confirmado por ele
@@ -112,7 +200,8 @@ de tentativa (`.1`, `.2`, …) quando for uma reimplementação — ver
    provável.
 
 Esta regra existe para impedir que a skill transforme uma inferência técnica
-numa decisão operacional. Uma issue que pertence a um épico com branch ativa
+numa decisão operacional. (Resolver o modo porque o *tipo do ticket* o determina
+não é inferência técnica: é consumo do contrato.) Uma issue que pertence a um épico com branch ativa
 *sugere* o Modo A — mas Rafinha pode legitimamente querer integração direta
 naquele momento, e só ele sabe disso.
 
@@ -163,8 +252,18 @@ motivo de não commitar aqui.
 
 ### 5. Modo declarado
 
-Nenhum merge acontece antes de o modo estar declarado por Rafinha ou
-confirmado por ele. Ver **O modo nunca é inferido**, acima.
+Nenhum merge acontece antes de o modo estar declarado por Rafinha, confirmado por
+ele, ou deterministicamente resolvido pelo Contrato Efetivo (Hotfix → Modo C). Ver
+**O modo nunca é inferido por julgamento subjetivo**, acima.
+
+### 6. Escopo explícito e topologia
+
+Escopo explícito: issue individual, lista de issues, Epic ou coluna de um Epic
+específico — **nunca coluna inteira** (princípio 11). Confirme também a
+**Topologia** do produto (campo da página de Controle de workflow): mono-repo
+integra no próprio repositório; **multi-repo** ativa a composição do Workspace
+(seção "Composição do Workspace"). Topologia ausente → informação obrigatória
+faltando: bloqueie e registre incidente (`workflow-incident-capture-executor`).
 
 ---
 
@@ -188,7 +287,7 @@ tiver informado explicitamente a operação, o modo e o escopo no comando
 inicial. Mesmo nesse caso, o resumo é impresso — ele é o registro do que a
 skill entendeu, não apenas um pedido de permissão. Esta exigência já é o
 Gate de Escopo do princípio 11 de `workflow-development-flow` — esta skill
-nunca varreu coluna inteira sem confirmação explícita.
+nunca varre coluna inteira.
 
 > ⚠️ Se qualquer linha do resumo não puder ser preenchida com um valor real
 > — origem desconhecida, épico ambíguo, escopo indefinido — **pare e
@@ -248,10 +347,11 @@ Para cada issue do escopo (seja ele um Epic inteiro ou uma issue só):
 1. Confirme que a issue **pertence a um épico**.
 2. Confirme que **existe branch ativa** para esse épico
    (`epic/<EPIC-KEY>-<nome>`). Ela deveria já existir — a
-   `jira-issue-executor` a garante antes da issue chegar aqui. Se **não
-   existir**, isso é **inconsistência upstream** (Gate 14): **pare e
-   reporte** essa issue especificamente — esta skill **nunca cria** branch
-   de épico, em nenhuma circunstância.
+   `jira-technical-preparation-executor` a prepara antes da issue chegar a
+   `Ready`. Se **não existir**, isso é **inconsistência upstream** (Gate 14):
+   **pare e reporte** essa issue especificamente — esta skill **nunca cria**
+   branch de épico, em nenhuma circunstância. (Em multi-repo, confirme também a
+   branch do Epic em cada repositório afetado e `workspace/epic/<EPIC-KEY>`.)
 3. Confirme que a **branch da issue nasceu da branch do épico**, não da
    `develop`. Se nasceu da `develop`, pare e reporte — mergear assim traria
    a `develop` inteira para dentro do épico.
@@ -268,6 +368,8 @@ Para cada issue do escopo (seja ele um Epic inteiro ou uma issue só):
 10. **R6** — registre o ledger no comentário da issue (ver **Ledger
     operacional**, abaixo).
 11. Aplique a label **`integrado-epico`**.
+12. *(Multi-repo)* Atualize a composição do Workspace — ver "Composição do
+    Workspace", Modo A.
 
 > **A issue não muda de coluna no Modo A.** Ela permanece em `Integração`
 > até que o épico seja promovido. A label `integrado-epico` é o que
@@ -342,9 +444,11 @@ equivale a autorização de merge:
     issue daquele ciclo que já cumpriram o papel (ver abaixo).
 16. **R6** — registre o ledger da promoção, no épico e em cada issue do
     escopo.
-17. Mova **todas as issues do escopo** para `QA - Claude` — só depois que
+17. *(Multi-repo)* Conclua a composição final do Workspace — ver "Composição do
+    Workspace", Modo B — **antes** de mover o lote.
+18. Mova **todas as issues do escopo** para `QA - Claude` — só depois que
     **todos** os repositórios aplicáveis tiverem sido efetivamente
-    mergeados.
+    mergeados (e, em multi-repo, a composição consolidada).
 
 ### Se Rafinha responder "não" à autorização (Gate 15)
 
@@ -420,7 +524,31 @@ Rafinha confirmar integração direta.
 9. **R4** — smoke test mínimo sobre a `develop`.
 10. **Limpeza de branches** — exclua a branch da issue (ver abaixo).
 11. **R6** — registre o ledger no comentário da issue.
-12. Mova a issue para `QA - Claude`.
+12. *(Multi-repo, issue isolada)* Conclua a composição — ver "Composição do
+    Workspace", Modo C.
+13. Mova a issue para `QA - Claude` — **exceto Hotfix** (próxima seção).
+
+---
+
+## Hotfix — Modo C resolvido pelo Tipo
+
+`Tipo = Hotfix` determina univocamente: base e destino `develop`, branch
+`hotfix/<ISSUE-KEY>`, **Modo C**. Portanto:
+
+- **não pergunte o modo** a Rafinha (ainda imprima o resumo operacional e exija o
+  escopo explícito);
+- a branch de Epic **nunca** participa, mesmo que a Hotfix tenha vínculo com Epic
+  (vínculo organizacional);
+- aplique a mecânica do Modo C: R1 (PR contra `develop`) → R2 → R3 → R5 → merge
+  em `develop` → R4 → limpeza da branch → R6 (ledger registra "Hotfix — Modo C
+  resolvido pelo Tipo");
+- **não mova a Hotfix.** Registre o resultado e as evidências e mantenha-a em
+  `Integração`; **não** envie para `QA - Claude` nem outra coluna. Rafinha decide e
+  executa a próxima transição;
+- conflito semântico (R3): pare, registre e peça decisão; **não** devolva a
+  Hotfix para `Análise - Rafinha` por conta própria;
+- subtarefas (R5): verifique e reporte; o bloqueio impede declarar a integração
+  concluída, mas nunca se traduz em mover a issue.
 
 ---
 
@@ -481,6 +609,104 @@ peça decisão de Rafinha** em vez de tentar resolver.
 `QA - Claude`; nenhuma limpeza final de branches é executada; a promoção
 permanece em andamento. A conclusão só ocorre quando o conjunto inteiro
 está efetivamente integrado.
+
+> A operação acima trata um Epic que toca vários repositórios mecanicamente. Em
+> produto cuja **topologia é multi-repo com Workspace**, ela se soma à
+> **Composição do Workspace** (próxima seção): o Workspace é parte da mesma
+> operação lógica, e `QA - Claude` só é alcançado depois de a composição estar
+> consolidada.
+
+---
+
+## Composição do Workspace (política de topologia multi-repo)
+
+Aplica-se **somente** quando a Topologia do produto é multi-repo. No mono-repo você
+integra branches no próprio repositório; no multi-repo, integra nos repositórios
+afetados **e** atualiza a composição versionada do produto: *integrar o código
+inclui integrar a composição*. Detalhes e fluxos completos:
+`workflow-development-flow/references/contexto-memoria-workspace.md` (seção 4).
+
+**Princípio dos gitlinks:** o gitlink registra um **commit exato**, não a branch.
+Nunca avance gitlink normal para commit que não esteja integrado no nível
+correspondente; nunca inicie trabalho em `detached HEAD` (branch correta ativa e
+validada antes de qualquer alteração em repositório componente).
+
+```text
+Modo A — issue → Epic
+  repositórios: issue → epic/<EPIC>
+  Workspace: obtenha o commit efetivamente integrado na branch do Epic de cada repo
+             → atualize os gitlinks de workspace/epic/<EPIC>
+             → crie o commit de composição
+
+Modo B — Epic → develop
+  repositórios: epic/<EPIC> → develop
+  Workspace: obtenha os commits finais das develop
+             → atualize os gitlinks de workspace/epic/<EPIC> para eles
+             → crie o commit final de composição
+             → integre workspace/epic/<EPIC> em workspace/develop
+             → valide que workspace/develop representa a composição efetivamente integrada
+
+Modo C — issue isolada → develop
+  repositórios: issue → develop
+  Workspace: atualize workspace/issue/<ISSUE> (gitlinks dos commits integrados)
+             → commit de composição → integre em workspace/develop → valide
+
+Modo C — Hotfix
+  repositórios: hotfix/<ISSUE> → develop (todos os afetados)
+  Workspace: workspace/hotfix/<ISSUE> consolida a composição final → workspace/develop
+```
+
+**Regras:**
+- *Issue de Epic:* enquanto a branch da issue não foi integrada à do Epic no
+  repositório, o gitlink de `workspace/epic/<EPIC>` **não** aponta para commit
+  exclusivo da branch da issue.
+- *Issue isolada:* `workspace/issue/<ISSUE>` só avança para a composição final depois
+  que os repositórios afetados foram integrados em `develop`.
+- `workspace/develop` só avança quando a composição está efetivamente integrada nas
+  `develop` dos repositórios envolvidos.
+- **Exceção de Hotfix:** `workspace/hotfix/<ISSUE>` pode representar temporariamente
+  commits ainda existentes só nas branches `hotfix/<ISSUE>` dos repositórios, para
+  validar a composição completa. Repositórios não afetados permanecem apontando para
+  a composição de `workspace/develop`. Se mais de um repositório é afetado, **todos**
+  devem estar integrados em suas `develop` antes da consolidação final.
+- Integração dos repositórios + promoção do Workspace = **uma operação lógica**; falha
+  em qualquer parte segue "Falha durante promoção multi-repo".
+- O commit de composição é de **composição**, não de memória operacional; um commit de
+  memória (`ai-memory-manager`) não equivale a integração de composição.
+
+**Encerramento de Epic (Modo B) — ordem consolidada.** As etapas 2–4 são de outras
+capacidades; você executa as demais:
+1. todas as issues obrigatórias integradas nas branches de Epic dos repositórios;
+2. *(ai-memory-manager)* AI Memory do Epic e handoffs finalizados;
+3. *(ai-memory-manager)* `ai-memory/active/<EPIC>` → `ai-memory/history/<EPIC>`;
+4. *(engineering-context-manager)* `context/` representa o estado final do Epic;
+5. com as condições anteriores satisfeitas, **você** executa a integração final;
+6. integra as branches de Epic dos repositórios em suas `develop`;
+7. obtém os commits finais resultantes;
+8. atualiza os gitlinks em `workspace/epic/<EPIC>` para os commits finais das `develop`;
+9. cria o commit final de composição;
+10. integra `workspace/epic/<EPIC>` em `workspace/develop`;
+11. valida que `workspace/develop` representa a composição efetivamente integrada;
+12. limpa as branches de Epic conforme a política vigente.
+
+**Fora da sua autoridade, mesmo no multi-repo:** bootstrap do Workspace (Rafinha);
+preparação de branches de Epic (Preparação técnica); governança de `context/`
+(`engineering-context-manager`); manutenção da AI Memory (`ai-memory-manager`);
+mudanças de composição fora de uma operação de integração autorizada.
+
+---
+
+## Contexto e AI Memory
+
+- **Leia** `ai-memory/` diretamente quando houver contexto operacional relevante
+  (continuidade de uma issue/Epic, conflito anterior). Leitura simples é direta.
+- **Delegue à `ai-memory-manager`**: resultado de integração, conflito relevante,
+  composição resultante com valor de handoff, informação necessária para
+  continuidade. Você **não** escreve `ai-memory/`.
+- Se a integração normalizou o estado e `context/` precisa refletir o novo estado
+  integrado, **solicite à `engineering-context-manager`**; ela altera a working tree
+  e você inclui a mudança no commit de composição/integração que já tem autoridade
+  para fazer. Você não governa `context/`.
 
 ---
 
@@ -566,8 +792,9 @@ Resultado:
 Depois de qualquer resolução de conflito:
 - `git push` normal (**nunca `--force`**).
 - Volte sempre para **R2** — a pipeline precisa rodar de novo e passar.
-- **Se o conflito foi semântico**, nos modos **A e C**: além de revalidar a
-  pipeline, **mova a issue de volta para `Análise - Rafinha`**. Uma nova
+- **Se o conflito foi semântico**, nos modos **A e C** (issue normal): além de
+  revalidar a pipeline, **mova a issue de volta para `Análise - Rafinha`** (em
+  **Hotfix**, não mova: pare e peça decisão de Rafinha). Uma nova
   rodada completa de revisão humana antes do merge, mesmo que a pipeline
   passe. Registre no comentário o que mudou e por quê. Isso vale mesmo
   quando Rafinha participou pontualmente da resolução: a revisão formal é o
@@ -647,20 +874,24 @@ smoke test, subtarefas, labels aplicadas/removidas, confirmação do merge):
 - modo executado; Epic; repositório; branch da issue (com a tentativa,
   se houver sufixo); branch de destino; número/tentativa; PR; merge SHA
   (ou evidência equivalente); data; resultado; aplicação de
-  `integrado-epico`.
+  `integrado-epico`; *(multi-repo)* commit de composição em
+  `workspace/epic/<EPIC>`.
 
 **Modo B** — na promoção agregada, registrada **no épico**, e referenciada
 em cada issue participante:
 - repositórios envolvidos; PRs `epic/** → develop`; issues promovidas;
   resultado das pipelines; **autorização de Rafinha** (Gate 15, com
   evidência de que foi pedida e concedida); merges realizados; data;
-  resultado final; limpeza de branches executada. Em promoção parcial,
-  quais issues ficaram fora e por quê.
+  resultado final; limpeza de branches executada; *(multi-repo)* commits finais
+  das `develop`, commit final de composição e promoção para `workspace/develop`.
+  Em promoção parcial, quais issues ficaram fora e por quê.
 
 **Modo C** — na issue:
-- modo; repositório; branch (com tentativa, se houver); destino
-  (`develop`); PR; merge SHA (ou evidência equivalente); data; resultado;
-  limpeza da branch executada.
+- modo (e, em Hotfix, "Modo C resolvido pelo Tipo Hotfix"); repositório; branch
+  (com tentativa, se houver); destino (`develop`); PR; merge SHA (ou evidência
+  equivalente); data; resultado; limpeza da branch executada; *(multi-repo)* commit
+  de composição e branch do Workspace; em Hotfix, o fato de que **a issue
+  permaneceu em `Integração`**.
 
 **Uso dos comentários.** Eles passam a apoiar: descoberta do próximo `.N`
 pela `jira-issue-executor`; retomada de reimplementação após QA;
@@ -722,12 +953,22 @@ já são a fonte de verdade permanente.
 
 - ❌ **Nunca inferir o modo de integração** — mesmo quando a estrutura da
   issue, do épico e das branches parecer indicar um caminho óbvio. O modo é
-  informado ou confirmado por Rafinha.
+  informado ou confirmado por Rafinha. (Único caso de modo automático: Hotfix →
+  Modo C, porque o Tipo o determina.)
+- ❌ **Nunca mover uma Hotfix de coluna** — nem para `QA - Claude`, nem de volta a
+  `Análise - Rafinha` / `Fazer - Claude`. Ela permanece em `Integração`.
+- ❌ Nunca usar branch de Epic como base ou destino de uma Hotfix.
+- ❌ Nunca apontar gitlink normal para commit ainda isolado em branch de
+  implementação, nem avançar `workspace/develop` antes de a composição estar
+  integrada nas `develop` dos repositórios.
+- ❌ Nunca criar o Workspace, submodules ou a estrutura inicial; nunca alterar
+  gitlinks fora de uma operação de integração autorizada.
+- ❌ Nunca escrever em `ai-memory/` ou governar `context/` (delegar).
 - ❌ Nunca executar merge sem antes imprimir o resumo operacional.
 - ❌ Nunca preencher uma linha do resumo operacional com suposição — se o
   valor real não for conhecido, pare e pergunte.
-- ❌ **Nunca criar branch de épico** — isso é da `jira-issue-executor`,
-  automaticamente, antes da 1ª Integração. Se a branch do épico não
+- ❌ **Nunca criar branch de épico** — isso é da
+  `jira-technical-preparation-executor`, antes de `Ready`. Se a branch do épico não
   existir durante uma integração, é inconsistência upstream (Gate 14):
   pare e reporte essa issue especificamente.
 - ❌ **Nunca reduzir, substituir ou inferir o escopo de um Modo A por Epic**
@@ -798,6 +1039,16 @@ Depois de processar a execução, apresente a Rafinha um resumo consolidado.
   - [ISSUE-3]: PR #14, pipeline OK, conflito semântico (duas implementações da mesma validação) — Rafinha decidiu qual prevalece, pipeline revalidada → devolvida para Análise - Rafinha
   - [ISSUE-4]: Gate 14 — branch do Epic ausente para esta issue → bloqueada, inconsistência upstream reportada
 ⚠️ Issues não processadas (PR ausente, destino errado, subtarefa pendente, pipeline não configurada ou Gate 14): [lista ou "nenhuma"]
+```
+
+**Hotfix (Modo C resolvido pelo Tipo):**
+
+```
+✅ Projeto processado: [nome/chave do projeto]
+🔀 Modo: C — resolvido pelo Contrato Efetivo (Tipo = Hotfix); branch hotfix/PROJ-77 → develop
+  - PR #91, pipeline OK, smoke OK, merge feito, branch removida
+  - Composição (multi-repo): workspace/hotfix/PROJ-77 → workspace/develop (se aplicável)
+📌 PROJ-77 permanece em Integração — Rafinha decide a próxima coluna
 ```
 
 **Modo B:**

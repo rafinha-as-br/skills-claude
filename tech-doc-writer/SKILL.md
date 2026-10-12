@@ -41,6 +41,49 @@ encaixa no fluxo geral do pipeline.
 
 ---
 
+## Contrato da skill
+
+### Finalidade
+Escrever e manter documentação **técnica** no Confluence e, quando aplicável,
+sincronizar documentação versionada no repositório.
+
+### Escopo e acionamento
+Cobre módulo, API, arquitetura para desenvolvedores, componente reutilizável, README
+e ADR, conforme trilha e contexto autorizados.
+
+### Autoridade
+- **Decisão.** Interpreta o estado técnico real do código/API e determina como
+  documentá-lo segundo o template. **Não** decide regra de negócio. Para trilha sem
+  template (`readme`/`adr`), declara a lacuna e pergunta.
+- **Mutação.** Cria/atualiza páginas técnicas no Confluence e, com acesso ao
+  repositório e escopo correspondente, sincroniza `docs/` e a documentação versionada
+  aplicável.
+- **Atestação.** Atesta que a documentação técnica reflete o código/API observado no
+  momento da execução e se a sincronização versionada foi ou não realizada.
+- **Transição.** Nenhuma transição de Jira por autoridade própria.
+
+### Entradas, obrigações e saída
+Entradas: produto; código/repositório/API real; trilha; template quando existente;
+mapa de documentação e página-mãe; sigla oficial quando houver ID canônico.
+Obrigações: usar código/API como fonte da verdade; não assumir produto nem árvore;
+não criar ID canônico com sigla provisória; distinguir documentação viva de decisão
+de produto; sinalizar componente reutilizável para catálogo; declarar quando não
+teve acesso ao repositório; encaminhar incertezas ao `doc-pendency-resolver`. Saída:
+documentação técnica criada/atualizada (e sincronizada no repositório quando
+aplicável e autorizado), sempre refletindo o estado técnico realmente observado. O
+Confluence é evidência da página; o Git, da documentação versionada.
+
+### Limites e delegações
+Não decide regra de negócio; não inventa sigla oficial; não finge sincronização; não
+escreve página de tela nem guia de usuário; não cria template inexistente por
+conveniência. Dependências: `doc-pendency-resolver`; catálogo/mapeamento por produto.
+
+> Defaults herdados (silêncio não concede autoridade, acesso técnico não é
+> autoridade, delegação não transfere autoridade etc.):
+> `workflow-development-flow/references/contrato-skills.md`.
+
+---
+
 ## Model Policy
 
 Modelo padrão: Sonnet

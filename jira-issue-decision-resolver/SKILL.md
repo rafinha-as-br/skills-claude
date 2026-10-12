@@ -1,6 +1,6 @@
 ---
 name: jira-issue-decision-resolver
-description: "Resolver, EM CONVERSA e uma issue por vez, as pendências de decisão de uma issue específica que está na coluna \"Decisão - Rafinha\" (ou de qualquer issue que Rafinha aponte com pendência real de escopo, regra de negócio, comportamento ou critério de aceite). Usar quando ele disser \"resolve a pendência da issue X\", \"vamos decidir o que falta em Y\", \"fecha as pendências dessa issue comigo\", ou apontar uma issue em Decisão - Rafinha para tratar. NÃO é linha de produção: não varre a coluna inteira automaticamente, não processa lote — sempre uma issue, com Rafinha, em diálogo real. Lê a issue e a descrição padronizada de 9 seções (workflow-development-flow §17), identifica e trata cada item da seção Pendências de decisão, ajuda a fechar regra de negócio/escopo/comportamento/critério de aceite em conversa direta com Rafinha, atualiza a descrição (remove pendências resolvidas, preenche Decisões registradas) e move a issue para `Design de produto - Rafinha` (quando exige design) ou `Ready` (quando não exige). É também o segundo ponto oficial, além da jira-issue-creator, onde `requires-design` pode ser confirmada explicitamente por Rafinha — nunca aplicada por inferência ou por conta própria. NUNCA implementa código, nunca cria PR, nunca faz QA, nunca documenta, nunca cria issues novas e nunca decide sozinha sem Rafinha — decisão durável de regra de negócio, arquitetura ou necessidade documental é sinalizada para o artefato certo (RN, ADR, etc.), porque a resolução da issue aqui não substitui a documentação futura que a jira-doc-executor vai acionar depois."
+description: "Resolver, EM CONVERSA e uma issue por vez, as pendências de decisão de uma issue específica que está na coluna \"Decisão - Rafinha\" (ou de qualquer issue que Rafinha aponte com pendência real de escopo, regra de negócio, comportamento ou critério de aceite). Usar quando ele disser \"resolve a pendência da issue X\", \"vamos decidir o que falta em Y\", \"fecha as pendências dessa issue comigo\", ou apontar uma issue em Decisão - Rafinha para tratar. NÃO é linha de produção: não varre a coluna inteira automaticamente, não processa lote — sempre uma issue, com Rafinha, em diálogo real. Lê a issue e a descrição padronizada de 9 seções (workflow-development-flow §17), identifica e trata cada item da seção Pendências de decisão, ajuda a fechar regra de negócio/escopo/comportamento/critério de aceite em conversa direta com Rafinha, atualiza a descrição (remove pendências resolvidas, preenche Decisões registradas) e, com tudo resolvido e confirmação de Rafinha, move a issue para `Design de produto - Rafinha` (quando requires-design está confirmada) ou `Preparação técnica - Claude` (caso contrário) — NUNCA direto para `Ready`: resolver decisão humana não atesta prontidão técnica. Decisão TÉCNICA descoberta depois na Preparação técnica não volta para esta coluna. É também o segundo ponto oficial, além da jira-issue-creator, onde `requires-design` pode ser confirmada explicitamente por Rafinha — nunca aplicada por inferência ou por conta própria. NUNCA implementa código, nunca cria PR, nunca faz QA, nunca documenta, nunca cria issues novas e nunca decide sozinha sem Rafinha — decisão durável de regra de negócio, arquitetura ou necessidade documental é sinalizada para o artefato certo (RN, ADR, etc.), porque a resolução da issue aqui não substitui a documentação futura que a jira-doc-executor vai acionar depois."
 ---
 
 # Resolvedor de Decisões de Issue — Coluna "Decisão - Rafinha" (Jira genérico)
@@ -21,6 +21,50 @@ apagando sem resolver, nunca assumindo a resposta que Rafinha daria.
 amadurece issues em lote, a partir de `A fazer`) nem a `jira-issue-executor`
 (que implementa depois que tudo já foi decidido). Você fica entre as duas —
 uma issue por vez, em diálogo.
+
+---
+
+## Contrato da skill
+
+### Finalidade
+Conduzir, uma issue por vez, a resolução das pendências **humanas** registradas
+em `Decisão - Rafinha`.
+
+### Escopo e acionamento
+Acionada para uma issue específica apontada por Rafinha. Não opera por varredura
+em lote.
+
+### Autoridade
+- **Decisão.** **Não decide a pendência em nome de Rafinha.** Pode analisar
+  contexto, recomendar alternativas e explicar trade-offs. A decisão de regra de
+  negócio, comportamento, prioridade ou critério de aceite é humana.
+- **Mutação.** Após decisão explícita de Rafinha, atualiza `Pendências de
+  decisão`, `Decisões registradas`, Escopo, Regras de negócio e Critérios de
+  aceite; pode mover a issue ao destino autorizado.
+- **Atestação.** Atesta que as pendências foram formalmente resolvidas e
+  registradas. **Não** atesta implementação nem aceite funcional.
+- **Transição.** Com todas as pendências resolvidas e confirmação de Rafinha:
+  `Decisão - Rafinha` → `Design de produto - Rafinha` (se `requires-design` for
+  confirmada) ou → `Preparação técnica - Claude` (caso contrário). Com pendência
+  aberta, não move. A resolução de decisão humana **não atesta prontidão técnica
+  e não autoriza envio direto para `Ready`**.
+
+### Entradas, obrigações e saída
+Entradas: issue específica; descrição completa; pendências registradas; respostas
+explícitas de Rafinha. Obrigações: apresentar pendências sem inferir respostas;
+tratar cada resposta como decisão independente; registrar decisões no contrato da
+issue; sinalizar decisões duráveis que mereçam documentação formal; confirmar com
+Rafinha antes da transição. O Jira é a fonte operacional do ato decisório. Saída:
+issue sem pendências abertas, com decisão registrada e destino correto.
+
+### Limites
+Não decide autonomamente; não processa lote; não implementa; não cria PR; não faz
+QA; não escreve documentação; não aplica `requires-design` sem confirmação
+explícita.
+
+> Passo 0 de toda execução: resolver o Contrato Efetivo
+> (`workflow-development-flow/references/contrato-efetivo.md`). Defaults herdados:
+> `workflow-development-flow/references/contrato-skills.md`.
 
 ---
 
@@ -117,8 +161,12 @@ Quando **todas** as pendências estiverem resolvidas:
 ```text
 A issue precisa de Design Package (requires-design confirmada)?
   SIM → move para Design de produto - Rafinha
-  NÃO → move para Ready
+  NÃO → move para Preparação técnica - Claude
 ```
+
+Nunca para `Ready` direto: decisão humana resolvida não atesta prontidão técnica.
+Decisão **técnica** descoberta depois, na Preparação técnica, não volta para
+esta coluna.
 
 Se restar qualquer pendência sem resposta de Rafinha (ele pediu para
 pensar, ou a conversa foi interrompida), **não mova a issue** — ela

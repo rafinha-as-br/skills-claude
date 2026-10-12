@@ -97,6 +97,48 @@ Documentar uma tela não é trabalho de uma skill só. O conjunto completo é:
 Cada uma escreve só o que a **sua** fonte da verdade entrega, e linka em vez
 de repetir. Quem monta o conjunto é a `jira-doc-executor`.
 
+## Contrato da skill
+
+### Finalidade
+Documentar uma tela no Confluence a partir da UI rodando de verdade, incluindo
+evidências visuais e conteúdo adequado ao público.
+
+### Escopo e acionamento
+Opera nos modos `dev`, `user` ou `hybrid`, conforme pedido/delegação ou modo já
+estabelecido na página existente.
+
+### Autoridade
+- **Decisão.** Observa a UI e seleciona o conteúdo correspondente ao modo. **Não**
+  decide ambiguidade de produto. O modo **não** é inferido em silêncio: se não
+  estiver definido, é confirmado conforme esta skill.
+- **Mutação.** Cria/atualiza a página da tela no Confluence e anexa/substitui os
+  screenshots necessários.
+- **Atestação.** Atesta o estado visual/funcional **observado** na UI usada durante a
+  documentação. Não atesta a arquitetura do módulo inteiro nem o aceite do produto.
+- **Transição.** Nenhuma transição Jira por autoridade própria.
+
+### Entradas, obrigações e saída
+Entradas: tela e produto; modo documental; ambiente local/dev funcional; Claude in
+Chrome disponível; página/página-mãe; código da tela quando modo `dev`. Obrigações:
+navegar a UI real; tirar e embutir prints relevantes; respeitar a separação de
+público; usar estado atual; evitar jargão no modo `user`; limitar detalhe técnico ao
+escopo da tela; encaminhar informação não observável ao `doc-pendency-resolver`.
+Saída: página de tela criada/atualizada no modo correto, com screenshots pertinentes,
+limitada ao público e ao escopo da tela. A página e seus screenshots no Confluence
+são o artefato documental.
+
+### Limites e delegações
+Não usa produção; não realiza ação que altere dado real sem confirmação; não inventa
+comportamento não observado; não substitui documentação de módulo; não escolhe o modo
+em silêncio. Dependências: Claude in Chrome; `doc-pendency-resolver`; utilitário de
+anexos.
+
+> Defaults herdados (silêncio não concede autoridade, acesso técnico não é
+> autoridade, delegação não transfere autoridade etc.):
+> `workflow-development-flow/references/contrato-skills.md`.
+
+---
+
 ## Model Policy
 
 Modelo padrão: Sonnet
