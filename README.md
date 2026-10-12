@@ -1,236 +1,446 @@
-# skills-claude
+<div align="center">
 
-Coleção pessoal de [skills](https://docs.claude.com/en/docs/claude-code/skills) do Claude Code que automatizam o fluxo de desenvolvimento de Rafinha: da criação da issue no Jira até o merge, QA, documentação e release — com Claude executando cada etapa do pipeline sozinho, sempre parando para decisão humana nos pontos que importam.
+# Rafinha-Claude
 
-## O pipeline Rafinha-Claude
+**Engenharia de software orquestrada por IA, com o humano no controle das decisões.**
 
-Cada coluna do Jira tem uma skill dona. Issues de código são implementadas de verdade (branch, commit, PR); issues de documentação são delegadas para quem escreve Confluence.
+Um sistema pessoal de orquestração do ciclo de desenvolvimento — da issue no Jira ao release —
+em que o Claude Code executa o trabalho operacional dentro de contratos, gates e evidências,
+e o desenvolvedor decide o que importa.
+
+</div>
+
+> [!NOTE]
+> Este repositório (`skills-claude`) é a implementação do Rafinha-Claude como [skills do Claude Code](https://code.claude.com/docs/en/skills). O nome técnico do repositório não muda; **Rafinha-Claude** é o nome do sistema. Um workflow construído para o ambiente pessoal de Rafinha — leia [Como utilizar](#como-utilizar) antes de reaproveitá-lo.
+
+**Navegação:** [O que é](#o-que-é) · [Origem e evolução](#origem-e-evolução) · [Filosofia](#filosofia) · [Como funciona](#como-funciona) · [Contratos](#arquitetura-de-contratos) · [Capacidades](#capacidades) · [Ecossistema](#ecossistema-tecnológico) · [Catálogo de skills](#catálogo-de-skills) · [Como utilizar](#como-utilizar) · [Estado atual e limites](#estado-atual-e-limites) · [Referências](#referências)
+
+---
+
+## O que é
+
+O Rafinha-Claude trata a IA não como um gerador de código isolado, mas como **participante de um processo de engenharia**: requisitos registrados, decisões tomadas por quem tem autoridade, contratos que dizem o que cada capacidade pode fazer, gates que bloqueiam o avanço sem evidência, e rastros que permitem auditar tudo depois.
+
+Na prática, o board do Jira é o mapa do processo e cada etapa tem uma skill dona:
+
+- **O Claude Code executa o trabalho operacional**: maturar issues, preparar o ambiente técnico e as branches, implementar com testes e abrir o Pull Request, integrar, rodar QA, escrever a documentação, auditar o resultado e preparar releases.
+- **O desenvolvedor mantém as decisões que não são da IA**: regras de negócio, design de produto, decisões técnicas não determinísticas, revisão de código, aceitação do produto, o modo de cada integração e o incremento de cada versão.
+- **Os contratos ligam os dois lados**: uma skill só age dentro da autoridade que o seu contrato declara, sobre um escopo que o humano confirmou, e deixa evidência verificável do que fez.
+
+A autonomia da IA aqui é **operacional e supervisionada** — não é um agente que percorre todas as etapas por conta própria.
+
+### Quem faz o quê
+
+| Responsabilidade | Rafinha | Claude (via skills) |
+|---|---|---|
+| Regras de negócio e escopo | Decide (`Decisão - Rafinha`) | Levanta pendências, conduz a conversa, registra a decisão |
+| Design de produto | Constrói e aprova (`Design de produto - Rafinha`) | Consome o Design Package; bloqueia se ele não existe |
+| Decisão técnica não determinística | Decide, perguntado durante a Preparação técnica | Classifica o achado e pergunta |
+| Preparação técnica, implementação, integração, QA, documentação | Define o escopo; autoriza `Ready → Fazer - Claude` | Executa, com testes e evidências |
+| Revisão de código e aceitação do produto | Decide (`Análise - Rafinha`, `Análise Final - Rafinha`) | Prepara o material (PR, evidências, Validações Humanas) |
+| Modo e merge de integração; incremento de versão | Decide e autoriza | Sugere, valida, executa o que foi autorizado |
+| Auditoria final | Lê o resultado | Audita contrato, labels, gates e rastros (`Análise Final - Claude`) |
+
+---
+
+## Origem e evolução
+
+O Rafinha-Claude não nasceu como arquitetura. Começou como automação de colunas do Jira e foi ganhando estrutura à medida que cada lacuna operacional aparecia. A história abaixo é reconstruída a partir do histórico Git do repositório, dos registros de implementação (`plano-*.md`) e das mensagens de commit; as datas são as dos commits. O que existiu antes do primeiro commit não está registrado aqui.
+
+### 1. Skills por coluna (agosto de 2026)
+
+O repositório nasce em **11/08/2026** já com skills que automatizam colunas do board: criar e executar issues, fazer QA, documentar e fazer uma segunda revisão. Junto vêm os escritores de documentação para o Confluence e o checklist de padrões Flutter. Cada skill resolvia a sua coluna; o encadeamento entre elas ainda era implícito.
+
+Em **15/08** surge a skill mãe, `workflow-development-flow`: o vocabulário comum do processo (hierarquia Épico → Issue → Subtask, etapas, gates, camadas de validação) e a ligação **GitHub Issue ↔ Jira ↔ Pull Request**. Nasce também a etapa de **Integração**, com merge real validado por GitHub Actions. O fluxo tinha oito etapas.
+
+### 2. Qualidade, controle e continuidade (agosto – setembro)
+
+Com o pipeline rodando, as lacunas passaram a ser de confiança e de continuidade:
+
+- **QA multiplataforma** (22/08): Web pelo Chrome real e Android por Maestro sobre um emulador, com evidências no AIO Tests; o executor passou a rodar code review automatizado sobre o diff antes do PR.
+- **Model Escalation Policy** (23/08): o Claude recomenda subir modelo ou esforço quando a complexidade pede, mas nunca troca por conta própria.
+- **Validação Humana Agregada** (27/08): a aceitação passou a poder agregar várias issues que alteram o mesmo comportamento, sem repetir o que o QA já automatizou.
+- **Execution State** (30/08): uma execução interrompida pode ser retomada por uma sessão nova, reconciliando o arquivo local com Jira, Git e GitHub — o chat deixou de ser fonte de verdade.
+
+### 3. Release como distribuição (agosto – setembro)
+
+O ciclo de release entra em **16/08** como um fluxo separado do board. Em **11–12/09** ele é redesenhado: a unidade versionada passa a ser o **componente** (tags `<componente>/vX.Y.Z`), a topologia do projeto é declarada em manifesto e nada é inferido, e o resultado deixa de ser uma tag com artefato anexado para ser uma **distribuição** que roda fora do ambiente de desenvolvimento, montada por um Release Orchestrator local. Quinze decisões de arquitetura ficaram registradas em [`plano-release-lifecycle.md`](plano-release-lifecycle.md).
+
+### 4. Contratos, gates e design (setembro)
+
+A partir de **20/09** o trabalho passa a ser em *pacotes* de revisão, cada um partindo de uma definição escrita por Rafinha e implementada nas skills e no Confluence:
+
+| Pacote | Problema | Resultado |
+|---|---|---|
+| **Design, labels e gates** (20/09) | Natureza da issue num campo customizado do Jira; QA assumindo `web` quando faltava a label de plataforma; design sem ponto de entrada no fluxo | Tipo nativo do ticket; matriz oficial de labels; gate de design com `requires-design`; **proibição de fallback silencioso** |
+| **Branches por épico e release controlada** (22/09) | Épico sem branch de agrupamento e issues integradas direto na `develop`; sem prova de que a `develop` só carregava trabalho aprovado | Três modos de integração (A/B/C); labels de estado; `release/current` e o gate de elegibilidade G10 |
+| **Skills de documentação** (23–26/09) | Documentação tratada como trabalho de um writer só | Cinco writers por fonte da verdade; `jira-doc-executor` passa a orquestrar um *conjunto* de writers por issue |
+| **Revisão do workflow inteiro** (26/09) | Execução por varredura de coluna, sem escopo explícito; decisão de produto sem etapa própria no board | Escopo operacional explícito ("nunca coluna inteira"); colunas `Decisão - Rafinha` e `Ready`; descrição padronizada da issue; skills de intake, resolução de decisão e captura de incidentes |
+| **Correções de integração e branches** (27/09) | Dois incidentes reais na Integração (escopo restrito à issue em checkout; bloqueio por "ausência de PR" quando a responsabilidade de criá-lo havia mudado) | Integração por Epic; branches como artefatos temporários; PR de promoção próprio com autorização humana distinta |
+
+### 5. Arquitetura de contratos (outubro de 2026)
+
+A revisão mais recente, de **12/10/2026**, consolida o que os pacotes anteriores vinham construindo: o workflow passa a ser governado por **camadas contratuais** (Workflow, Tipo, Política, Etapa → Contrato Efetivo) em vez de regras espalhadas pelas skills. Com ela entram a etapa **Preparação técnica** (o fluxo vai a 13 etapas), o tipo **Hotfix**, as camadas `context/` e `ai-memory/`, o **Workspace** para produtos multi-repositório e quatro skills novas. Não há convivência com o contrato anterior nem migração de issues existentes: o workflow novo é a única referência para novas execuções.
+
+---
+
+## Filosofia
+
+Os princípios abaixo estão presentes nos contratos vigentes e explicam as escolhas de arquitetura.
+
+**Autonomia operacional com supervisão humana.** A IA implementa; não decide requisitos nem regras de negócio que ninguém especificou. A responsabilidade final por regras, aceitação e decisões técnicas críticas é do desenvolvedor. Sem essa fronteira, a velocidade da IA vira decisão de produto tomada por omissão.
+
+**Responsabilidades explícitas.** Cada etapa responde a uma pergunta própria e não assume a de outra. Acesso técnico (um token, uma ferramenta) não é autoridade: o que uma skill pode decidir, alterar, atestar ou transicionar vem do seu contrato, e silêncio não concede poder.
+
+**Execução condicionada por contratos.** Uma skill resolve o contrato aplicável à issue antes de agir. O que a issue exige e o que a skill está autorizada a fazer são coisas diferentes, e a execução acontece sobre um *escopo* confirmado.
+
+**Escopo explícito.** Toda execução operacional começa com um escopo fechado: uma issue, uma lista, um Epic ou a coluna de um Epic específico. **Não existe "coluna inteira".** Estar na coluna certa não basta; estar no escopo também não, se o estado for incompatível.
+
+**Gates verificáveis.** Uma etapa só termina quando a saída esperada está comprovada, e um gate que "deixa passar com aviso" não é gate. Falha de teste, de análise estática ou de pipeline é bloqueio de avanço, não diagnóstico.
+
+**Separação entre implementação e validação.** Quem implementa não atesta. Validação local, GitHub Actions, QA, aceitação humana e auditoria final são camadas distintas, cada uma respondendo a uma pergunta diferente, e nenhuma substitui a outra. Evidência de uma fonte não vale como atestação de outra (um build verde não prova QA nem aceite).
+
+**Rastreabilidade.** Toda decisão relevante deixa registro onde possa ser consultada: comentários estruturados no Jira, Pull Requests, commits. O histórico permanente é *commit + Pull Request + Jira* — não a branch, que é artefato temporário.
+
+**Contexto técnico durável.** O porquê que o código não mostra (restrições, decisões, armadilhas) vive em `context/`, separado do que é só continuidade operacional (`ai-memory/`) e do ponto de retomada de uma única execução (Execution State). Três camadas, três finalidades.
+
+**Continuidade operacional.** O chat é contexto temporário. Uma execução interrompida é retomada por outra sessão a partir das fontes oficiais, reconciliadas antes de qualquer ação — nunca por instrução cega.
+
+**Integração e distribuição controladas.** O modo de integração é informado por Rafinha, o merge de promoção de épico exige autorização humana própria, e a release só parte de uma branch de estabilização cujo conteúdo rastreia para trabalho com QA elegível.
+
+**Sem fallback silencioso.** Quando o contrato esperado não é encontrado, a skill **para e reporta**. Ela não adivinha, não assume o valor mais comum e não volta a ler um contrato antigo. O caso que motivou a regra: o QA assumia `web` quando faltava a label de plataforma — e um QA no executor errado produz um verde que não significa nada.
+
+---
+
+## Como funciona
+
+### O pipeline de 13 etapas
+
+O fluxo normal de uma issue no Jira. Etapas em **azul** são executadas por skills; em **âmbar**, dependem de decisão, revisão ou autorização de Rafinha; em **verde**, o estado final.
 
 ```mermaid
 flowchart LR
-    Z["A fazer"] --> W["Decisão - Rafinha"]
-    Z --> Y["Design de produto - Rafinha"]
-    Z --> P["Preparação técnica - Claude"]
-    W --> Y
-    W --> P
-    Y --> P
-    P --> R["Ready"]
-    R --> A["Fazer - Claude"]
-    HF["Hotfix qualificada"] -.-> A
-    A --> B["Análise - Rafinha"]
-    B --> C["Integração"]
-    C --> D["QA - Claude"]
-    D --> F["Análise Final - Rafinha"]
-    F --> E["Documentar"]
-    E --> G["Análise Final - Claude"]
-    G --> H["Concluído"]
+    A1["A fazer"] -->|"intake"| A2["Decisão - Rafinha"]
+    A1 -->|"requires-design"| A3["Design de produto - Rafinha"]
+    A1 --> A4["Preparação técnica - Claude"]
+    A2 --> A3
+    A2 --> A4
+    A3 --> A4
+    A4 -->|"atestado PRONTA"| A5["Ready"]
+    A5 -->|"Rafinha autoriza"| B1["Fazer - Claude"]
+    B1 --> B2["Análise - Rafinha"]
+    B2 --> B3["Integração"]
+    B3 --> B4["QA - Claude"]
+    B4 --> C1["Análise Final - Rafinha"]
+    C1 --> C2["Documentar"]
+    C2 --> C3["Análise Final - Claude"]
+    C3 --> C4["Concluído"]
+
+    classDef claude fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a;
+    classDef humano fill:#fef3c7,stroke:#b45309,color:#78350f;
+    classDef fim fill:#dcfce7,stroke:#15803d,color:#14532d;
+    class A4,B1,B4,C2,C3 claude;
+    class A2,A3,A5,B2,C1 humano;
+    class A1,B3 claude;
+    class C4 fim;
 ```
 
-> **Revisão do workflow 2** (plano em `plano-pacote-6.md`) substitui os
-> pacotes anteriores onde há conflito: **13 etapas**, arquitetura de
-> **contratos**, `context/` + AI Memory, **Workspace multi-repo**, etapa de
-> **Preparação técnica** e tipo **Hotfix**. Não há convivência com o contrato
-> anterior nem migração de issues existentes. A configuração real do Jira
-> (status `Preparação técnica - Claude`, tipos nativos `Hotfix` e
-> `Validação Humana`, Topologia por produto) e o bootstrap do Workspace dos
-> produtos multi-repo são manuais, de Rafinha, fora das skills — enquanto não
-> existirem, as skills bloqueiam por informação ausente, sem fallback. A
-> configuração de CI e branch protection para `epic/**` e `release/current`
-> continua manual, de Rafinha.
+`A fazer` e `Integração` são as etapas em que skill e humano se encontram: o intake roda sobre um escopo que Rafinha confirmou, e a Integração roda no modo que Rafinha informou. `Ready` é um estado de espera — a passagem para `Fazer - Claude` é a autorização humana de implementação.
 
-**O fluxo tem 13 etapas.** `A fazer` é entrada bruta — nunca fila para
-`Fazer - Claude` direto. A `jira-sprint-intake-executor` amadurece o escopo
-informado e roteia para `Decisão - Rafinha` (pendência real),
-`Design de produto - Rafinha` (design confirmado) ou
-`Preparação técnica - Claude`. A `jira-issue-decision-resolver` fecha
-pendências **uma issue por vez, em conversa** com Rafinha, e move para design
-ou Preparação técnica. **`Ready` só recebe a issue normal que a
-`jira-technical-preparation-executor` atestou `PRONTA`** — o atestado é um
-comentário estruturado e cada revalidação gera um novo. `Fazer - Claude` assume
-essa preparação (sem refazer o preflight) e mantém o gate defensivo de
-**Pendências de decisão**.
+### Caminhos excepcionais
 
-**Preparação técnica - Claude.** Último gate preparatório do fluxo normal:
-verifica dependências, Design Package, ambiente, topologia Git e **prepara a
-branch de Epic** (e as do Workspace); classifica cada achado (determinístico,
-impedimento operacional, trabalho técnico ausente, decisão técnica); reutiliza
-issue existente antes de originar outra; nunca implementa. Decisão técnica real
-é perguntada a Rafinha **sem** mover a issue para `Decisão - Rafinha`.
+Hotfix e Validação Humana não percorrem o fluxo principal. Mantê-los separados evita que o diagrama principal esconda a regra normal.
 
-**Hotfix.** Trabalho emergencial que não pode esperar o ciclo normal. A
-`jira-hotfix-creator` qualifica e prepara (nunca cria o ticket); a
-`jira-issue-creator` materializa **direto em `Fazer - Claude`**; o **fast-track**
-vive na descrição, com obrigações `Satisfeita`, `Não aplicável` ou `Excepcionada`;
-branch `hotfix/<ISSUE-KEY>` a partir de `develop`, integração por **Modo C**
-resolvida pelo tipo. **Nenhuma skill move uma Hotfix entre colunas** — só Rafinha.
+```mermaid
+flowchart LR
+    subgraph HF["Hotfix"]
+        direction LR
+        H1["jira-hotfix-creator<br/>qualifica e prepara"] --> H2["jira-issue-creator<br/>cria o ticket"]
+        H2 --> H3["Fazer - Claude<br/>branch hotfix/KEY"]
+        H3 --> H4["Integração<br/>Modo C → develop"]
+        H4 --> H5["Rafinha move<br/>as colunas seguintes"]
+    end
+    subgraph VH["Validação Humana"]
+        direction LR
+        V1["Análise Final - Rafinha"] --> V2["jira-human-validation-executor<br/>agrupa e cria validações"]
+        V2 --> V3["Rafinha valida e dá o veredito"]
+        V3 --> V4["Concluído"]
+    end
+```
 
-**Contratos.** As regras vivem em camadas — Workflow, Tipo, Política, Etapa —
-que compõem o **Contrato Efetivo** da issue; cada skill é **contrato + operação
-técnica**. Fontes em `workflow-development-flow/references/`
-(`contrato-workflow.md`, `contrato-efetivo.md`, `politicas.md`,
-`contrato-skills.md`).
+- **Hotfix**: trabalho emergencial que não pode esperar a preparação normal. Nasce direto em `Fazer - Claude`, com o *fast-track* escrito na descrição (cada obrigação dispensada é `Não aplicável` ou `Excepcionada`, nunca apagada). A branch nasce e volta para `develop`, a integração é sempre Modo C, e **nenhuma skill move uma Hotfix entre colunas** — só Rafinha.
+- **Validação Humana**: uma issue própria que agrega, por comportamento funcional, os cenários que ainda exigem julgamento humano. Vai direto a `Concluído`, sem passar por `Documentar` nem por `Análise Final - Claude`.
 
-**`context/`, AI Memory e Workspace.** `context/` guarda o conhecimento técnico
-atual e durável (governado pela `engineering-context-manager`); `ai-memory/` guarda
-continuidade operacional e handoff (governada pela `ai-memory-manager`, leitura
-descentralizada, mutação centralizada). Em produto multi-repo, o **Workspace** Git
-versiona a composição exata (gitlinks); a `jira-integration-executor` integra
-código **e** composição.
+### Como uma demanda percorre o sistema
 
-**Nenhuma skill executora roda às cegas.** Toda execução operacional
-(`jira-technical-preparation-executor`, `jira-issue-executor`,
-`jira-integration-executor`, `jira-qa-executor`, `jira-doc-executor`,
-`jira-human-validation-executor`, `jira-review-executor`) exige escopo explícito
-de Rafinha antes de buscar issues — issue, lista de issues, Epic ou coluna de um
-Epic específico (**nunca coluna inteira**). Estar na coluna certa não autoriza
-issue fora do escopo.
+1. **Registro.** A necessidade vira uma issue (ou subtask) pela `jira-issue-creator`, com tipo oficial, labels da matriz e a descrição padronizada de nove seções. Uma GitHub Issue também pode ser a origem.
+2. **Maturação.** A `jira-sprint-intake-executor` explicita lacunas e roteia a issue: para `Decisão - Rafinha` se há pendência real, para `Design de produto - Rafinha` se `requires-design` foi confirmada, ou direto para a Preparação técnica. Decisões são fechadas uma issue por vez, em conversa, pela `jira-issue-decision-resolver`.
+3. **Design.** Quando exigido, Rafinha constrói o design no Claude Design e salva o Design Package localmente.
+4. **Preparação técnica.** A `jira-technical-preparation-executor` verifica dependências, design, ambiente e topologia Git, **cria a branch de Epic** quando necessário e emite um atestado (`PRONTA`, `BLOQUEADA` ou `AGUARDANDO DECISÃO TÉCNICA`). Só `PRONTA` leva a `Ready`.
+5. **Implementação.** Depois da autorização de Rafinha, a `jira-issue-executor` implementa, testa, roda análise estática e code review automatizado, e abre o Pull Request contra a branch correta.
+6. **Revisão e integração.** Rafinha revisa o código. A `jira-integration-executor` valida Actions e conflitos e faz o merge no modo informado, com smoke test.
+7. **QA.** A `jira-qa-executor` testa a `develop` integrada no executor da plataforma da issue e registra o veredito.
+8. **Aceitação, documentação e auditoria.** Rafinha aceita o produto; os writers registram o estado **aceito**; a `jira-review-executor` faz a auditoria final antes de `Concluído`.
+9. **Release.** Fora do board, quando Rafinha pede, a `jira-release-executor` transforma o conjunto de issues concluídas numa distribuição versionada.
 
-**Documentar é trabalho composto.** São cinco writers, um por fonte da
-verdade — produto, código, tela, usuário final e o próprio workflow. Numa
-issue de código, a `jira-doc-executor` não escolhe **um** writer: monta o
-conjunto dos que se aplicam, imprime o plano, e declara com motivo os que
-pulou. Documentar uma tela atualiza a página do módulo, escreve a da tela e
-entra no guia de usuário que passa por ela — cada writer escreve só o que a
-sua fonte entrega, e linka em vez de repetir.
+### Branches
 
-**Design de Produto entra como coluna.** `Design de produto - Rafinha` é
-etapa **manual** — nenhuma skill a varre. A issue só passa por ela quando tem
-a label `requires-design`, que é **confirmada manualmente por Rafinha**: a
-skill pode sugerir, nunca aplicar. Se a issue tem a label e o Design Package
-não está em `.claude/design-packages/<ISSUE-KEY>/`, a implementação **para
-antes de escrever código** — nunca implementa no escuro, e nunca conclui que
-o design não foi feito, apenas que o artefato não está naquela máquina.
+As colunas dizem em que etapa a issue está; as branches dizem onde o código dela vive. A branch é artefato temporário: depois de cumprir o papel é excluída, e o histórico permanece em commits e Pull Requests.
 
-**O tipo do ticket substituiu o campo `Tipo`.** A natureza da issue passa a
-ser o tipo nativo do Jira — Implementação, Correção, Bug, Refatoração
-Técnica, Documentação, Validação Humana (nativo, sem fallback), Hotfix, Epic. O campo customizado saiu do
-contrato e nenhuma skill deve lê-lo. Correção e Bug são coisas diferentes:
-ajuste visual de algo já entregue é **Correção** com `correcao-ui`.
+```mermaid
+flowchart BT
+    I["{tipo}/KEY-claude[.N]<br/>trabalho de uma issue"] -->|"Modo A"| E["epic/EPIC-KEY-nome<br/>agrupamento de um épico"]
+    E -->|"Modo B · autorização humana"| D["develop"]
+    I -->|"Modo C · issue sem épico"| D
+    HF["hotfix/KEY"] -->|"Modo C"| D
+    D -->|"gate G10"| R["release/current"]
+    R --> M["main"]
+```
 
-**Labels têm matriz oficial.** O vocabulário vive no Confluence, em 11
-categorias. Nenhuma skill pode inventar label fora dela; uma label
-documentada pode ser criada no Jira sob demanda. A décima categoria —
-produto/módulo/feature — é declarada **por produto**, na página de controle
-daquele produto. A label genérica de revisão saiu do contrato: a revisão já
-é representada por coluna.
+Os três modos de integração nunca são inferidos: Rafinha informa o modo, com uma única exceção — o tipo Hotfix determina o Modo C.
 
-A décima primeira categoria — **estado operacional de integração** —
-registra onde o código da issue está no fluxo de branches: `integrado-epico`
-e `qa-develop-aprovado`. Ela não contradiz a regra acima: cada uma dessas
-duas labels carrega informação que **nenhuma coluna tem**.
+---
 
-**Gates não têm fallback silencioso.** Quando o contrato esperado não é
-encontrado, a skill **para e reporta**. O caso que motivou a regra: o QA
-assumia `web` quando faltava a label de plataforma — um QA no executor errado
-produz um verde que não significa nada.
+## Arquitetura de contratos
 
-**`Documentar` fica depois da aceitação.** Rafinha valida primeiro se o
-produto resolve o problema; só então a documentação registra o estado
-**aceito**, e a auditoria final vê as duas coisas prontas.
+As regras do workflow não vivem soltas dentro de cada skill. Vivem em camadas, e cada skill as consome.
 
-**Branches são artefatos temporários, não histórico (Correções 27/09).** O
-histórico permanente é commit + Pull Request + Jira — nunca a branch viva.
-A branch do épico deixou de ser opcional: a
-`jira-technical-preparation-executor` a **prepara** antes de a issue chegar a
-`Ready` (a issue nasce de `epic/<EPIC-KEY>-<nome>`, e o PR aponta para lá); o
-`jira-issue-executor` e a `jira-integration-executor` nunca a criam — Epic
-promovido e excluído, com issue reprovada, volta à Preparação técnica. Depois que o Modo B promove o épico, ou o Modo C mergeia
-uma issue, com sucesso, as branches que já cumpriram o papel são
-**excluídas** — ausência de branch, depois disso, não é achado. A
-convenção de nome ganhou sufixo de tentativa —
-`{tipo}/<ISSUE-KEY>-claude[.<tentativa>]` — porque reimplementação após
-retorno/reprovação nunca reaproveita a branch antiga; o contador vem de um
-comentário estruturado na própria issue, nunca de contar branches.
+```mermaid
+flowchart TB
+    W["Contrato do Workflow<br/>autoridades · escopo · informação ausente · satisfação"]
+    T["Contrato de Tipo<br/>natureza do ticket (8 tipos)"]
+    P["Contrato de Política<br/>regras condicionais: plataforma, QA, design, risco, topologia"]
+    E["Contrato de Etapa<br/>o que cada uma das 13 etapas recebe, exige e entrega"]
+    X["Exceções válidas<br/>autorizadas por Rafinha"]
+    CE{{"Contrato Efetivo do Ticket<br/>o que a ISSUE exige"}}
+    S["Contrato da skill<br/>o que a skill PODE decidir, mutar, atestar e transicionar"]
+    O["Escopo operacional<br/>sobre quais alvos, nesta execução"]
+    R(["Capacidade autorizada naquela execução"])
 
-**A Integração tem três modos, e nunca escolhe sozinha.** Modo A (issue →
-branch do épico — ou o **Epic inteiro** como escopo, processando todas as
-issues dele em `Integração` de uma vez), Modo B (branch do épico →
-`develop`, promovendo o épico inteiro — agora **cria seu próprio PR** de
-promoção quando necessário e exige uma **autorização humana de merge**
-distinta da confirmação de modo/escopo, só depois de tudo verde e apto) e
-Modo C (issue → `develop`). Rafinha informa o modo, ou a skill para e
-pergunta — mesmo quando a estrutura das branches parece indicar o caminho
-óbvio (**única exceção:** Hotfix, cujo tipo determina o Modo C). Antes de qualquer merge, a skill imprime o resumo operacional do que
-entendeu. Se Rafinha negar a autorização de merge no Modo B, não é falha —
-a execução só encerra sem mergear, e revalida do zero na próxima vez.
+    W --> CE
+    T --> CE
+    P --> CE
+    E --> CE
+    X -.-> CE
+    CE --> R
+    S --> R
+    O --> R
+```
 
-**Duas labels carregam o que a coluna não diz.** Existe **uma** coluna
-`Integração` para três destinos de merge, então `integrado-epico` é o único
-jeito de saber em qual branch o código parou. E o ciclo de release lê a issue
-muito depois de ela ter saído de `QA - Claude`, então `qa-develop-aprovado` é o
-único registro durável de que aquele QA passou. Nenhuma skill aplica e remove a
-mesma label — as duas pontas ficam auditáveis na revisão final.
+- **Contrato do Workflow** define as regras universais: quem tem autoridade de decisão, mutação, atestação, transição e exceção; como o escopo é fechado; o que fazer quando falta informação; e os seis estados de satisfação de uma obrigação (`Pendente`, `Satisfeita`, `Não satisfeita`, `Não aplicável`, `Não verificável`, `Excepcionada`). `Excepcionada` nunca vira `Satisfeita` em silêncio.
+- **Tipo**, **Política** e **Etapa** acrescentam obrigações pela natureza do ticket, por condições verificáveis (uma label com efeito contratual, a topologia do produto) e pela coluna atual.
+- O **Contrato Efetivo** é a composição dessas camadas para uma issue. Não é um arquivo nem um campo do Jira: é um procedimento — o *Passo 0* — que cada skill executa lendo as fontes oficiais. Conflito entre regras sem declaração explícita de composição é decidido por Rafinha, nunca por precedência implícita.
+- O **Contrato da skill** é uma interface separada. Uma obrigação existir na issue não autoriza qualquer skill a executá-la. A skill final é *contrato + operação técnica*: o contrato diz o que ela está autorizada e obrigada a fazer; a operação diz como, e nunca pode ampliar o contrato.
 
-**A release não parte da `develop`.** Ela parte de `release/current`, a branch
-persistente de estabilização, e chegar lá exige provar que **todo** commit do
-intervalo rastreia para uma issue cuja obrigação de QA está elegível
-(`qa-develop-aprovado`, ou `Não aplicável`/`Excepcionada` rastreável). Commit direto na
-`develop`, sem PR, bloqueia a promoção. Exceção só com autorização explícita de
-Rafinha, registrada com risco, frase de autorização e impacto.
+**Por que isso importa.** Skills independentes que simplesmente executam instruções têm o comportamento disperso em dezenas de textos e se contradizem ao evoluir. Com contratos em camadas, uma regra é definida uma vez, o conflito aparece como conflito (e não como inconsistência silenciosa) e uma auditoria consegue responder *por que* uma obrigação recebeu determinado estado. Quando o Confluence (norma) e o `SKILL.md` (comportamento implementado) divergem, isso é *drift*: reconciliado, não mascarado.
 
-`workflow-development-flow` é a skill mãe: não executa nada, apenas responde "em qual etapa uma issue está", "o que vem depois de X", "qual gate se aplica" ou "essa label é oficial" para as demais. Release & Versionamento (SemVer, tags, GitHub Release) é um ciclo separado, acionado sob demanda — nunca uma coluna do board.
+---
 
-**Release é distribuição, não tag.** Uma release transforma um estado do software num pacote versionado que roda **fora do ambiente de desenvolvimento** — e não apenas numa tag com artefato anexado. Todo pedido tem dois eixos: **tipo** (`PRE_RELEASE` ou `FINAL`) e **escopo** (parcial ou completa).
+## Capacidades
 
-**Projeto ≠ repositório.** Um projeto pode ser monorepo ou multi-repo, e a topologia é declarada em `.release/project.yml`, nunca inferida. A unidade versionada é o **componente** (tag `<componente>/vX.Y.Z`); uma distribuição completa recebe também uma versão de **produto**. Dependências entre componentes são declaradas, nunca descobertas: elas expandem o escopo pedido no escopo efetivo, e um componente puxado que não mudou entra como `carried` — sem versão nova.
+### Gestão de demandas e planejamento
 
-**Três camadas, ninguém decidindo pelo vizinho.** A `release.yml` de cada repositório builda e publica seu componente. O **Release Orchestrator** local (PowerShell, um por projeto) dispara as Actions, coleta os artefatos, inclui o Runtime Package e gera o ZIP com o `release-manifest.yml` dentro. A `jira-release-executor` faz o que exige contexto: escopo vindo do Jira, incrementos sugeridos, notas em texto corrido, e o registro final. **Rafinha continua fechando um componente sozinho pela aba Actions**, sem skill e sem Orchestrator.
+Criação de issues e subtasks com **8 tipos oficiais** (Epic, Implementação, Correção, Bug, Refatoração Técnica, Documentação, Validação Humana, Hotfix) e a descrição padronizada de nove seções. Maturação de escopo no intake, fechamento de decisões em conversa, **Preparação técnica** com atestado e reaproveitamento de issues existentes antes de originar trabalho novo, e o tipo Hotfix com qualificação própria. Correção (ajuste de algo entregue) e Bug (defeito real) são tipos distintos.
+*Valor:* a issue chega à implementação com decisões fechadas e condições técnicas verificadas, em vez de descobri-las no meio do código.
+`jira-issue-creator` · `jira-hotfix-creator` · `jira-sprint-intake-executor` · `jira-issue-decision-resolver` · `jira-technical-preparation-executor`
 
-GitHub Release só em versão **final** — nenhum RC polui a aba Releases, e nenhum repositório vira dono do produto. A distribuição vai para o Drive e é registrada no Confluence.
+### Design e implementação
 
-**Validação Humana Agregada.** A unidade de implementação é a Issue, mas a unidade de aceitação humana pode agregar várias: antes da `Análise Final - Rafinha`, a `jira-human-validation-executor` varre a coluna, agrupa as issues por comportamento funcional e cria *Validações Humanas* contendo só os cenários que ainda exigem julgamento humano — nada do que o QA já automatizou volta como passo. Não é uma coluna nova nem um status novo, e não substitui QA, code review ou auditoria.
+Gate de design (`requires-design`, confirmada só por Rafinha), Design Package local por issue, gate de pendência de decisão, implementação passiva (nunca cria regra de negócio), testes proporcionais ao risco, análise estática, code review automatizado sobre o diff e Pull Request referenciando Jira e GitHub Issue. IDs canônicos de componentes reutilizáveis ligam o design ao código.
+*Valor:* o executor implementa o que foi decidido, desenhado e preparado — e para quando algo disso falta.
+`jira-issue-executor` · `flutter-development-standards`
 
-**Execution State.** O chat não é fonte de verdade: uma issue em execução pode ser retomada por uma sessão nova do Claude Code — troca de conta, esgotamento de quota, encerramento inesperado — sem depender do transcript anterior. `jira-issue-executor`, `jira-integration-executor`, `jira-qa-executor`, `jira-doc-executor` e `jira-review-executor` mantêm um arquivo `.claude/execution-state/<CHAVE>.md` com o ponto de retomada, reconciliado com Jira/Git/GitHub antes de qualquer ação — nunca uma instrução cega. Não é uma etapa nem uma coluna nova.
+### Integração e controle de branches
 
-## Skills
+Três modos explícitos (issue → épico, épico → `develop`, issue → `develop`), integração por Epic inteiro com idempotência, branches de épico preparadas antes de `Ready`, branches temporárias com número de tentativa, autorização humana de merge para promover um épico e, em produtos multi-repo, integração da **composição do Workspace** (gitlinks) junto com o código. Duas labels de estado (`integrado-epico`, `qa-develop-aprovado`) registram o que nenhuma coluna diz.
+*Valor:* o destino de cada merge é conhecido e rastreável, e a `develop` só carrega trabalho aprovado.
+`jira-integration-executor`
 
-### Pipeline Jira
+### Qualidade e validação
 
-| Skill | O que faz |
-|---|---|
-| [`workflow-development-flow`](workflow-development-flow/SKILL.md) | Referência do fluxo: lista canônica de 13 etapas, arquitetura de contratos, escopo operacional explícito, hierarquia Épico/Issue/Subtask, os 8 tipos oficiais de ticket, os 15 gates operacionais, a Preparação técnica e a Hotfix, a camada de Design de Produto, o vocabulário de labels, a descrição padronizada da issue, o modelo de branches (incl. Workspace) e os três modos da Integração, `context/`/AI Memory, ciclo de release e Execution State. |
-| [`jira-issue-creator`](jira-issue-creator/SKILL.md) | Cria issues/subtasks no Jira com tipo oficial, descrição padronizada de 9 seções e labels da matriz — sugere `requires-design`, nunca aplica. Destino: `A fazer` ou backlog. |
-| [`jira-hotfix-creator`](jira-hotfix-creator/SKILL.md) | Qualifica e prepara uma Hotfix (urgência real, fast-track na descrição, `hotfix/<KEY>`, Modo C) e entrega o payload à `jira-issue-creator`. Nunca cria o ticket. |
-| [`jira-sprint-intake-executor`](jira-sprint-intake-executor/SKILL.md) | Amadurece o escopo confirmado em `A fazer`: explicita lacunas, registra pendências, roteia para `Decisão - Rafinha`, `Design de produto - Rafinha` ou `Preparação técnica - Claude`. Nunca move direto para `Ready` nem `Fazer - Claude`. |
-| [`jira-issue-decision-resolver`](jira-issue-decision-resolver/SKILL.md) | Fecha pendências de decisão de uma issue por vez, em conversa com Rafinha — nunca varre a coluna em lote. |
-| [`jira-technical-preparation-executor`](jira-technical-preparation-executor/SKILL.md) | Etapa `Preparação técnica - Claude`: dependências, Design Package, ambiente, topologia Git (cria a branch de Epic), blockers; atestado `PRONTA` / `BLOQUEADA` / `AGUARDANDO DECISÃO TÉCNICA`; só `PRONTA` leva a `Ready`. |
-| [`jira-issue-executor`](jira-issue-executor/SKILL.md) | Implementa, de forma passiva, as issues de "Fazer - Claude" vindas de `Ready` (e Hotfix): gate de Pendência de decisão, gate de Design, código + testes + review automatizado + PR. Não cria branch de Epic; não move Hotfix. |
-| [`jira-integration-executor`](jira-integration-executor/SKILL.md) | Faz o merge real (modos A/B/C; Hotfix → Modo C) validando GitHub Actions e conflitos antes; em multi-repo integra também a composição do Workspace. |
-| [`jira-qa-executor`](jira-qa-executor/SKILL.md) | QA funcional/visual — plataforma escolhe o executor, protocolo escolhe a estratégia. Sem label de plataforma, bloqueia. |
-| [`jira-doc-executor`](jira-doc-executor/SKILL.md) | Roda depois da aceitação. Identifica a documentação impactada e delega para o writer certo; ignora `validacao-humana`. |
-| [`jira-human-validation-executor`](jira-human-validation-executor/SKILL.md) | Agrupa as issues por comportamento e gera as Validações Humanas — só os cenários que exigem julgamento humano. Registra o veredito e roteia reprovações. |
-| [`jira-review-executor`](jira-review-executor/SKILL.md) | Auditoria final antes de "Concluído" — inclui o contrato de labels, tipos e gates. |
-| [`jira-release-executor`](jira-release-executor/SKILL.md) | Prepara e executa releases: resolve tipo e escopo, expande dependências declaradas, sugere os incrementos, escreve as notas e entrega a execução ao Release Orchestrator — até a distribuição validada fora da IDE. |
+QA sobre a `develop` integrada: a **plataforma escolhe o executor** (Web por Claude in Chrome, Android por Maestro) e o **protocolo escolhe a estratégia** (funcional, visual, regressão, e2e, smoke). Sem label de plataforma, bloqueia. Resultados no AIO Tests; veredito por issue, mesmo em lote. Defeitos reais descobertos no QA são delegados à criação de issue, nunca criados pela skill. Validação Humana Agregada concentra o julgamento de Rafinha onde ele é insubstituível, e a auditoria final verifica contrato de tipos, labels, gates e branches.
+*Valor:* cada camada de validação responde à sua pergunta, e a repetição manual é eliminada sem eliminar o julgamento humano.
+`jira-qa-executor` · `jira-human-validation-executor` · `jira-review-executor`
 
-### Documentação (Confluence)
+### Documentação
+
+Cinco escritores, um por fonte da verdade — **produto**, **código**, **tela**, **usuário final** e o **próprio workflow** —, mais um resolvedor de pendências que pergunta antes de escrever. Numa issue de código, a `jira-doc-executor` monta o *conjunto* de writers aplicáveis, imprime o plano e declara com motivo os que pulou. A documentação roda depois da aceitação e descreve o estado **aceito**.
+*Valor:* cada documento tem uma fonte clara, links em vez de repetição e nenhuma trilha escolhida por palpite.
+`jira-doc-executor` · `product-doc-writer` · `tech-doc-writer` · `screen-doc-writer` · `user-doc-writer` · `workflow-doc-writer` · `doc-pendency-resolver`
+
+### Contexto e continuidade
+
+Três camadas com finalidades distintas: **`context/`** (conhecimento técnico atual e durável — o *porquê*), **`ai-memory/`** (continuidade operacional e handoff, de `active/` para `history/`) e o **Execution State** (ponto de retomada de uma execução). Leitura é descentralizada; mutação é centralizada em `engineering-context-manager` e `ai-memory-manager`.
+*Valor:* menos redescoberta técnica e retomada segura entre sessões, contas ou quotas.
+`engineering-context-manager` · `ai-memory-manager`
+
+### Release e distribuição
+
+Ciclo separado do board, acionado sob demanda, com dois eixos por pedido (**tipo**: pré-release ou final; **escopo**: parcial ou completa). Versionamento por componente, versão de produto para distribuições completas, dependências declaradas, promoção para `release/current` condicionada ao gate G10, notas em texto corrido, Release Orchestrator local que dispara as Actions e monta o pacote, e validação da distribuição fora da IDE. Três camadas, sem que uma decida pela vizinha: a *Action* faz o determinístico dentro de um repositório, o *Orchestrator* o determinístico entre repositórios, a *skill* o que exige contexto e decisão humana.
+*Valor:* uma release é uma distribuição reproduzível, não uma tag.
+`jira-release-executor`
+
+### Governança operacional
+
+Contratos em camadas, políticas ativadas por condições verificáveis, **15 gates operacionais**, matriz oficial de labels em 11 categorias (nenhuma skill inventa label), exceções com origem, escopo e vigência, captura de incidentes quando o contrato falha (`workflow-incident-capture-executor`, observação pura) e Model Escalation Policy.
+*Valor:* o comportamento do sistema é previsível, auditável e corrigível quando falha.
+`workflow-development-flow` · `workflow-incident-capture-executor`
+
+---
+
+## Ecossistema tecnológico
+
+| Ferramenta | Papel no workflow | Natureza |
+|---|---|---|
+| **Claude Code** | Ambiente de execução das skills | Obrigatório |
+| **Jira** (via Atlassian Rovo) | Fonte de verdade do estado e do histórico operacional das issues | Obrigatório |
+| **Confluence** | Autoridade normativa do workflow, matriz oficial de labels, páginas de controle por produto e destino da documentação | Obrigatório |
+| **Git e GitHub** (Issues, Pull Requests, Actions, CLI `gh`) | Versionamento, integração, validação técnica e releases | Obrigatório |
+| **AIO Tests** | Registro detalhado da execução de QA (exige token em `AIO_TESTS_ACCESS_TOKEN`) | Obrigatório para `QA - Claude` |
+| **Claude in Chrome** | Executor de QA Web, no Chrome real | Condicional: plataforma Web |
+| **Maestro** (MCP, com fallback CLI) e **Android Emulator** | Executor de QA Android | Condicional: plataforma Android |
+| **Claude Design** | Etapa de design de produto e geração do Design Package | Condicional: issues com `requires-design` |
+| **PowerShell** | Release Orchestrator local | Condicional: ciclo de release |
+| **Google Drive** | Destino dos pacotes de distribuição | Condicional: ciclo de release |
+| **Notion** | Onde as atualizações do workflow são redigidas antes de virarem skills e páginas | Processo de autoria; as skills não dependem dele em execução |
+
+Os padrões de Flutter/Dart (`flutter-development-standards`) e os executores de QA (Web e Android) refletem a stack em que o workflow foi exercitado.
+
+---
+
+## Catálogo de skills
+
+São **25 skills** no repositório: **23** fazem parte do Rafinha-Claude e **2** são pessoais.
+
+### Rafinha-Claude
+
+#### Referência
 
 | Skill | O que faz |
 |---|---|
-| [`product-doc-writer`](product-doc-writer/SKILL.md) | Documentação de produto: regra de negócio, requisito, caso de uso, fluxo de produto, critérios de aceitação. |
-| [`tech-doc-writer`](tech-doc-writer/SKILL.md) | Documentação técnica: módulo, API, arquitetura para devs, componente reutilizável. |
-| [`screen-doc-writer`](screen-doc-writer/SKILL.md) | Documentação de tela/UI, com prints reais via navegação ao vivo — modos `dev`/`user`/`hybrid`. |
-| [`user-doc-writer`](user-doc-writer/SKILL.md) | Guias de usuário final — a tarefa que atravessa telas, ponta a ponta. |
-| [`workflow-doc-writer`](workflow-doc-writer/SKILL.md) | Documentação do próprio workflow: fichas de skill (com checagem de drift Confluence × `SKILL.md`: sincroniza só o descritivo compatível, drift contratual é reconciliado), páginas de pipeline, documentação de release de cada projeto (o Manifest copiado, nunca reescrito). |
-| [`doc-pendency-resolver`](doc-pendency-resolver/SKILL.md) | Resolve pendências e ambiguidades perguntando antes de escrever, nunca assumindo. |
+| [`workflow-development-flow`](workflow-development-flow/SKILL.md) | Skill mãe e índice das fontes contratuais. Não executa nada: responde em qual etapa uma issue está, qual contrato, gate ou label se aplica. Reúne os [`references/`](workflow-development-flow/references/) normativos. |
 
-### Contexto e memória
+#### Demanda, preparação e execução
 
 | Skill | O que faz |
 |---|---|
-| [`engineering-context-manager`](engineering-context-manager/SKILL.md) | Governa `context/`: conhecimento técnico atual e durável. Leitura direta por qualquer skill; criar/alterar/remover só por ela. |
-| [`ai-memory-manager`](ai-memory-manager/SKILL.md) | Governa `ai-memory/`: continuidade operacional e handoff (`active` → `history`), criação sob demanda, commit só das próprias alterações. |
+| [`jira-issue-creator`](jira-issue-creator/SKILL.md) | Cria issues e subtasks com tipo oficial, descrição padronizada e labels da matriz; sugere `requires-design`, nunca aplica. |
+| [`jira-hotfix-creator`](jira-hotfix-creator/SKILL.md) | Qualifica e prepara uma Hotfix (urgência, fast-track, branch, Modo C) e entrega o payload à criação de issue. Não cria o ticket. |
+| [`jira-sprint-intake-executor`](jira-sprint-intake-executor/SKILL.md) | Amadurece o escopo em `A fazer`, registra pendências e roteia para decisão, design ou Preparação técnica. |
+| [`jira-issue-decision-resolver`](jira-issue-decision-resolver/SKILL.md) | Fecha as pendências de decisão de uma issue por vez, em conversa com Rafinha. |
+| [`jira-technical-preparation-executor`](jira-technical-preparation-executor/SKILL.md) | Etapa `Preparação técnica - Claude`: dependências, design, ambiente, topologia Git e atestado de prontidão. |
+| [`jira-issue-executor`](jira-issue-executor/SKILL.md) | Implementa de forma passiva as issues de `Fazer - Claude`: código, testes, code review e Pull Request. |
 
-### Qualidade & produtividade
+#### Integração, validação e fechamento
 
 | Skill | O que faz |
 |---|---|
-| [`flutter-development-standards`](flutter-development-standards/SKILL.md) | Checklist de arquitetura/boas práticas Flutter, incluindo componentes reutilizáveis e IDs canônicos do Design System. |
-| [`workflow-incident-capture-executor`](workflow-incident-capture-executor/SKILL.md) | Registra incongruências do workflow num `.md` local, sem corrigir nada nem tocar Jira/Confluence/GitHub/código — observação pura para retomada depois. |
-| [`weekly-organizer`](weekly-organizer/SKILL.md) | Organiza a semana e o inbox do Todoist (fora do Workflow Rafinha-Claude). |
-| [`task-creator-trabalho`](task-creator-trabalho/SKILL.md) | Registra tarefas e contexto de trabalhos acadêmicos (fora do Workflow Rafinha-Claude). |
+| [`jira-integration-executor`](jira-integration-executor/SKILL.md) | Merge real nos modos A/B/C, validando Actions e conflitos; em multi-repo integra também a composição do Workspace. |
+| [`jira-qa-executor`](jira-qa-executor/SKILL.md) | QA funcional e visual por plataforma e protocolo, com evidências no AIO Tests. |
+| [`jira-human-validation-executor`](jira-human-validation-executor/SKILL.md) | Agrega issues por comportamento e gera as Validações Humanas; registra o veredito e roteia reprovações. |
+| [`jira-doc-executor`](jira-doc-executor/SKILL.md) | Orquestra a documentação pós-aceitação, delegando ao conjunto certo de writers. |
+| [`jira-review-executor`](jira-review-executor/SKILL.md) | Auditoria final antes de `Concluído`: contrato de tipos, labels, gates e branches. |
+| [`jira-release-executor`](jira-release-executor/SKILL.md) | Prepara e executa releases como distribuições versionadas. Contém os [templates](jira-release-executor/templates/) de manifesto, Action, Orchestrator e Runtime. |
 
-## Como usar
+#### Documentação
 
-São skills do Claude Code — cada pasta é uma skill com seu `SKILL.md`. Clone para `~/.claude/skills/` (globais) ou `.claude/skills/` de um projeto, e o Claude passa a reconhecê-las automaticamente pelo gatilho descrito em cada `description`.
+| Skill | O que faz |
+|---|---|
+| [`product-doc-writer`](product-doc-writer/SKILL.md) | Documentação de produto: regra de negócio, requisito, caso de uso, fluxo, critérios de aceitação. |
+| [`tech-doc-writer`](tech-doc-writer/SKILL.md) | Documentação técnica: módulo, API, arquitetura, componente reutilizável. |
+| [`screen-doc-writer`](screen-doc-writer/SKILL.md) | Documentação de tela com prints reais, nos modos `dev`, `user` e `hybrid`. |
+| [`user-doc-writer`](user-doc-writer/SKILL.md) | Guias de usuário final, ponta a ponta. |
+| [`workflow-doc-writer`](workflow-doc-writer/SKILL.md) | Documentação do próprio workflow: fichas de skill, páginas de pipeline e documentação de release. |
+| [`doc-pendency-resolver`](doc-pendency-resolver/SKILL.md) | Resolve pendências de documentação perguntando antes de escrever. |
 
-A maior parte pressupõe o ecossistema real de Rafinha (Jira via Atlassian Rovo, Confluence, GitHub, AIO Tests, Maestro) — usar como referência de arquitetura de skills ou adaptar os nomes de projeto/board antes de reaproveitar em outro contexto.
+#### Contexto e continuidade
+
+| Skill | O que faz |
+|---|---|
+| [`engineering-context-manager`](engineering-context-manager/SKILL.md) | Governa `context/`: conhecimento técnico atual e durável. |
+| [`ai-memory-manager`](ai-memory-manager/SKILL.md) | Governa `ai-memory/`: continuidade operacional e handoff. |
+
+#### Apoio ao workflow
+
+| Skill | O que faz |
+|---|---|
+| [`flutter-development-standards`](flutter-development-standards/SKILL.md) | Checklist de arquitetura e boas práticas Flutter/Dart, incluindo componentes reutilizáveis e IDs canônicos do Design System. |
+| [`workflow-incident-capture-executor`](workflow-incident-capture-executor/SKILL.md) | Registra incongruências do workflow num `.md` local, sem corrigir nem tocar Jira, Confluence, GitHub ou código. |
+
+### Fora do Rafinha-Claude
+
+Skills pessoais que apenas coexistem neste repositório. Não fazem parte do pipeline e o [contrato das skills](workflow-development-flow/references/contrato-skills.md) as exclui expressamente.
+
+| Skill | O que faz |
+|---|---|
+| [`weekly-organizer`](weekly-organizer/SKILL.md) | Organiza a semana e o inbox do Todoist. |
+| [`task-creator-trabalho`](task-creator-trabalho/SKILL.md) | Registra tarefas e contexto de trabalhos acadêmicos. |
+
+---
+
+## Como utilizar
+
+### Estrutura
+
+Cada pasta na raiz é uma skill: um `SKILL.md` (com `name` e `description`, que o Claude usa para decidir quando acioná-la) e, quando necessário, `references/` (documentos carregados sob demanda), `templates/` ou `scripts/`. As skills do pipeline têm um bloco `## Contrato da skill` seguido da operação técnica.
+
+### Disponibilizar no Claude Code
+
+O Claude Code lê skills de `~/.claude/skills/` (globais) ou de `.claude/skills/` de um projeto — detalhes na [documentação oficial](https://code.claude.com/docs/en/skills). Este repositório é usado diretamente como o diretório de skills globais:
+
+```bash
+git clone https://github.com/rafinha-as-br/skills-claude.git ~/.claude/skills
+```
+
+> O comando só serve para um diretório `~/.claude/skills` vazio ou inexistente.
+
+### Pré-requisitos reais
+
+Para o pipeline funcionar, o ambiente precisa ter as integrações da [tabela do ecossistema](#ecossistema-tecnológico) e, **além delas, a configuração do projeto**, que é manual e de responsabilidade de quem adota o workflow:
+
+- **Jira**: colunas do board com a grafia literal dos 13 status e os tipos nativos `Hotfix` e `Validação Humana`.
+- **Confluence**: a matriz oficial de labels, as páginas de contrato e a página de controle de workflow de cada produto (sigla, labels de produto e o campo de Topologia, mono ou multi-repo). As skills tratam essas páginas como autoridade normativa.
+- **Repositórios**: `.claude/design-packages/` no `.gitignore`; CI e branch protection para `epic/**` e `release/current`; manifesto `.release/project.yml` para releases; Workspace Git criado manualmente em produtos multi-repo.
+- **Qualidade**: token do AIO Tests, emulador Android e Maestro para QA mobile.
+
+### Reutilizar em outro projeto
+
+O workflow foi projetado para o ambiente pessoal de Rafinha: nomes de projeto, espaço do Confluence, convenções de board e a stack de QA refletem esse ambiente. Reutilizá-lo exige **adaptar** esses pontos e **montar os contratos** que as skills esperam. Sem eles, as skills não improvisam: **bloqueiam por informação ausente**. O repositório serve bem como referência de arquitetura de skills governadas por contratos mesmo para quem não usa Jira.
+
+### Para estudar a arquitetura
+
+1. Esta página, para a visão geral.
+2. [`workflow-development-flow/SKILL.md`](workflow-development-flow/SKILL.md) para etapas, tipos, gates e modelo de branches.
+3. Os contratos em [`workflow-development-flow/references/`](workflow-development-flow/references/) (abaixo).
+4. O `SKILL.md` da skill que interessa: o bloco *Contrato da skill* primeiro, a operação depois.
+
+---
+
+## Estado atual e limites
+
+- A revisão mais recente (12/10/2026) está implementada nas skills e no Confluence. **Não há migração de issues anteriores** e nenhuma convivência com o contrato antigo.
+- A reconfiguração real do Jira (status `Preparação técnica - Claude`, tipos nativos `Hotfix` e `Validação Humana`) e a Topologia por produto no Confluence, o bootstrap do Workspace dos produtos multi-repo e a configuração de CI e branch protection são manuais e ficam fora das skills. Enquanto não existirem, as skills **bloqueiam** em vez de assumir valores.
+- Há pendências herdadas e declaradas nos contratos, como a trilha `qa-doc`, que ainda não tem writer (a skill para e reporta).
+- O Rafinha-Claude é um workflow pessoal em evolução, não um produto instalável.
+
+---
+
+## Referências
+
+**Contratos e fontes normativas** (em [`workflow-development-flow/references/`](workflow-development-flow/references/))
+
+| Documento | Conteúdo |
+|---|---|
+| [`contrato-workflow.md`](workflow-development-flow/references/contrato-workflow.md) | Regras universais: autoridades, escopo, informação ausente, satisfação, composição, vigência |
+| [`contrato-efetivo.md`](workflow-development-flow/references/contrato-efetivo.md) | Composição das camadas e procedimento *Passo 0* |
+| [`contrato-skills.md`](workflow-development-flow/references/contrato-skills.md) | Anatomia contrato + operação, defaults herdados e escopo das skills |
+| [`politicas.md`](workflow-development-flow/references/politicas.md) | Políticas condicionais: plataforma, QA, design, risco, topologia, fast-track |
+| [`preparacao-e-hotfix.md`](workflow-development-flow/references/preparacao-e-hotfix.md) | Preparação técnica, atestado e Hotfix |
+| [`contexto-memoria-workspace.md`](workflow-development-flow/references/contexto-memoria-workspace.md) | `context/`, AI Memory e Workspace multi-repo |
+| [`release-lifecycle.md`](workflow-development-flow/references/release-lifecycle.md) | Contratos do ciclo de release |
+
+**Pontos de entrada em [`workflow-development-flow/SKILL.md`](workflow-development-flow/SKILL.md)**: tipos de ticket (§3), etapas (§4–5), gates (§8), release (§10), Validação Humana (§12), Execution State (§13), design (§14), labels (§15), modelo de branches (§16), descrição da issue (§17), contratos (§18).
+
+**Registros de implementação**, um por revisão: [`plano-release-lifecycle.md`](plano-release-lifecycle.md), [`plano-pacote-2.md`](plano-pacote-2.md), [`plano-pacote-3.md`](plano-pacote-3.md), [`plano-pacote-4.md`](plano-pacote-4.md), [`plano-pacote-5.md`](plano-pacote-5.md), [`plano-pacote-6.md`](plano-pacote-6.md). São documentos históricos de decisão, não contratos vigentes; em caso de divergência valem os contratos acima.
+
+A norma é espelhada no Confluence (espaço privado do projeto). O histórico completo está no Git: `git log --reverse`.
