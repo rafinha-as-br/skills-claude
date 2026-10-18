@@ -1,6 +1,6 @@
 ---
 name: workflow-development-flow
-description: "Skill mãe do Workflow Rafinha-Claude — referência consultável e índice das fontes contratuais: a lista canônica de 13 etapas (A fazer, Decisão - Rafinha, Design de produto - Rafinha, Preparação técnica - Claude, Ready, Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Análise Final - Rafinha, Documentar, Análise Final - Claude, Concluído), a arquitetura de CONTRATOS (Workflow, Tipo, Política, Etapa → Contrato Efetivo do Ticket, e Contrato das skills = contrato + operação técnica), o princípio de escopo operacional explícito (issue, lista de issues, Epic ou coluna de um Epic específico — nunca coluna inteira; nenhuma skill executora roda às cegas), a descrição padronizada da issue em 9 seções (seção 17), a camada de Design de Produto e o gate `requires-design` com Design Package em `.claude/design-packages/<ISSUE-KEY>/` (no repositório afetado, em multi-repo), os 8 tipos oficiais de ticket (Epic, Implementação, Correção, Bug, Refatoração Técnica, Documentação, Validação Humana nativa, Hotfix), a matriz oficial de labels mantida no Confluence, os 15 gates operacionais e a proibição de fallback silencioso, a hierarquia Épico → Issue → Subtask, as camadas de validação, a integração GitHub Issues ↔ Jira ↔ Pull Request, a etapa Preparação técnica e seu atestado (PRONTA / BLOQUEADA / AGUARDANDO DECISÃO TÉCNICA) — que também PREPARA a branch de Epic —, o tipo Hotfix com fast-track na descrição, branch `hotfix/<ISSUE-KEY>` e Modo C automático (transições de board só de Rafinha), o MODELO DE BRANCHES (seção 16: branches temporárias, gramática de tentativa `{tipo}/<ISSUE-KEY>-claude[.<tentativa>]`, os três modos da Integração A/B/C e as labels de estado `integrado-epico` e `qa-develop-aprovado`), as camadas de contexto (`context/`), AI Memory e Workspace multi-repo (seção 20), o ciclo separado de Release & Versionamento (`references/release-lifecycle.md`), a Validação Humana Agregada (seção 12) e o Execution State (seção 13). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, qual contrato/gate/política se aplica, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'como funciona a Preparação técnica', 'o que é uma Hotfix', 'quais labels são oficiais', 'como funciona o ciclo de release', ou qualquer dúvida sobre o workflow."
+description: "Skill mãe do Workflow Rafinha-Claude — referência consultável e índice das fontes contratuais: a lista canônica de 13 etapas (A fazer, Decisão - Rafinha, Design de produto - Rafinha, Preparação técnica - Claude, Ready, Fazer - Claude, Análise - Rafinha, Integração, QA - Claude, Análise Final - Rafinha, Documentar, Análise Final - Claude, Concluído), a arquitetura de CONTRATOS (Workflow, Tipo, Política, Etapa → Contrato Efetivo do Ticket, e Contrato das skills = contrato + operação técnica), o princípio de escopo operacional explícito (issue, lista de issues, Epic ou coluna de um Epic específico — nunca coluna inteira; nenhuma skill executora roda às cegas), a descrição padronizada da issue em 9 seções (seção 17), a camada de Design de Produto e o gate `requires-design` com Design Package em `.claude/design-packages/<ISSUE-KEY>/` (no repositório afetado, em multi-repo), os 8 tipos oficiais de ticket (Epic, Implementação, Correção, Bug, Refatoração Técnica, Documentação, Validação Humana nativa, Hotfix), a matriz oficial de labels mantida no Confluence, os 15 gates operacionais e a proibição de fallback silencioso, a hierarquia Épico → Issue → Subtask, as camadas de validação, a integração GitHub Issues ↔ Jira ↔ Pull Request, a etapa Preparação técnica e seu atestado (PRONTA / BLOQUEADA / AGUARDANDO DECISÃO TÉCNICA) — que também PREPARA a branch de Epic —, o tipo Hotfix com fast-track na descrição, branch `hotfix/<ISSUE-KEY>` e Modo C automático (transições de board só de Rafinha), o MODELO DE BRANCHES (seção 16: branches temporárias, gramática de tentativa `{tipo}/<ISSUE-KEY>-claude[.<tentativa>]`, os três modos da Integração A/B/C e as labels de estado `integrado-epico` e `qa-develop-aprovado`), as camadas de contexto (`context/`), AI Memory e Workspace multi-repo (seção 20), o ciclo separado de Release & Versionamento (`references/release-lifecycle.md`), a Validação Humana Agregada (seção 12), o Execution State (seção 13) e a orquestração remota sob demanda pelo celular (seção 21, `workflow-remote-orchestrator`). Esta skill NUNCA executa ação nenhuma no Jira, no Confluence ou no código — é só consulta. Use-a quando outra skill do pipeline precisar entender em qual etapa uma issue está, o que vem antes/depois, o que uma etapa deve produzir, qual contrato/gate/política se aplica, ou o que fazer diante de incerteza sobre o fluxo. Rafinha também aciona diretamente com perguntas como 'qual a próxima etapa depois de X', 'o que a etapa Y deveria produzir', 'como funciona a Preparação técnica', 'o que é uma Hotfix', 'quais labels são oficiais', 'como funciona o ciclo de release', ou qualquer dúvida sobre o workflow."
 ---
 
 # Fluxo de Desenvolvimento — Skill Mãe (Rafinha + Claude)
@@ -18,7 +18,7 @@ processo que todas as demais skills do pipeline (`jira-sprint-intake-executor`,
 `ai-memory-manager`, `product-doc-writer`, `tech-doc-writer`,
 `screen-doc-writer`, `user-doc-writer`, `workflow-doc-writer`,
 `doc-pendency-resolver`, `flutter-development-standards`,
-`jira-release-executor`)
+`jira-release-executor`, `workflow-remote-orchestrator`)
 referenciam quando precisam entender em qual etapa uma issue está, o que
 vem antes ou depois, o que uma etapa deve produzir, qual gate se aplica, ou
 o que fazer diante de incerteza sobre o fluxo — incluindo o ciclo separado
@@ -26,8 +26,8 @@ de Release & Versionamento (seção 10), a camada de Validação Humana
 Agregada (seção 12), o Execution State (seção 13), a camada de Design de
 Produto (seção 14), o vocabulário de labels (seção 15), a descrição
 padronizada da issue (seção 17), a arquitetura de contratos (seção 18), a
-Preparação técnica e a Hotfix (seção 19) e as camadas de contexto, AI Memory e
-Workspace (seção 20).
+Preparação técnica e a Hotfix (seção 19), as camadas de contexto, AI Memory e
+Workspace (seção 20) e a orquestração remota sob demanda (seção 21).
 
 > **Revisão do workflow 2 em vigor.** O fluxo tem **13 etapas** e as regras
 > vivem em camadas contratuais (seção 18). A configuração real do Jira (status
@@ -388,8 +388,10 @@ A fazer
 `Preparação técnica - Claude`. `Design de produto - Rafinha`, depois de
 concluída, segue para `Preparação técnica - Claude`. Só a Preparação técnica
 com resultado `PRONTA` leva a `Ready`. A transição `Ready → Fazer - Claude`
-representa a **autorização de implementação** e é manual, feita por Rafinha —
-nenhuma skill varre `Ready` para empurrar issues adiante.
+representa a **autorização de implementação** e é de Rafinha — dada por ele
+no Jira ou por **confirmação remota explícita** executada pela
+`workflow-remote-orchestrator` (seção 21), registrada em comentário da issue.
+Nenhuma skill varre `Ready` para empurrar issues adiante.
 
 **Exceção — Hotfix.** Uma Hotfix qualificada nasce em `Fazer - Claude` e não
 passa por `Ready`; as obrigações das etapas puladas permanecem rastreáveis no
@@ -512,7 +514,9 @@ decisões resolvidas
 issue normal só chega aqui vinda de `Preparação técnica - Claude` com atestado
 `PRONTA` (nunca de `A fazer`, `Decisão` ou `Design` diretamente). Nenhuma skill
 varre `Ready`. A transição `Ready → Fazer - Claude` representa a **autorização
-de implementação**, é **manual, feita por Rafinha**.
+de implementação**, é **de Rafinha**: feita por ele no Jira ou por confirmação
+remota explícita executada pela `workflow-remote-orchestrator` (seção 21),
+registrada em comentário da issue.
 
 O `jira-issue-executor` pode fazer apenas verificações defensivas mínimas sobre
 uma issue vinda de `Ready`; **Hotfix é exceção própria** e não precisa passar por
@@ -2092,6 +2096,10 @@ concorrente**.
 | 5. Contrato Efetivo do Ticket | Composição das camadas acima para uma issue; procedimento "Passo 0" das skills | `references/contrato-efetivo.md` |
 | 6. Contrato das skills | Interface contratual de cada capacidade (autoridades, obrigações, limites, delegações) = **contrato + operação técnica** | `references/contrato-skills.md` e o bloco `## Contrato da skill` de cada `SKILL.md` |
 
+A orquestração remota (seção 21, `references/orquestracao-remota.md`) não é
+camada nova: é uma capacidade (skill) sujeita ao Contrato das skills, com a
+exceção de transição "Comando remoto" declarada no Contrato do Workflow (A.5).
+
 **Fórmula.** `Workflow + Tipo + Políticas + Etapa (+ exceções) = Contrato
 Efetivo` (o que a *issue* exige). `Contrato Efetivo + Contrato da skill +
 Escopo operacional = capacidade autorizada na execução`. O Contrato da skill não
@@ -2161,6 +2169,32 @@ Resumo; estrutura, formatos, ciclos de vida e fluxos completos em
 
 ---
 
+## 21. Orquestração remota
+
+Resumo; comandos, mapa etapa → skill, segurança e pontos em observação em
+`references/orquestracao-remota.md`.
+
+A `workflow-remote-orchestrator` (primeira versão experimental) é acionada
+**manualmente por Rafinha**, pelo celular, numa sessão de Claude Code Remote
+Control. Lê o contexto, fecha o escopo com ele, **despacha a skill dona da etapa**
+e devolve um cartão com resultado, bloqueios e próxima ação. Não é agente
+permanente e não substitui nenhuma autoridade.
+
+- Comando explícito de Rafinha autoriza objetivo e escopo da sessão; "Continuar
+  EPIC-123" pode autorizar execução sequencial das issues elegíveis do recorte.
+- Transições que ela executa (enumeradas, registradas no comentário da issue):
+  `Ready → Fazer - Claude` (issue normal, atestado `PRONTA`) e a saída de colunas
+  de Rafinha **quando ele declara o resultado**. O resto é da skill dona.
+- **Nunca** move Hotfix; **nunca** decide negócio, design, review, aceite, conflito
+  ou modo de integração; a promoção de Epic para `develop` (Modo B, G15) exige
+  confirmação manual distinta de Rafinha no momento do merge.
+- Escopo confirmado na sessão e repassado vale como confirmação para a skill
+  delegada (`contrato-workflow.md`, B.2). Não existe "coluna inteira".
+- Incidente ou informação ausente → `workflow-incident-capture-executor`; handoff →
+  `ai-memory-manager`.
+
+---
+
 ## Quando Rafinha aciona esta skill diretamente
 
 Perguntas do tipo:
@@ -2202,7 +2236,9 @@ Perguntas do tipo:
   ou regra de bloqueio de avanço.
 - "O que é a coluna `Decisão - Rafinha`?" / "Quando uma issue vai pra lá em
   vez de seguir para a Preparação técnica?"
-- "Quem move issue de `Ready` para `Fazer - Claude`?"
+- "Quem move issue de `Ready` para `Fazer - Claude`?" (Rafinha, no Jira ou por
+  confirmação remota via `workflow-remote-orchestrator`)
+- "O que é a orquestração remota?" / "O que a orquestradora pode e não pode mover?"
 - "O que é a `Preparação técnica - Claude`?" / "O que é o atestado PRONTA?"
 - "Quando algo é Hotfix?" / "Quem move uma Hotfix entre colunas?" / "O que é
   `Excepcionada`?"

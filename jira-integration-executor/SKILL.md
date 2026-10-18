@@ -413,6 +413,12 @@ equivale a autorização de merge:
    todos os PRs aplicáveis estarem verdes e aptos ao merge. É um pedido
    explícito e separado, não implícito na confirmação de escopo.
 
+**Chamada pela orquestradora remota.** Escopo (e modo, se Rafinha o informou ao
+confirmar o recorte) repassado pela `workflow-remote-orchestrator` vale como a
+confirmação 1. A autorização final de merge (Gate 15) **nunca** é herdada dela
+nem de confirmação anterior da sessão: peça-a de novo, a Rafinha, no momento do
+merge.
+
 ### Passo a passo
 
 1. Confirme que Rafinha **solicitou ou confirmou explicitamente** o Modo B.

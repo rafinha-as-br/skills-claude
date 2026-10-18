@@ -123,6 +123,11 @@ Se Rafinha já informou o escopo no próprio pedido ("amadurece o épico
 PROJ-40"), não pergunte de novo — só confirme se restar ambiguidade real
 (ex.: mais de um épico com nome parecido).
 
+**Escopo repassado pela orquestradora remota.** Escopo já fechado e confirmado
+por Rafinha na sessão e repassado pela `workflow-remote-orchestrator` vale como
+a confirmação (`contrato-workflow.md`, B.2); gates e o registro do escopo no
+Jira continuam seus.
+
 ---
 
 ## Passo a passo

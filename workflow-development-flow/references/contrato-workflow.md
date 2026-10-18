@@ -81,6 +81,16 @@ etapa que não é sua, não escolhe destino não autorizado, não pula etapas e 
 antecipa transição de outra capacidade. Sem condição satisfeita, mantém a issue
 no estado apropriado, sem inventar destino alternativo.
 
+**Exceção oficial — Comando remoto.** Numa sessão de Remote Control iniciada por
+Rafinha, a `workflow-remote-orchestrator` executa, **como execução de comando
+explícito de Rafinha registrado em comentário da issue**, apenas: (a)
+`Ready → Fazer - Claude` de issue normal com atestado `PRONTA` vigente; (b) a saída
+de `Análise - Rafinha`, `Análise Final - Rafinha` ou `Design de produto - Rafinha`
+quando **Rafinha declara o resultado** (a orquestradora nunca escolhe nem infere o
+resultado). Toda outra transição continua da skill dona da etapa. Esta exceção
+**não** alcança Hotfix e **não** substitui a autorização distinta de merge do
+Modo B (G15). Detalhes: `orquestracao-remota.md`.
+
 **Exceção oficial — Hotfix.** Com `Tipo = Hotfix`, **toda autoridade automática
 de transição entre colunas fica suspensa.** As skills executam só a
 responsabilidade da coluna atual, registram evidências e atestações normalmente,
@@ -175,6 +185,11 @@ individual ou lista explícita. Quando o escopo exige consulta ao Jira, a skill
 resolve o conjunto, **apresenta para confirmação** e, depois disso, o escopo
 está **fechado**.
 
+- **Escopo repassado.** Escopo já resolvido e **confirmado por Rafinha na sessão**
+  (ex.: pela `workflow-remote-orchestrator`) e repassado à skill delegada com o
+  conjunto fechado vale como a confirmação exigida; a skill delegada ainda valida
+  gates e evidências e registra o escopo no Jira. O modo da Integração e a
+  autorização de merge do Modo B nunca são herdados dessa confirmação.
 - **Sem ampliação automática.** Descoberta posterior (bug, refatoração,
   documentação, problema estrutural) não entra no escopo; é registrada/reportada.
   Descoberta não é autorização.

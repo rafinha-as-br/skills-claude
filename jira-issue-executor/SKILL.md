@@ -250,6 +250,12 @@ Rafinha para confirmação; depois disso o escopo está fechado e descoberta
 posterior não o amplia. Estar na coluna correta não autoriza uma issue fora do
 escopo confirmado. Não rode a busca abaixo sem essa confirmação.
 
+**Escopo repassado pela orquestradora remota.** Escopo já fechado e confirmado
+por Rafinha na sessão e repassado pela `workflow-remote-orchestrator` (conjunto
+resolvido) vale como esta confirmação — não pergunte de novo
+(`contrato-workflow.md`, B.2). Passo 0, gates e o registro do escopo no Jira
+continuam seus.
+
 **Passo 0 — Contrato Efetivo.** Para cada issue do escopo, resolva o Contrato
 Efetivo (`workflow-development-flow/references/contrato-efetivo.md`): tipo
 nativo, Epic, etapa (`Fazer - Claude`), labels com efeito de política, e — se o

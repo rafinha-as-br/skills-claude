@@ -37,6 +37,9 @@ competentes) aciona esta skill para registrar o incidente
 ### Escopo e acionamento
 Acionada durante outra execução quando uma regra, gate, skill ou evidência apresenta
 comportamento inesperado, lacuna contratual, ou informação obrigatória ausente.
+Chamadora legítima também a `workflow-remote-orchestrator`, sempre que Rafinha
+pedir ou ela julgar necessário diante de erro, incongruência ou situação que exija
+análise humana posterior.
 
 ### Autoridade
 - **Decisão.** Identifica e descreve objetivamente a divergência entre o esperado e o

@@ -140,7 +140,9 @@ antes de buscar issue, qual forma se aplica: **issue individual**, **lista de
 issues**, **Epic** ou **coluna de um Epic específico** (Preparação técnica do
 Epic X). Não existe "coluna inteira". Resolvido o conjunto, apresente-o para
 confirmação; depois disso o escopo está fechado e descoberta posterior **não**
-o amplia. Registre o conjunto fechado na primeira linha do atestado de cada
+o amplia. Escopo já fechado e confirmado por Rafinha na sessão e repassado pela
+`workflow-remote-orchestrator` vale como essa confirmação
+(`contrato-workflow.md`, B.2). Registre o conjunto fechado na primeira linha do atestado de cada
 issue (ou no resumo final, quando o escopo for um Epic).
 
 ### 3. Repositório e topologia

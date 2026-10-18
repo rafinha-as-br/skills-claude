@@ -43,7 +43,8 @@ produto.
 ### Escopo e acionamento
 Existe em **mono-repo** (no próprio repositório) e **multi-repo** (no Workspace); a
 Política de Topologia determina a localização. Acionada pelas skills
-consumidoras ou por Rafinha.
+consumidoras (inclusive a `workflow-remote-orchestrator`, para handoff de sessão
+remota) ou por Rafinha.
 
 ### Autoridade
 - **Decisão.** Decide deterministicamente: se um fato recebido tem valor real de

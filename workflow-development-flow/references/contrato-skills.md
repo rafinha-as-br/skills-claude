@@ -70,6 +70,10 @@ exige o que a operação não faz → ampliar a operação. Contradição ou lac
   para declarar o resultado de outra capacidade.
 - **Operação técnica não cria autoridade.** Nenhum passo, script ou ferramenta
   concede poder que o contrato não reconheça.
+- **Chamada pela orquestradora remota.** Quando a `workflow-remote-orchestrator`
+  despacha uma skill, a skill chamada executa o próprio Passo 0, gates e registros
+  normalmente; o escopo repassado conta como confirmado (Contrato do Workflow,
+  B.2), mas o modo da Integração e a autorização de Modo B nunca são herdados.
 
 Estes defaults são **referenciados**, não copiados para cada `SKILL.md`.
 
@@ -105,7 +109,7 @@ Ele **não copia** o Contrato do Workflow, todos os tipos ou todas as políticas
 
 ## Escopo — skills incluídas e excluídas
 
-Incluídas (23): `workflow-development-flow`, `jira-sprint-intake-executor`,
+Incluídas (24): `workflow-development-flow`, `workflow-remote-orchestrator`, `jira-sprint-intake-executor`,
 `jira-issue-decision-resolver`, `jira-technical-preparation-executor`,
 `jira-hotfix-creator`, `jira-issue-creator`, `jira-issue-executor`,
 `jira-integration-executor`, `jira-qa-executor`,

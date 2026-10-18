@@ -36,7 +36,7 @@ A autonomia da IA aqui é **operacional e supervisionada** — não é um agente
 | Regras de negócio e escopo | Decide (`Decisão - Rafinha`) | Levanta pendências, conduz a conversa, registra a decisão |
 | Design de produto | Constrói e aprova (`Design de produto - Rafinha`) | Consome o Design Package; bloqueia se ele não existe |
 | Decisão técnica não determinística | Decide, perguntado durante a Preparação técnica | Classifica o achado e pergunta |
-| Preparação técnica, implementação, integração, QA, documentação | Define o escopo; autoriza `Ready → Fazer - Claude` | Executa, com testes e evidências |
+| Preparação técnica, implementação, integração, QA, documentação | Define o escopo; autoriza `Ready → Fazer - Claude` (no Jira ou por confirmação remota pelo celular) | Executa, com testes e evidências |
 | Revisão de código e aceitação do produto | Decide (`Análise - Rafinha`, `Análise Final - Rafinha`) | Prepara o material (PR, evidências, Validações Humanas) |
 | Modo e merge de integração; incremento de versão | Decide e autoriza | Sugere, valida, executa o que foi autorizado |
 | Auditoria final | Lê o resultado | Audita contrato, labels, gates e rastros (`Análise Final - Claude`) |
@@ -145,7 +145,9 @@ flowchart LR
     class C4 fim;
 ```
 
-`A fazer` e `Integração` são as etapas em que skill e humano se encontram: o intake roda sobre um escopo que Rafinha confirmou, e a Integração roda no modo que Rafinha informou. `Ready` é um estado de espera — a passagem para `Fazer - Claude` é a autorização humana de implementação.
+`A fazer` e `Integração` são as etapas em que skill e humano se encontram: o intake roda sobre um escopo que Rafinha confirmou, e a Integração roda no modo que Rafinha informou. `Ready` é um estado de espera — a passagem para `Fazer - Claude` é a autorização humana de implementação, dada por Rafinha no Jira ou por confirmação remota explícita executada pela `workflow-remote-orchestrator`.
+
+**Orquestração remota (experimental).** Pelo celular, numa sessão de Claude Code Remote Control no notebook, Rafinha pode pedir "onde paramos?" ou "continuar EPIC-123". A `workflow-remote-orchestrator` fecha o escopo, despacha a skill dona de cada etapa e comunica o resultado. Não é agente permanente: não decide negócio, design, review, aceite nem modo de integração, nunca move Hotfix, e a promoção de Epic para `develop` continua exigindo confirmação manual distinta de Rafinha. Regras em [`orquestracao-remota.md`](workflow-development-flow/references/orquestracao-remota.md).
 
 ### Caminhos excepcionais
 
@@ -302,6 +304,7 @@ Contratos em camadas, políticas ativadas por condições verificáveis, **15 ga
 | **Claude Design** | Etapa de design de produto e geração do Design Package | Condicional: issues com `requires-design` |
 | **PowerShell** | Release Orchestrator local | Condicional: ciclo de release |
 | **Google Drive** | Destino dos pacotes de distribuição | Condicional: ciclo de release |
+| **Claude Code Remote Control** | Sessão remota (celular) para a orquestração sob demanda | Condicional: `workflow-remote-orchestrator` |
 | **Notion** | Onde as atualizações do workflow são redigidas antes de virarem skills e páginas | Processo de autoria; as skills não dependem dele em execução |
 
 Os padrões de Flutter/Dart (`flutter-development-standards`) e os executores de QA (Web e Android) refletem a stack em que o workflow foi exercitado.
@@ -310,7 +313,7 @@ Os padrões de Flutter/Dart (`flutter-development-standards`) e os executores de
 
 ## Catálogo de skills
 
-São **25 skills** no repositório: **23** fazem parte do Rafinha-Claude e **2** são pessoais.
+São **26 skills** no repositório: **24** fazem parte do Rafinha-Claude e **2** são pessoais.
 
 ### Rafinha-Claude
 
@@ -359,6 +362,12 @@ São **25 skills** no repositório: **23** fazem parte do Rafinha-Claude e **2**
 |---|---|
 | [`engineering-context-manager`](engineering-context-manager/SKILL.md) | Governa `context/`: conhecimento técnico atual e durável. |
 | [`ai-memory-manager`](ai-memory-manager/SKILL.md) | Governa `ai-memory/`: continuidade operacional e handoff. |
+
+#### Orquestração remota (experimental)
+
+| Skill | O que faz |
+|---|---|
+| [`workflow-remote-orchestrator`](workflow-remote-orchestrator/SKILL.md) | Sob comando de Rafinha pelo celular (Claude Code Remote Control), fecha o escopo, despacha a skill dona de cada etapa e devolve resultado, bloqueios e próxima ação. Só executa `Ready → Fazer - Claude` e saídas de colunas humanas quando Rafinha declara o resultado; nunca move Hotfix nem autoriza Modo B. |
 
 #### Apoio ao workflow
 
@@ -420,6 +429,7 @@ O workflow foi projetado para o ambiente pessoal de Rafinha: nomes de projeto, e
 
 - A revisão mais recente (12/10/2026) está implementada nas skills e no Confluence. **Não há migração de issues anteriores** e nenhuma convivência com o contrato antigo.
 - A reconfiguração real do Jira (status `Preparação técnica - Claude`, tipos nativos `Hotfix` e `Validação Humana`) e a Topologia por produto no Confluence, o bootstrap do Workspace dos produtos multi-repo e a configuração de CI e branch protection são manuais e ficam fora das skills. Enquanto não existirem, as skills **bloqueiam** em vez de assumir valores.
+- A `workflow-remote-orchestrator` é uma **primeira versão experimental**: concorrência de sessões, recuperação de desconexão, ambiente sempre ligado, expiração do canal e custo de contexto são pontos em observação (`orquestracao-remota.md`, seção 11), não bloqueios.
 - Há pendências herdadas e declaradas nos contratos, como a trilha `qa-doc`, que ainda não tem writer (a skill para e reporta).
 - O Rafinha-Claude é um workflow pessoal em evolução, não um produto instalável.
 
@@ -438,9 +448,10 @@ O workflow foi projetado para o ambiente pessoal de Rafinha: nomes de projeto, e
 | [`preparacao-e-hotfix.md`](workflow-development-flow/references/preparacao-e-hotfix.md) | Preparação técnica, atestado e Hotfix |
 | [`contexto-memoria-workspace.md`](workflow-development-flow/references/contexto-memoria-workspace.md) | `context/`, AI Memory e Workspace multi-repo |
 | [`release-lifecycle.md`](workflow-development-flow/references/release-lifecycle.md) | Contratos do ciclo de release |
+| [`orquestracao-remota.md`](workflow-development-flow/references/orquestracao-remota.md) | Orquestração remota sob demanda: comandos, transições permitidas, mapa etapa → skill, segurança |
 
-**Pontos de entrada em [`workflow-development-flow/SKILL.md`](workflow-development-flow/SKILL.md)**: tipos de ticket (§3), etapas (§4–5), gates (§8), release (§10), Validação Humana (§12), Execution State (§13), design (§14), labels (§15), modelo de branches (§16), descrição da issue (§17), contratos (§18).
+**Pontos de entrada em [`workflow-development-flow/SKILL.md`](workflow-development-flow/SKILL.md)**: tipos de ticket (§3), etapas (§4–5), gates (§8), release (§10), Validação Humana (§12), Execution State (§13), design (§14), labels (§15), modelo de branches (§16), descrição da issue (§17), contratos (§18), orquestração remota (§21).
 
-**Registros de implementação**, um por revisão: [`plano-release-lifecycle.md`](plano-release-lifecycle.md), [`plano-pacote-2.md`](plano-pacote-2.md), [`plano-pacote-3.md`](plano-pacote-3.md), [`plano-pacote-4.md`](plano-pacote-4.md), [`plano-pacote-5.md`](plano-pacote-5.md), [`plano-pacote-6.md`](plano-pacote-6.md). São documentos históricos de decisão, não contratos vigentes; em caso de divergência valem os contratos acima.
+**Registros de implementação**, um por revisão: [`plano-release-lifecycle.md`](plano-release-lifecycle.md), [`plano-pacote-2.md`](plano-pacote-2.md), [`plano-pacote-3.md`](plano-pacote-3.md), [`plano-pacote-4.md`](plano-pacote-4.md), [`plano-pacote-5.md`](plano-pacote-5.md), [`plano-pacote-6.md`](plano-pacote-6.md), [`plano-pacote-7.md`](plano-pacote-7.md). São documentos históricos de decisão, não contratos vigentes; em caso de divergência valem os contratos acima.
 
 A norma é espelhada no Confluence (espaço privado do projeto). O histórico completo está no Git: `git log --reverse`.

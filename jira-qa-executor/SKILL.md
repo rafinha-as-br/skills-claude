@@ -87,6 +87,8 @@ registrar evidências e emitir o veredito técnico de QA.
 ### Escopo e acionamento
 Opera sobre issues em `QA - Claude` pertencentes ao escopo explícito confirmado
 (issue, lista, Epic ou coluna de um Epic específico — nunca coluna inteira).
+Escopo já fechado e confirmado por Rafinha na sessão e repassado pela
+`workflow-remote-orchestrator` vale como essa confirmação (`contrato-workflow.md`, B.2).
 
 ### Autoridade
 - **Decisão.** Define casos e regressões a partir do contrato da issue; seleciona o

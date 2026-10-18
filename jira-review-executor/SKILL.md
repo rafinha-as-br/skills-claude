@@ -208,7 +208,9 @@ trabalha em branch isolada). Ver `workflow-development-flow`, seção 13.
 buscar qualquer issue, confirme o escopo explícito com Rafinha, se ele
 ainda não o deixou claro no comando: issue individual, lista de issues, Epic ou
 coluna de um Epic específico — **nunca coluna inteira**. Estar na coluna correta
-não autoriza uma issue fora do escopo confirmado.
+não autoriza uma issue fora do escopo confirmado. Escopo já fechado e confirmado
+por Rafinha na sessão e repassado pela `workflow-remote-orchestrator` vale como
+a confirmação (`contrato-workflow.md`, B.2).
 
 Busque, na sprint atual do projeto identificado, as issues do escopo
 confirmado na coluna **"Análise Final - Claude"**. Processe-as uma de cada
