@@ -86,7 +86,19 @@ aplicáveis; evidências Git/GitHub/AIO/Confluence quando necessárias.
 - no fluxo normal, depois de a issue efetivamente chegar a `Concluído`, pode
   solicitar à `ai-memory-manager` o arquivamento `active → history`; **em Hotfix, a
   aprovação do review não autoriza arquivamento** — só depois que o Jira confirmar
-  que Rafinha moveu a issue para estado final.
+  que Rafinha moveu a issue para estado final;
+- **claim, executor e handoff:** para cada issue do escopo fechado, antes da
+  primeira mutação (comentário, transição), ler os comentários e abrir o claim de
+  execução (Contrato do Workflow, B.5); claim vigente de **outro** executor → não
+  auditar aquela issue e reportar a Rafinha. O comentário de resultado leva
+  `Executor: Claude | Codex` (A.9) e libera o claim. A frase de atestação
+  (`claude review aprovado` / `review reprovada por claude`) é **nome contratual
+  fixo**, inclusive quando o auditor é o Codex: ela continua abrindo o comentário e
+  o `Executor` vai logo abaixo (A.10). Retomada por outro executor segue o handoff de
+  B.5. A auditoria avalia **evidências nas fontes primárias**, nunca o julgamento do
+  executor que implementou — esta skill não herda a conclusão de nenhum review
+  automatizado anterior (`review-agent`, `/code-review`) e não o substitui. Sem
+  conector Atlassian e GitHub homologados no executor, a execução **bloqueia**.
 
 ### Evidências, saída e limites
 O Jira preserva o comentário de review; as evidências permanecem nas fontes
@@ -107,21 +119,18 @@ AI Memory → `ai-memory-manager`.
 
 ## Model Policy
 
-Modelo padrão: Opus
-Effort padrão: High
+Nível padrão: 3 — Profundo · esforço padrão
 
-Esta é a auditoria final antes de "Concluído" — o padrão já parte de Opus
-(não do Sonnet + High global), conforme a tabela de natureza de atividade
-da Model Escalation Policy ("Auditoria final → Opus/High") em
+Esta é a auditoria final antes de "Concluído" — o padrão já parte do nível
+Profundo (não do Nível 1 global), conforme a tabela de natureza de atividade
+da Model Escalation Policy ("Auditoria final → Nível 3") em
 `workflow-development-flow`: o risco de deixar passar um problema para
 produção é maior aqui do que numa implementação comum.
 
-Escalonar effort quando:
+Escalar para o Nível 4 (Profundo · esforço máximo) quando:
 - há inconsistências cruzadas entre múltiplas issues da mesma sprint que
-  interagem entre si, exigindo comparação entre elas antes de aprovar.
-
-Escalonar para Opus + XHigh quando:
-- (exceção) a auditoria envolve alto risco arquitetural e Opus + High já
+  interagem entre si, exigindo comparação entre elas antes de aprovar;
+- (exceção) a auditoria envolve alto risco arquitetural e o Nível 3 já
   foi considerado insuficiente para uma conclusão confiável.
 
 Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
@@ -196,7 +205,10 @@ Antes de revisar uma issue (passo 2), verifique se existe
 (reprovação), onde a skill já parou uma vez esperando decisão de Rafinha no
 chat: se a sessão morrer nesse meio-tempo, o arquivo evita reabrir a
 investigação do zero. Arquivo **local, nunca commitado** (esta etapa não
-trabalha em branch isolada). Ver `workflow-development-flow`, seção 13.
+trabalha em branch isolada). Ver `workflow-development-flow`, seção 13. O arquivo
+registra `Executor` e `Handoff`: executor registrado diferente do atual é handoff
+(Contrato do Workflow, B.5) — reconcilie com Jira, Git/GitHub e `ai-memory/` antes
+de agir.
 
 ---
 
@@ -439,8 +451,8 @@ por skill (só por Rafinha).
 
 Se não há nenhuma ponta solta ou pendência:
 
-1. Comente na issue: **"claude review aprovado"**, com um breve resumo do
-   que foi conferido.
+1. Comente na issue: **"claude review aprovado"** (frase fixa, no início), com
+   `Executor: Claude | Codex` logo abaixo e um breve resumo do que foi conferido.
 2. **Issue normal:** mova o ticket para **"Concluído"**. **Hotfix: não mova** —
    registre a atestação e deixe a Hotfix em `Análise Final - Claude`; Rafinha a
    move para `Concluído` (ou outro destino).
@@ -474,7 +486,8 @@ documentação faltante:
    investigação nem adivinhar o que fazer.
 3. O comentário deve começar com o texto exato **"review reprovada por
    claude"** (não altere essa frase — ela é usada por outra automação para
-   identificar issues que precisam de correção).
+   identificar issues que precisam de correção), seguido de `Executor: Claude | Codex`
+   logo abaixo.
 4. **Issue normal:** mova o ticket direto para **"Fazer - Claude"** — a coluna de
    espera "Review - Rafinha" foi eliminada do fluxo novo. Como a decisão de
    Rafinha já foi obtida no chat (item 1, antes mesmo de escrever o

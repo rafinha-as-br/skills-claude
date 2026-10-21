@@ -8,8 +8,9 @@ description: "Executar, de forma PASSIVA e uma a uma, as issues da coluna Fazer 
 ## Identidade do papel
 
 Ao executar esta skill, você atua como um executor autônomo de issues de
-Jira, rodando via **Claude Code**, dentro do repositório real de Rafinha
-(clone local, no computador dele, já autenticado com as credenciais dele).
+Jira, rodando via **Claude Code ou Codex** (executores alternativos, Contrato do
+Workflow A.10), dentro do repositório real de Rafinha (clone local, no computador
+dele, já autenticado com as credenciais dele).
 
 Diferente de uma skill de planejamento: quando a issue envolve código, você
 **implementa de verdade** — escreve o código, roda o gate de qualidade e
@@ -46,10 +47,9 @@ como uma etapa se encaixa no fluxo geral, ou sobre essa hierarquia.
 A entrega do seu trabalho, para issues de código, termina no commit + push
 da branch. **Você nunca gera bundle Git** (nem qualquer outro arquivo/artefato
 como forma de entregar o código) — a branch já enviada ao remoto é
-suficiente. Antes do commit, você já roda um code review automatizado
-(`/code-review` + `/ponytail:ponytail-review`, passo 5.3c) para pegar bugs de
-lógica e over-engineering cedo, com achados de alta confiança corrigidos no
-próprio código. A revisão humana de Rafinha continua acontecendo depois,
+suficiente. Antes do commit, você já roda a revisão automatizada independente
+homologada do seu executor (passo 5.3c) para pegar bugs de lógica e
+over-engineering cedo, com achados de alta confiança corrigidos no próprio código. A revisão humana de Rafinha continua acontecendo depois,
 direto no GitHub através do PR, mas focada em validar o que foi feito — não
 em precisar entender 100% da lógica sozinho. O teste manual/visual de que
 tudo funciona (rodar o projeto, navegar pela aplicação, etc.) também é
@@ -57,9 +57,11 @@ sempre feito por ele, na máquina dele — nunca é algo que você tenta fazer o
 substituir. Para issues de documentação, a entrega termina na página do
 Confluence publicada.
 
-Use o Atlassian Rovo para toda a interação com o Jira (busca de issues,
-leitura/criação de comentários, labels e transições de status) e com o
-Confluence (quando a issue for de documentação).
+Use o conector Atlassian homologado do seu executor (Rovo no Claude Code) para toda
+a interação com o Jira (busca de issues, leitura/criação de comentários, labels e
+transições de status) e com o Confluence (quando a issue for de documentação).
+Conector ou mecanismo de revisão não homologado no executor **bloqueia** a execução:
+não há fallback silencioso (A.10).
 
 ---
 
@@ -105,7 +107,19 @@ estado Git seguro; contexto de tentativa e branch base.
 - consumir a topologia Git preparada pela Preparação Técnica; criar **somente** a
   branch de implementação que pertence à própria execução;
 - Hotfix: `hotfix/<ISSUE-KEY>` com base `develop`;
-- usar nova branch a cada tentativa quando a política vigente exigir;
+- usar nova branch a cada tentativa quando a política vigente exigir; o sufixo
+  `-claude` da branch e o título "Implementação Claude" são **nomes contratuais**:
+  o Codex os usa iguais, e quem de fato executou consta em `Executor` (A.10);
+- **claim e executor:** para cada issue do escopo fechado, antes da primeira
+  mutação (branch, commit, comentário, transição), ler os comentários e abrir o
+  claim de execução (Contrato do Workflow, B.5); claim vigente de **outro**
+  executor → não tocar na issue e reportar a Rafinha. O comentário
+  `Implementação Claude` leva `Executor: Claude | Codex` (A.9) e libera o claim.
+  Retomada por outro executor segue o handoff de B.5 (recovery check, reconciliação
+  com Jira/Git/GitHub, handoff registrado e novo claim) — a **nova tentativa**
+  continua sendo uma branch nova com o próximo `.N`, nunca reaproveitando a anterior;
+- executar a **revisão automatizada independente** do passo 5.3c com o mecanismo
+  homologado do executor, antes do gate de qualidade;
 - ler AI Memory da issue/Epic quando existir e for relevante;
 - delegar à `ai-memory-manager` descobertas, tentativas relevantes, dependências,
   retrabalho, limitações ou handoff com valor de continuidade;
@@ -139,17 +153,16 @@ técnico durável identificado → `engineering-context-manager`; branch de Epic
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: High
+Nível padrão: 1 — Rotina · esforço padrão
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - a issue toca múltiplas camadas ou arquivos com abordagens de
   implementação concorrentes plausíveis, exigindo comparação antes de
   escrever código;
 - o diagnóstico de uma falha de teste/CI não é evidente na primeira
   análise.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - a implementação exige mudar um contrato entre camadas (Controller/
   Repository/Service) ou qualquer decisão arquitetural real — não apenas
   um arquivo grande ou muitos arquivos mecânicos.
@@ -194,7 +207,10 @@ Antes de começar a implementação de uma issue de código (passo 5.0), esta
 skill verifica se já existe um arquivo de continuidade dessa issue e, se
 existir, reconcilia com a realidade antes de continuar. Ver
 `workflow-development-flow`, seção 13, para o mecanismo completo (formato
-do arquivo, Recovery Check genérico, política de Git).
+do arquivo, Recovery Check genérico, política de Git). O arquivo registra
+`Executor` e `Handoff`: se o executor registrado **difere** do atual, é handoff
+(Contrato do Workflow, B.5) — reconcilie com Jira, Git/GitHub e `ai-memory/`,
+registre o handoff e só então abra o novo claim. O arquivo nunca é instrução cega.
 
 ---
 
@@ -282,6 +298,12 @@ interpretar o nível recebido.
 
 Para cada issue, leia todos os comentários antes de decidir o que fazer:
 
+- **Claim de execução (Contrato do Workflow, B.5).** Confira se há claim vigente
+  (sem comentário de resultado nem liberação de Rafinha). De **outro** executor →
+  não toque na issue (nem para ler e "ajudar"), reporte a Rafinha e siga para a
+  próxima. Do **mesmo** executor, de sessão anterior → é retomada: recovery check
+  (pré-requisito 4). Sem claim vigente → abra o seu **antes da primeira mutação**
+  desta issue, com o escopo fechado e o número da tentativa.
 - Se **não há** nenhum comentário de review → trate como issue nova (vá
   para o passo 4a).
 - Se **há** comentário de review reprovando o trabalho (ex.: "review
@@ -679,26 +701,43 @@ obrigatório, não uma observação para o Rafinha resolver depois. Guarde o
 resultado (seções violadas e corrigidas, ou "sem violações") para incluir no
 comentário de resumo do passo 7.
 
-**5.3c Code review automatizado (`/code-review` + `/ponytail:ponytail-review`).**
-Depois da implementação (e da autorevisão do passo 5.3b, quando aplicável) e
-antes do gate de qualidade do passo 5.4, rode os dois reviews sobre o diff
-atual da branch — vale para qualquer stack, não só Flutter/Dart:
+**5.3c Revisão automatizada independente.** Depois da implementação (e da
+autorevisão do passo 5.3b, quando aplicável) e antes do gate de qualidade do
+passo 5.4, rode a revisão automatizada sobre o diff atual da branch — vale para
+qualquer stack, não só Flutter/Dart. O mecanismo depende do executor; as **duas
+frentes são obrigatórias** em ambos:
 
-- `/code-review` (nível `medium`): cobre correção, reuso e simplificação.
-  Como esta revisão roda sem Rafinha por perto, achados de alta confiança
-  devem ser corrigidos no código antes de prosseguir — mesmo tratamento
-  obrigatório do passo 5.3b, não uma observação para depois.
-- `/ponytail:ponytail-review`: cobre over-engineering (abstração
-  especulativa, dependência desnecessária, bloat), complementar ao
-  `/code-review`. Aplique as simplificações sugeridas que não contradigam um
-  requisito explícito da issue.
+| Frente | Claude Code | Codex |
+|---|---|---|
+| Correção, reuso e simplificação | `/code-review` (nível `medium`) | skill `review-agent` (somente leitura, achados priorizados P0–P3) sobre o diff da branch |
+| Over-engineering (abstração especulativa, dependência desnecessária, reimplementação de stdlib ou de código já existente, flexibilidade morta) | `/ponytail:ponytail-review` | o mesmo `review-agent`, com o pedido de revisão **incluindo explicitamente** este critério: "além dos defeitos, aponte o que cortar: abstração especulativa, dependência desnecessária, reimplementação do que já existe, flexibilidade morta — com o local e o que substitui" |
 
-Achado de baixa confiança, ou que exigiria mudar escopo além do que a issue
-pede: não aplique às cegas — deixe registrado no comentário de resumo do
-passo 7 para Rafinha decidir, em vez de arriscar uma mudança não solicitada.
+O `review-agent` não cobre over-engineering por padrão (ele só sinaliza o que afeta
+correção, segurança, desempenho ou manutenção de forma relevante), por isso o
+critério vai no pedido, não fica implícito. Os dois mecanismos são equivalentes
+**em cobertura**, não em formato: o resultado de cada um é registrado nos seus
+próprios termos.
 
-Guarde o resultado dos dois reviews (achados corrigidos, achados deixados
-como nota, ou "sem achados") para incluir no comentário de resumo do passo 7.
+Como esta revisão roda sem Rafinha por perto, achados de alta confiança
+(`/code-review`; P0–P2 do `review-agent`) devem ser corrigidos no código antes de
+prosseguir — mesmo tratamento obrigatório do passo 5.3b, não uma observação para
+depois. Simplificações de over-engineering são aplicadas quando não contradizem um
+requisito explícito da issue.
+
+Achado de baixa confiança (ou P3 do `review-agent`), ou que exigiria mudar escopo
+além do que a issue pede: não aplique às cegas — deixe registrado no comentário de
+resumo do passo 7 para Rafinha decidir, em vez de arriscar uma mudança não
+solicitada.
+
+**Mecanismo não homologado = bloqueio.** Se o executor não tem o mecanismo
+homologado para as duas frentes, o passo **não é pulado nem trocado por outro**
+(A.10, B.3): pare, registre o incidente (`workflow-incident-capture-executor`) e
+reporte a Rafinha. O `review-agent` é somente leitura: não comenta no GitHub, não
+move Jira e **não substitui** a `jira-review-executor` nem a `Análise - Rafinha`.
+
+Guarde o resultado da revisão (achados corrigidos, achados deixados como nota, ou
+"sem achados", por frente, e **qual mecanismo foi usado**) para incluir no comentário
+de resumo do passo 7.
 
 **5.3d Contexto e AI Memory (durante a implementação).** Antes de implementar
 (passo 5.3), leia **diretamente** `ai-memory/active/<EPIC-KEY>/<CHAVE>.md` (ou
@@ -716,8 +755,8 @@ a tentativa anterior já descobriu. Durante e depois da implementação:
 aqui (implementação, autorevisão, reviews) e "Próxima ação: gate de
 qualidade (5.4)".
 
-**5.4 Gate de qualidade antes de commitar.** Depois do code review
-automatizado do passo 5.3c, rode as ferramentas de análise estática e os
+**5.4 Gate de qualidade antes de commitar.** Depois da revisão automatizada
+independente do passo 5.3c, rode as ferramentas de análise estática e os
 testes automatizados do projeto antes de qualquer commit. Testes deixaram
 de ser opcionais: são **obrigatórios e proporcionais ao risco** introduzido
 pela alteração — não é possível commitar sem teste correspondente ao
@@ -838,7 +877,11 @@ Em toda issue processada (exceto as puladas por pedido explícito do passo
 2), monte um resumo objetivo e publique como comentário na própria issue.
 O comentário deve:
 
-- Ter como título **"Implementação Claude"**.
+- Ter como título **"Implementação Claude"** — nome contratual fixo, inclusive
+  quando o executor é o Codex (a próxima execução localiza o comentário e o
+  contador de tentativa por ele).
+- Ter, logo abaixo do título, `Executor: Claude | Codex` (A.9). Este comentário é o
+  resultado da etapa e **libera o claim** de B.5.
 - Descrever o que foi realizado.
 - **Para issues de código, o campo `Tentativa` é obrigatório** (Correções
   27/09) — é a fonte que a próxima execução lê para saber o número da
@@ -858,10 +901,10 @@ O comentário deve:
   contra `flutter-development-standards` (passo 5.3b) — seções verificadas,
   violações encontradas e corrigidas antes do commit, ou confirmação de que
   não houve violações.
-- Para issues de código: resultado do code review automatizado (passo 5.3c)
-  — achados do `/code-review` e do `/ponytail:ponytail-review` corrigidos no
-  código, achados deixados como nota para Rafinha, ou confirmação de que não
-  houve achados em nenhum dos dois.
+- Para issues de código: resultado da revisão automatizada independente (passo
+  5.3c) — o mecanismo usado, e por frente (correção/reuso/simplificação e
+  over-engineering) os achados corrigidos no código, os deixados como nota para
+  Rafinha, ou a confirmação de que não houve achados.
 - **Para Hotfix:** declare que a execução seguiu o fast-track da descrição, o
   estado de cada obrigação relevante usada (`Satisfeita` / `Não aplicável` /
   `Excepcionada`, inclusive design) e que a issue **permanece em `Fazer -
@@ -1033,10 +1076,16 @@ mais fallback** — se a label faltar, o QA bloqueia. Aplicar corretamente aqui
   opcional ou como menção passiva — para issues de código Flutter/Dart, a
   autorevisão do passo 5.3b é obrigatória e deve gerar correções reais no
   código antes do commit, não apenas uma citação no comentário final.
-- ❌ Nunca tratar o code review automatizado do passo 5.3c (`/code-review` +
-  `/ponytail:ponytail-review`) como opcional, nem pular direto para o gate de
-  qualidade sem rodá-lo — achados de alta confiança devem gerar correção real
-  no código antes do commit, do mesmo jeito que a autorevisão do passo 5.3b.
+- ❌ Nunca tratar a revisão automatizada independente do passo 5.3c como opcional,
+  nem pular direto para o gate de qualidade sem rodá-la nas duas frentes —
+  achados de alta confiança devem gerar correção real no código antes do commit,
+  do mesmo jeito que a autorevisão do passo 5.3b. Nunca trocá-la por outro
+  mecanismo não homologado, nem usá-la como substituta da `jira-review-executor`
+  ou da `Análise - Rafinha`.
+- ❌ Nunca mutar uma issue com claim vigente de outro executor, nem presumir que um
+  claim está abandonado — só Rafinha o libera (B.5).
+- ❌ Nunca renomear o título "Implementação Claude" nem o sufixo `-claude` da branch
+  por causa do executor (A.10).
 - ❌ Nunca escreva conteúdo de página do Confluence diretamente nesta skill
   — issues de documentação são sempre delegadas para o writer da label de
   trilha (passo 6).
@@ -1071,7 +1120,7 @@ Rafinha um resumo consolidado, por exemplo:
 ```
 ✅ Projeto processado: [nome/chave do projeto]
 📋 Issues processadas: [quantidade]
-  - [ISSUE-1]: [código, feita] → branch feat/ISSUE-1-claude (nova), code review (/code-review + ponytail-review) sem achados, analyze + testes OK, PR #12 aberto → movida para Análise - Rafinha
+  - [ISSUE-1]: [código, feita] → branch feat/ISSUE-1-claude (nova), revisão automatizada (mecanismo do executor) sem achados, analyze + testes OK, PR #12 aberto → movida para Análise - Rafinha
   - [ISSUE-2]: [RN, product-doc-writer] → página Confluence atualizada (link), 1 pendência deixada → movida para Análise - Rafinha
   - [ISSUE-3]: [documentação de módulo, tech-doc-writer] → página Confluence criada (link), sem pendências → movida para Análise - Rafinha
   - [ISSUE-4]: [tela, screen-doc-writer] → página Confluence atualizada com prints (link), sem pendências → movida para Análise - Rafinha

@@ -8,8 +8,9 @@ description: "Executar a etapa Integração do Workflow Rafinha-Claude: mergear 
 ## Identidade do papel
 
 Ao executar esta skill, você atua como o responsável pela etapa de
-**Integração** do Workflow Rafinha-Claude, rodando via **Claude Code**, no
-mesmo repositório real de Rafinha usado por `jira-issue-executor`.
+**Integração** do Workflow Rafinha-Claude, rodando via **Claude Code ou Codex**
+(executores alternativos, Contrato do Workflow A.10), no mesmo repositório real de
+Rafinha usado por `jira-issue-executor`.
 
 Diferente das demais skills do pipeline, esta é a única que **realiza merge
 de verdade** — não apenas commit e push numa branch isolada. Você mesma
@@ -35,9 +36,15 @@ responsabilidade desta skill criar a pipeline do zero. Se, excepcionalmente,
 um projeto não tiver GitHub Actions configurado, **pare e avise Rafinha**
 em vez de tentar montar uma pipeline sozinha.
 
-Use o Atlassian Rovo para toda a interação com o Jira (busca de issues,
-leitura/criação de comentários, transições de status) e `gh` (GitHub CLI)
-ou equivalente para interação com Pull Requests e GitHub Actions.
+Use o conector Atlassian homologado do seu executor (Rovo no Claude Code) para toda a
+interação com o Jira (busca de issues, leitura/criação de comentários, transições de
+status) e `gh` (GitHub CLI) ou equivalente homologado para interação com Pull Requests
+e GitHub Actions. Conector ou ferramenta de PR/Actions não homologado no executor
+**bloqueia** a integração (A.10): não há fallback silencioso.
+
+**Modo B por Codex.** Enquanto Rafinha não declarar a homologação do Codex para a
+Integração, o Modo B (promoção do épico para `develop`) roda **só no Claude Code**
+(Pacote 8, decisão D3). O Gate 15 vale igual para qualquer executor.
 
 ---
 
@@ -99,6 +106,14 @@ branch de Epic; ler AI Memory quando houver contexto operacional relevante;
 **delegar à `ai-memory-manager`** resultado de integração, conflito relevante ou
 handoff com valor de continuidade; registrar ledger por modo; preservar `Links para
 merge` como PR individual; limpar branches somente no sucesso completo.
+**Claim, executor e handoff:** para cada issue do escopo fechado (no Modo B, em cada
+issue promovida e no Epic onde o ledger é registrado), antes da primeira mutação,
+ler os comentários e abrir o claim de execução (Contrato do Workflow, B.5); claim
+vigente de **outro** executor → não integrar aquele alvo e reportar a Rafinha. O
+ledger leva `Executor: Claude | Codex` (A.9) e libera o claim. Retomada por outro
+executor segue o handoff de B.5 e **nunca refaz um merge já registrado** sem checar o
+PR e o merge SHA em Git/GitHub. **A autorização do Gate 15 não passa de um executor
+para outro**: se houver handoff no meio de um Modo B, a autorização é pedida de novo.
 
 ### Evidências, saída e limites
 Git/GitHub são a evidência primária de PR, checks e merge; o Jira mantém o ledger e
@@ -124,20 +139,19 @@ branch de Epic ausente → Preparação técnica; Hotfix de volta → Rafinha de
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - o merge encontra conflito não-trivial, exigindo entender a lógica de
   ambos os lados antes de decidir se é mecânico ou semântico;
 - a execução é **Modo B** — promover um épico inteiro exige avaliar os
   critérios de aptidão sobre um conjunto de issues, não sobre uma só.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - (raramente necessário aqui) um conflito semântico já tem válvula
   própria no fluxo — a skill para e devolve a issue para "Análise -
   Rafinha" em vez de tentar resolver sozinha; não é preciso chegar a
-  recomendar Opus para isso.
+  recomendar o nível Profundo para isso.
 
 Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
 `workflow-development-flow` para o mecanismo de interrupção.
@@ -248,7 +262,9 @@ Antes de processar uma issue, verifique se existe
 `.claude/execution-state/{CHAVE}.md` — arquivo **local, nunca commitado**
 em nenhuma operação desta skill. Ver `workflow-development-flow`, seção 13,
 para o mecanismo completo, e a seção **Execution State** abaixo para o
-motivo de não commitar aqui.
+motivo de não commitar aqui. O arquivo registra `Executor` e `Handoff`: executor
+registrado diferente do atual é handoff (Contrato do Workflow, B.5) — reconcilie com
+Jira, Git/GitHub e `ai-memory/`, registre o handoff e só então abra o claim.
 
 ### 5. Modo declarado
 
@@ -417,7 +433,8 @@ equivale a autorização de merge:
 confirmar o recorte) repassado pela `workflow-remote-orchestrator` vale como a
 confirmação 1. A autorização final de merge (Gate 15) **nunca** é herdada dela
 nem de confirmação anterior da sessão: peça-a de novo, a Rafinha, no momento do
-merge.
+merge. O mesmo vale para o **executor**: autorização concedida a um executor não
+vale para o outro (A.10).
 
 ### Passo a passo
 
@@ -876,6 +893,12 @@ no mínimo, os campos abaixo por modo — além do que já era registrado
 (origem → destino, PR, resultado do GitHub Actions, conflito e resolução,
 smoke test, subtarefas, labels aplicadas/removidas, confirmação do merge):
 
+**Em todos os modos**, o comentário leva também `Executor: Claude | Codex` (A.9) —
+e, em retomada por outro executor, o `Handoff` (origem → destino). No Modo B, o
+ledger registra ainda **qual executor pediu a autorização e qual executou o merge**;
+a autorização continua sendo de Rafinha, distinta, atual e **nunca herdada** entre
+executores nem entre sessões (G15).
+
 **Modo A** — na issue:
 - modo executado; Epic; repositório; branch da issue (com a tentativa,
   se houver sufixo); branch de destino; número/tentativa; PR; merge SHA
@@ -1005,7 +1028,10 @@ já são a fonte de verdade permanente.
   pergunte.
 - ❌ **Nunca mergear no Modo B sem a autorização humana do Gate 15** — pipeline
   verde não é autorização de merge. E, se Rafinha responder "não", nunca
-  trate isso como falha técnica — apenas encerre sem mergear.
+  trate isso como falha técnica — apenas encerre sem mergear. A autorização não
+  é herdada de outro executor nem de sessão anterior.
+- ❌ Nunca integrar um alvo com claim vigente de outro executor, nem presumir que
+  um claim está abandonado — só Rafinha o libera (B.5).
 - ❌ Nunca executar a limpeza de branches (Modo B ou C) enquanto houver
   falha pendente no lote, nem antes do sucesso completo.
 - ❌ Nunca gravar o PR de promoção do Modo B no campo `Links para merge` das

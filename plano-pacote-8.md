@@ -1,7 +1,7 @@
 # Plano de implementação — Pacote 8: Codex como executor alternativo
 
 Registro de implementação, no formato dos `plano-pacote-N.md` anteriores.
-**Status: PLANO APROVADO — Onda 0 executada e sincronizada (`c0c3322`); Onda 1 sincronizada (`7bf58f5`); Onda 2 executada sem commit; Ondas 1–6 pendentes.**
+**Status: PLANO APROVADO — Onda 0 executada e sincronizada (`c0c3322`); Onda 1 sincronizada (`7bf58f5`); Onda 2 sincronizada (`e5d0ce5`); Onda 3 executada sem commit; Ondas 1–6 pendentes.**
 
 **Fonte:** `plano-adaptacao-codex.md` (proposta de Rafinha, em `~/.codex/skills/`), avaliada em
 2026-10-21 contra o repo e contra `~/.codex`. As 6 decisões pendentes do plano original e as 6
@@ -122,7 +122,7 @@ Itens originais da onda:
    Critério: Codex reconstrói o estado de uma issue só com Jira, Git, GitHub, Execution State,
    `context/` e AI Memory, sem assumir fato não comprovado.
 
-### Onda 2 — Jira e preparação (Lote B) — **status: texto executado em 2026-10-21, sem commit; Codex NÃO habilitado**
+### Onda 2 — Jira e preparação (Lote B) — **status: texto executado e sincronizado em 2026-10-21 (`e5d0ce5`); Codex NÃO habilitado**
 Entregue (6 SKILL.md, só texto; `description`, `name`, Contrato Efetivo, descrições, tipos, labels e
 transições intactos; títulos e frases fixas dos comentários preservados):
 - **Nível:** `Model Policy` migrada para nível (criador, intake e decision-resolver = 0; hotfix-creator,
@@ -149,7 +149,35 @@ Itens originais da onda:
    campo `Executor` nos comentários, política de modelo por nível, referência de ferramenta.
    **Sem** mexer em Contrato Efetivo, descrições, tipos, labels ou transições.
 
-### Onda 3 — Implementação, integração e auditoria (Lote C, piloto)
+### Onda 3 — Implementação, integração e auditoria (Lote C, piloto) — **status: texto executado em 2026-10-21, sem commit; Codex NÃO habilitado**
+Entregue (3 SKILL.md, só texto; `description`, `name`, gates 9/10/11/14/15, modos A/B/C, gramática de
+branch `-claude[.N]`, título "Implementação Claude" e frases fixas `claude review aprovado` /
+`review reprovada por claude` preservados):
+- **`jira-issue-executor`, passo 5.3c (desvio consciente do texto do plano):** o plano dizia
+  *substituir* `/code-review` e `/ponytail:ponytail-review` pelo `review-agent`. Como a skill é
+  compartilhada e o `review-agent` não existe no Claude Code, substituir quebraria o Claude. O passo
+  agora é **parametrizado por executor**, com duas frentes obrigatórias em ambos: Claude Code usa
+  `/code-review` (medium) + `/ponytail:ponytail-review`; Codex usa o `review-agent`, **com o critério de
+  over-engineering no pedido** (o `review-agent` não o cobre por padrão). P0–P2 corrigidos, P3 e baixa
+  confiança viram nota para Rafinha. Mecanismo não homologado = bloqueio com incidente, nunca pular nem
+  trocar. O `review-agent` é somente leitura e não substitui `jira-review-executor` nem a Análise -
+  Rafinha. O comentário passa a registrar qual mecanismo foi usado.
+- **Claim, `Executor`, handoff:** os três executores abrem claim por issue antes da primeira mutação (na
+  integração, no Modo B, em cada issue promovida e no Epic do ledger); `Executor:` entra logo abaixo do
+  título/frase fixa; recovery check trata executor diferente como handoff; handoff **nunca refaz merge
+  registrado** sem checar PR e merge SHA.
+- **Gate 15 / Modo B:** a autorização de merge **não passa de um executor para outro** nem entre
+  sessões; handoff no meio do Modo B pede nova autorização; o ledger registra quem pediu e quem
+  executou. **Modo B por Codex só após homologação declarada por Rafinha** (D3).
+- **Nível:** issue-executor = 1, integration-executor = 0, review-executor = 3 (auditoria final;
+  "Opus + XHigh" virou Nível 4).
+- **Ferramenta:** conector Atlassian e `gh` "homologados do executor"; ausente = bloqueio.
+**Não verificado:** o `review-agent` não foi invocado de verdade com o critério de over-engineering;
+`gh` e o conector Atlassian no Codex não foram checados. O plugin `code-review@openai-bundled` do Codex
+não foi avaliado como alternativa. Critério de aceite (issue artificial percorre implementação, revisão
+humana e integração com os mesmos gates e autorizações) **não executado**: depende do laboratório.
+
+Itens originais da onda:
 8. `jira-issue-executor`: trocar `/code-review` e `/ponytail:ponytail-review` (passo 5.3c) por
    `review-agent` (L6), com o critério de over-engineering embutido; manter branch `-claude[.N]`,
    tentativas, PR, checks, ledger, recovery.
