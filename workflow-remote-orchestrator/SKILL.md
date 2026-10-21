@@ -13,9 +13,11 @@ chama a skill que **já é dona** da operação e comunica o resultado. Você n�
 implementa, não integra, não faz QA, não documenta e não decide — você **despacha
 e acompanha**.
 
-O canal remoto é só uma forma de acionar e aprovar a sessão. Ele **não** transforma
-conversa em decisão, não dispensa gates e não amplia permissões de Jira, GitHub,
-Confluence, código ou infraestrutura.
+O canal remoto é só uma forma de acionar e aprovar a sessão — Claude Code Remote
+Control ou Codex Remote Control, **desde que homologado** (Contrato do Workflow,
+A.10). Ele **não** transforma conversa em decisão, não dispensa gates e não amplia
+permissões de Jira, GitHub, Confluence, código ou infraestrutura. O executor da
+sessão não altera nenhuma autoridade desta skill.
 
 Spec completa e mapa etapa → skill: `workflow-development-flow/references/orquestracao-remota.md`.
 Consulte `workflow-development-flow` diante de dúvida sobre o fluxo.
@@ -31,7 +33,8 @@ pela próxima operação elegível; ao fim de cada operação, devolver um resum
 estado, evidências, bloqueios e próxima ação.
 
 ### Escopo e acionamento
-Acionada **somente** por pedido manual de Rafinha numa sessão autenticada. Comandos:
+Acionada **somente** por pedido manual de Rafinha numa sessão autenticada em canal
+remoto homologado. Comandos:
 "Onde paramos?"; "Continuar EPIC-123"; "Trabalhar ISSUE-123"; "Preparar as issues
 de EPIC-123 em Preparação técnica"; "Retomar a sessão X"; "Parar/cancelar". Nunca
 age por iniciativa própria, não monitora o board, não agenda trabalho.
@@ -64,12 +67,16 @@ autorização apenas de consulta); acesso às fontes oficiais; sessão autentica
 Antes de despachar: fonte de verdade acessível; estágio atual confirmado no Jira;
 conjunto do escopo **fechado antes de toda mutação**; ausência de conflito não
 resolvido; checagem **somente leitura** de disponibilidade (conexão, diretório/projeto
-correto, ferramentas essenciais, ausência de outra sessão mutante concorrente).
+correto, ferramentas essenciais, ausência de claim vigente de outro executor ou
+sessão no alvo — Contrato do Workflow, B.5).
 
 ### Obrigações
 - Fechar o escopo (G13) e apresentá-lo a Rafinha quando vier de consulta ao Jira;
   **perguntar o modo (A/B/C)** quando o recorte incluir `Integração`.
 - Despachar **uma skill por vez por alvo**, nunca em paralelo sobre o mesmo alvo.
+  Antes de cada despacho, ler os claims vigentes na issue: claim de **outro**
+  executor ou sessão → não despachar, reportar e perguntar (só Rafinha libera um
+  claim). Você não abre claim próprio — a skill despachada abre o dela (B.5).
 - Repassar à skill chamada: alvo, escopo fechado e confirmado, contexto verificável,
   intenção. A skill chamada executa o próprio Passo 0 e valida seus gates.
 - Comunicar o resultado **nos termos da skill chamada**; nunca normalizar falha como
@@ -104,8 +111,8 @@ autoridade.
 
 ## Model Policy
 
-Sem Model Escalation Policy específica nesta primeira versão: usa o modelo/esforço da
-sessão e **não escala automaticamente**. Priorizar economia de tokens e compactar a
+Sem Model Escalation Policy específica nesta primeira versão: usa o nível da sessão
+(configuração do executor) e **não escala automaticamente**. Priorizar economia de tokens e compactar a
 **conversa** quando necessário — nunca AI Memory, Execution State, Jira ou evidências.
 
 ---
@@ -164,6 +171,7 @@ material; pergunte antes de repetir. Não presuma idempotência.
 ### Formato do comentário Jira
 ```
 [Orquestração remota] <data/hora> — comando de Rafinha: "<texto curto>"
+Executor: Claude | Codex
 Alvo/escopo fechado: <issues>
 Ação autorizada: <transição ou skill despachada>
 Resultado: <resultado informado pela skill/transição>
@@ -174,8 +182,9 @@ Evidências: <links>
 
 ## Pontos em observação (primeira versão)
 
-Concorrência/recuperação de sessão, canal/identidade/expiração, ambiente sempre ligado,
-contexto/tokens, falha e repetição, observabilidade. Não bloqueiam: observe em uso real,
+Recuperação de sessão abandonada (o claim de B.5 não expira: só Rafinha libera),
+canal/identidade/expiração, ambiente sempre ligado, contexto/tokens, falha e repetição,
+observabilidade. Não bloqueiam: observe em uso real,
 reporte quando houver risco (via incidente) e não crie comportamento implícito para
 cobri-los.
 

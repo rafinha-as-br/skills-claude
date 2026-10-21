@@ -7,8 +7,9 @@
 
 ## 1. O que é
 
-Permite que Rafinha, pelo celular, inicie uma sessão manual de **Claude Code
-Remote Control** no notebook preparado e peça continuidade de um **alvo explícito**
+Permite que Rafinha, pelo celular, inicie uma sessão manual em um **canal remoto
+homologado** (Claude Code Remote Control ou Codex Remote Control — Contrato do
+Workflow, A.10) no host preparado e peça continuidade de um **alvo explícito**
 do workflow. A `workflow-remote-orchestrator` lê o contexto, **despacha** para a
 skill dona de cada etapa e comunica resultado e bloqueios. Ela **não substitui
 nenhuma autoridade**: o canal remoto é só uma forma de acionar e aprovar uma
@@ -140,7 +141,9 @@ Sem formato mínimo fixo além disso.
 - Uma sessão tem identificador e escopo. Rafinha amplia/muda o escopo por novo comando explícito; a skill nunca amplia por inferência.
 - Credenciais, tokens e segredos nunca aparecem no chat remoto, AI Memory ou resumos.
 - Falha de conexão, permissão, ambiente ou sessão ambígua → **bloqueio operacional**; não autoriza tentativa destrutiva. Diante de estado ambíguo, consultar evidência antes de repetir ação material; não inventar idempotência.
-- Prompts de permissão de ferramenta do Claude Code seguem o mecanismo do Remote Control (aprovação pelo celular); a skill não os contorna.
+- Prompts de permissão de ferramenta do executor (Claude Code ou Codex) seguem o mecanismo do canal remoto (aprovação pelo celular); a skill não os contorna.
+- Claim: antes de cada despacho lê os claims vigentes na issue; claim de outro executor ou sessão bloqueia o despacho e só Rafinha o libera (Contrato do Workflow, B.5). A skill despachada abre o próprio claim; a orquestradora não abre claim próprio e registra `Executor` no comentário.
+- Canal Codex Remote Control: só depois de configurado e validado em host dedicado (iniciar e acompanhar trabalho autorizado, sem decidir modo de integração, ampliar escopo ou mover Hotfix). Até lá, a operação remota usa apenas o canal já em uso.
 - Compactação: economizar tokens compactando a **conversa**; nunca apagar AI Memory, Execution State, Jira ou evidências.
 - Sem registro de sessão separado: valem os registros normais no Jira e nas fontes primárias.
 
@@ -160,8 +163,8 @@ criar comportamento implícito:
 
 | Tema | Diretriz atual |
 |---|---|
-| Concorrência e recuperação de sessão | Desconhecidas. Definir depois como detectar sessão abandonada/desconectada e a granularidade de exclusividade (issue/Epic) |
-| Canal, identidade e expiração | Não definidos; a conexão Remote Control ainda não foi testada o bastante |
+| Concorrência e recuperação de sessão | Exclusividade por **issue** via claim (Contrato do Workflow, B.5); o claim não expira e só Rafinha libera. Segue em observação: detectar sessão abandonada/desconectada sem TTL e a granularidade por Epic |
+| Canal, identidade e expiração | Canal remoto homologado (Claude Code ou Codex Remote Control); identidade e expiração ainda não definidas e a conexão não foi testada o bastante |
 | Ambiente sempre ligado | Sem política de religamento; a v1 verifica e reporta indisponibilidade |
 | Contexto e tokens | Compactar a conversa; política detalhada de handoff fica para evolução |
 | Falha e repetição | Cenário de teste; consultar evidência antes de repetir |

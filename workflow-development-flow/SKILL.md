@@ -1159,9 +1159,11 @@ Quem executa os passos de skill é a `jira-release-executor`, sempre sob demanda
 
 ## 11. Model Escalation Policy
 
-Política única de modelo (Sonnet/Opus) e effort (Medium/High/XHigh) para
-todas as skills do workflow. Objetivo: economizar quota sem reduzir
-qualidade nas etapas que realmente exigem raciocínio elevado.
+Política única de **nível** (0–4) para todas as skills e para qualquer
+executor (Claude Code ou Codex). Cada nível combina a capacidade do modelo
+(**Rotina** ou **Profundo**) com o esforço de raciocínio; cada executor mapeia
+o nível para a própria configuração (11.10). Objetivo: economizar quota sem
+reduzir qualidade nas etapas que realmente exigem raciocínio elevado.
 
 ### 11.1 Princípio geral
 
@@ -1170,7 +1172,7 @@ Configuração padrão da skill
         ↓
 Execução normal
         ↓
-Claude avalia a complexidade encontrada
+O executor avalia a complexidade encontrada
         ↓
 Complexidade compatível?
     ┌───────┴───────┐
@@ -1191,43 +1193,43 @@ Continua       Interrompe
                Continua
 ```
 
-Identificar a necessidade de escalonamento é responsabilidade de Claude.
-Decidir se aceita é sempre responsabilidade de Rafinha. **Claude nunca
-troca de modelo ou effort sozinho** — nem automaticamente, nem "por
-hábito", nem porque a tarefa é grande.
+Identificar a necessidade de escalonamento é responsabilidade do executor.
+Decidir se aceita é sempre responsabilidade de Rafinha. **O executor nunca
+troca de nível sozinho** — nem automaticamente, nem "por hábito", nem
+porque a tarefa é grande.
 
-### 11.2 Configuração padrão global
+### 11.2 Nível padrão global
 
 ```text
-Modelo: Sonnet
-Effort: High
+Nível 1 — Rotina · esforço padrão
 ```
 
 Uma skill pode declarar um padrão diferente quando sua natureza
 operacional justificar (ver tabela 11.6) — isso não é escalonamento, é
-configuração de repouso daquela skill. Nenhuma skill deve usar Opus como
-padrão só porque a tarefa *pode* ficar complexa eventualmente.
+configuração de repouso daquela skill. Nenhuma skill deve usar nível
+Profundo (3–4) como padrão só porque a tarefa *pode* ficar complexa
+eventualmente.
 
 ### 11.3 Hierarquia de escalonamento
 
 ```text
-Nível 0 — Sonnet + Medium
+Nível 0 — Rotina   · esforço baixo
         ↓
-Nível 1 — Sonnet + High
+Nível 1 — Rotina   · esforço padrão
         ↓
-Nível 2 — Sonnet + XHigh
+Nível 2 — Rotina   · esforço máximo
         ↓
-Nível 3 — Opus + High
+Nível 3 — Profundo · esforço padrão
         ↓
-Nível 4 — Opus + XHigh
+Nível 4 — Profundo · esforço máximo
 ```
 
-Preferir subir effort antes de trocar de modelo, enquanto o Sonnet ainda
-for adequado ao tipo de raciocínio exigido. Só recomendar troca de modelo
-quando o problema exigir uma capacidade de raciocínio que o effort, por si
-só, não cobre.
+Preferir subir o esforço antes de trocar para Profundo, enquanto a
+capacidade Rotina ainda for adequada ao tipo de raciocínio exigido. Só
+recomendar Profundo quando o problema exigir uma capacidade de raciocínio
+que o esforço, por si só, não cobre.
 
-### 11.4 Quando escalar effort (Sonnet permanece adequado)
+### 11.4 Quando escalar o esforço (Rotina permanece adequada)
 
 Considerar quando a execução encontrar: múltiplas abordagens plausíveis
 que exigem comparação; comportamento não-determinístico; causa raiz
@@ -1235,19 +1237,18 @@ difícil de isolar; dependências entre vários arquivos/módulos; risco
 real de solução incorreta sem raciocínio mais longo; tentativas repetidas
 de análise sem conclusão confiável.
 
-### 11.5 Quando escalar para Opus
+### 11.5 Quando escalar para Profundo
 
-Considerar quando aumentar o effort do Sonnet provavelmente não resolve:
+Considerar quando aumentar o esforço em Rotina provavelmente não resolve:
 decisão arquitetural significativa; refatoração transversal a vários
 módulos; mudança em contratos/responsabilidades arquiteturais; debugging
 extremamente difícil após investigação adequada; comparação entre
 estratégias com consequências técnicas relevantes; auditoria que exige
 achar inconsistências difíceis de detectar.
 
-**Opus + XHigh é exceção**, não o próximo passo automático depois de Opus
-+ High: só quando o problema for extremamente complexo, de alto impacto
-arquitetural, com Sonnet + XHigh e Opus + High já considerados
-insuficientes.
+**O Nível 4 é exceção**, não o próximo passo automático depois do Nível 3:
+só quando o problema for extremamente complexo, de alto impacto
+arquitetural, com os Níveis 2 e 3 já considerados insuficientes.
 
 **Nunca** contam sozinhos como motivo de escalonamento: quantidade de
 arquivos, de linhas, de comandos, de mensagens, duração da tarefa, ou o
@@ -1256,33 +1257,33 @@ sobre dificuldade de raciocínio e risco técnico, não sobre volume.
 
 ### 11.6 Configuração padrão por natureza de atividade
 
-| Tipo de atividade | Modelo | Effort |
-|---|---|---|
-| Implementação comum | Sonnet | High |
-| Implementação simples | Sonnet | Medium |
-| Implementação complexa | Sonnet | XHigh |
-| Arquitetura complexa | Opus | High |
-| Debugging difícil | Opus | High |
-| Refatoração transversal | Opus | High |
-| Integração mecânica | Sonnet | Medium |
-| QA comum | Sonnet | High |
-| QA complexo | Sonnet | XHigh |
-| Documentação | Sonnet | Medium |
-| Auditoria final | Opus | High |
-| Preparação técnica (rotineira) | Sonnet | High |
-| Preparação técnica com decisão técnica complexa ou conflito entre épicos | Opus | High |
-| Qualificação de Hotfix | Sonnet | High |
-| Governança de `context/` e de `ai-memory/` | Sonnet | Medium |
-| Triagem e maturação de issue (intake) | Sonnet | Medium |
-| Resolução de decisão em conversa (decision resolver) | Sonnet | Medium |
-| Captura de incidente operacional | Sonnet | Medium |
+| Tipo de atividade | Nível |
+|---|---|
+| Implementação comum | 1 |
+| Implementação simples | 0 |
+| Implementação complexa | 2 |
+| Arquitetura complexa | 3 |
+| Debugging difícil | 3 |
+| Refatoração transversal | 3 |
+| Integração mecânica | 0 |
+| QA comum | 1 |
+| QA complexo | 2 |
+| Documentação | 0 |
+| Auditoria final | 3 |
+| Preparação técnica (rotineira) | 1 |
+| Preparação técnica com decisão técnica complexa ou conflito entre épicos | 3 |
+| Qualificação de Hotfix | 1 |
+| Governança de `context/` e de `ai-memory/` | 0 |
+| Triagem e maturação de issue (intake) | 0 |
+| Resolução de decisão em conversa (decision resolver) | 0 |
+| Captura de incidente operacional | 0 |
 
 Orientação geral — uma skill pode sobrescrevê-la com justificativa
 explícita na sua própria seção `## Model Policy`.
 
 ### 11.7 Formato da interrupção
 
-Ao identificar necessidade de escalonamento, Claude para **antes** de
+Ao identificar necessidade de escalonamento, o executor para **antes** de
 continuar a parte que depende do raciocínio adicional (nunca depois de já
 ter gasto o esforço extra) e apresenta:
 
@@ -1292,13 +1293,9 @@ ESCALONAMENTO NECESSÁRIO
 Motivo:
 [explicação objetiva do problema]
 
-Configuração atual:
-- Modelo: [modelo]
-- Effort: [effort]
+Nível atual: [N] — [configuração do executor, pela tabela 11.10]
 
-Configuração recomendada:
-- Modelo: [modelo recomendado]
-- Effort: [effort recomendado]
+Nível recomendado: [N] — [configuração do executor, pela tabela 11.10]
 
 Impacto esperado:
 [qual parte da tarefa depende desse escalonamento]
@@ -1306,15 +1303,15 @@ Impacto esperado:
 Aguardando Rafinha alterar manualmente a configuração.
 ```
 
-Depois da mensagem, Claude para e aguarda. A troca pode acontecer na
-mesma sessão (sem precisar reiniciar contexto) — Rafinha altera modelo/
-effort na configuração do Claude Code e pede para continuar.
+Depois da mensagem, o executor para e aguarda. A troca pode acontecer na
+mesma sessão (sem precisar reiniciar contexto) — Rafinha altera a
+configuração do executor (Claude Code ou Codex) e pede para continuar.
 
 ### 11.8 Depois que Rafinha aceita um escalonamento
 
-Claude tenta concluir a tarefa normalmente na nova configuração — não
+O executor tenta concluir a tarefa normalmente no novo nível — não
 pede novos escalonamentos repetidamente sem evidência concreta. Se mesmo
-em Opus + XHigh o problema continuar sem solução segura, Claude
+no Nível 4 o problema continuar sem solução segura, o executor
 interrompe e devolve a decisão técnica a Rafinha, em vez de insistir
 consumindo mais quota.
 
@@ -1327,13 +1324,12 @@ formato:
 ```markdown
 ## Model Policy
 
-Modelo padrão: [Sonnet ou Opus]
-Effort padrão: [Medium/High/XHigh]
+Nível padrão: [0–4] — [Rotina ou Profundo] · [esforço]
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - [critério específico da skill]
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - [critério específico da skill]
 
 Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
@@ -1343,7 +1339,28 @@ Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
 A política local complementa esta seção global — não pode removê-la.
 Skills fora do pipeline de execução Jira (ex.: checklists consultados por
 outra skill, ou assistentes pessoais fora deste workflow) não precisam
-declarar seção própria; herdam o modelo/effort de quem as invoca.
+declarar seção própria; herdam o nível de quem as invoca.
+
+**Leitura de declarações no formato anterior.** Enquanto uma skill ainda
+declarar "Modelo padrão / Effort padrão" (Sonnet ou Opus × Medium, High,
+XHigh), a declaração lê-se pela coluna Claude Code da tabela 11.10 — é
+só outra grafia do mesmo nível, não uma política distinta.
+
+### 11.10 Mapeamento de nível para cada executor
+
+| Nível | Capacidade · esforço | Claude Code | Codex |
+|---|---|---|---|
+| 0 | Rotina · baixo | Sonnet + Medium | a definir por Rafinha na homologação |
+| 1 | Rotina · padrão | Sonnet + High | a definir por Rafinha na homologação |
+| 2 | Rotina · máximo | Sonnet + XHigh | a definir por Rafinha na homologação |
+| 3 | Profundo · padrão | Opus + High | a definir por Rafinha na homologação |
+| 4 | Profundo · máximo | Opus + XHigh | a definir por Rafinha na homologação |
+
+O mapeamento é de **configuração de executor**, não de contrato: mudar o
+modelo concreto de um nível não altera nenhuma skill. Enquanto a coluna
+Codex não for preenchida por Rafinha, o Codex não escolhe nível sozinho:
+usa a configuração da sessão e recomenda escalonamento pelo número do
+nível.
 
 ---
 
@@ -1512,9 +1529,9 @@ isso só na prosa da descrição.
 ## 13. Execution State & Continuidade
 
 Objetivo: uma issue em execução deve poder ser retomada por uma **nova
-sessão** do Claude Code — troca de conta, esgotamento de quota,
-encerramento inesperado, reinício da máquina — sem depender do transcript
-da sessão anterior. **O chat não é fonte de verdade**, é contexto
+sessão** — do mesmo executor ou de outro (Claude Code ou Codex) — após troca
+de conta, esgotamento de quota, encerramento inesperado ou reinício da
+máquina, sem depender do transcript da sessão anterior. **O chat não é fonte de verdade**, é contexto
 temporário; a fonte de verdade de uma execução em andamento é a combinação
 de Jira + Git + GitHub/Confluence + o arquivo local desta seção.
 
@@ -1534,11 +1551,20 @@ não viraram comentário formal.
 (nunca neste repositório de skills). Um arquivo por issue, **sobrescrito**
 a cada checkpoint — nunca um log anexado.
 
+O diretório `.claude/` é um **nome histórico**: a pasta é estrutura
+compartilhada do workflow, lida e escrita por qualquer executor (Claude Code
+ou Codex), e não uma dependência do Claude Code. O caminho não muda por
+causa do executor; migrar para um caminho neutro é evolução futura, com
+plano de compatibilidade e recuperação.
+
 ```markdown
 # Execution State — <CHAVE>
 
 ## Estado
 EM_EXECUÇÃO | BLOQUEADO | AGUARDANDO_RAFINHA | PRONTO_PARA_PRÓXIMA_ETAPA
+
+## Executor
+Claude | Codex — <identificador da sessão, quando conhecido>
 
 ## Objetivo atual / contexto de retomada
 <2-4 linhas>
@@ -1555,12 +1581,17 @@ EM_EXECUÇÃO | BLOQUEADO | AGUARDANDO_RAFINHA | PRONTO_PARA_PRÓXIMA_ETAPA
 ## Bloqueios / decisões pendentes de Rafinha
 - ...
 
+## Handoff
+Nenhum | <origem → destino, data, motivo, estado verificado>
+
 ## Última atualização
 <data/hora>
 ```
 
 Seção sem conteúdo real usa "Nenhum" — nunca inventar conteúdo só para
-preencher o template (ver 13.4).
+preencher o template (ver 13.4). Arquivo criado antes das seções `Executor` e
+`Handoff` continua válido: seção ausente lê-se como "desconhecido" e "Nenhum",
+e é completada no próximo checkpoint.
 
 Deliberadamente **não inclui** branch, commit, PR, ou resultado de
 teste/análise estática: essas informações já são reconstruídas ao vivo, a
@@ -1598,7 +1629,9 @@ sobrevive a uma máquina diferente, cenário que a proposta não exige.
 > `.claude/design-packages/` (seção 14) são ambas locais e não versionadas.
 > As duas entram no `.gitignore` do projeto. A diferença é que o Execution
 > State *pode* ser commitado na branch isolada da issue, enquanto o Design
-> Package **nunca** vai para o Git.
+> Package **nunca** vai para o Git. Ambas são estruturas históricas
+> **compartilhadas** do workflow, não do Claude Code (13.2): o Codex as lê e
+> escreve com as mesmas regras.
 
 ### 13.4 Recovery Check
 
@@ -1626,6 +1659,15 @@ Existe .claude/execution-state/<CHAVE>.md?
 **O arquivo nunca é instrução cega** — ele indica o que provavelmente
 aconteceu; a etapa confirma o que realmente aconteceu antes de agir. Jira,
 Git, GitHub e Confluence sempre prevalecem sobre o que está escrito nele.
+
+**Executor e claim no recovery.** O recovery check também confere (Contrato do
+Workflow, B.5): (a) há claim vigente de **outro** executor na issue? → parar e
+reportar a Rafinha; (b) o `Executor` registrado no arquivo difere do atual? →
+é **handoff**: reconciliar com Jira, Git/GitHub, `context/` e `ai-memory/`, registrar
+o handoff e abrir novo claim antes de agir; (c) claim do **mesmo** executor, de
+sessão anterior → retomada normal, registrada no novo claim. Sem arquivo local
+(outra máquina, outro host), a retomada parte das fontes primárias — Jira, Git e
+GitHub — e o claim e os comentários estruturados são o rastro compartilhado.
 
 ### 13.5 Onde se aplica
 
@@ -1730,8 +1772,8 @@ implementação começar, e o Jira já representa o estado da issue.
 
 ### 14.4 IDs canônicos de componentes reutilizáveis
 
-A ponte entre Claude Design e Claude Code é **contrato textual**, não
-integração automática:
+A ponte entre Claude Design e o executor (Claude Code ou Codex) é **contrato
+textual**, não integração automática:
 
 ```text
 <sigla>.<tipo-do-componente>.<subtipo-do-componente>
@@ -2089,7 +2131,7 @@ concorrente**.
 
 | Camada | Para que serve | Fonte |
 |---|---|---|
-| 1. Contrato do Workflow | Regras universais: autoridades, escopo, informação ausente, gates, satisfação, composição, vigência | `references/contrato-workflow.md` |
+| 1. Contrato do Workflow | Regras universais: autoridades, executor técnico (A.10), escopo, informação ausente, gates, concorrência/claim/handoff (B.5), satisfação, composição, vigência | `references/contrato-workflow.md` |
 | 2. Contrato de Tipo de Ticket | Obrigações inerentes à natureza do ticket (os 8 tipos) | seção 3 |
 | 3. Contrato de Política | Regras condicionais ativadas por labels/condições (plataforma, QA, design, risco, documentação, topologia, fast-track) | `references/politicas.md` |
 | 4. Contrato de Etapa | O que cada uma das 13 etapas recebe, exige e entrega | seções 4, 5 (incl. 5.13 e 5.14) e 8 |
@@ -2154,11 +2196,12 @@ Resumo; estrutura, formatos, ciclos de vida e fluxos completos em
 - **`context/`** — realidade técnica atual e durável (o *porquê* que o código
   não mostra). Governada pela `engineering-context-manager`. Leitura simples
   direta; localizar/avaliar chamando a skill; criar/alterar/reorganizar/remover
-  só por ela. `CLAUDE.md` é só bootstrap/router.
+  só por ela. `CLAUDE.md` (ou `AGENTS.md`, no Codex) é só bootstrap/router.
 - **`ai-memory/`** — continuidade operacional e handoff (`active/` → `history/`,
   criação sob demanda). Governada pela `ai-memory-manager`; leitura direta,
   mutação centralizada. Não é fonte de verdade de Jira, Git ou produto.
-- **Execution State** continua sendo outra camada (seção 13).
+- **Execution State** continua sendo outra camada (seção 13). Execution State e
+  AI Memory registram `Executor` e `Handoff` (Contrato do Workflow, A.10 e B.5).
 - **Workspace multi-repo** — repositório Git superior com Git Submodules;
   versiona gitlinks (composição exata do produto), `context/` e `ai-memory/`.
   Branches `workspace/develop|epic|issue|hotfix`. Bootstrap **manual** de
@@ -2175,8 +2218,9 @@ Resumo; comandos, mapa etapa → skill, segurança e pontos em observação em
 `references/orquestracao-remota.md`.
 
 A `workflow-remote-orchestrator` (primeira versão experimental) é acionada
-**manualmente por Rafinha**, pelo celular, numa sessão de Claude Code Remote
-Control. Lê o contexto, fecha o escopo com ele, **despacha a skill dona da etapa**
+**manualmente por Rafinha**, pelo celular, numa sessão remota em **canal remoto
+homologado** (Claude Code Remote Control ou Codex Remote Control; um canal só é
+homologado depois de validado em host dedicado, Contrato do Workflow A.10). Lê o contexto, fecha o escopo com ele, **despacha a skill dona da etapa**
 e devolve um cartão com resultado, bloqueios e próxima ação. Não é agente
 permanente e não substitui nenhuma autoridade.
 
@@ -2192,6 +2236,10 @@ permanente e não substitui nenhuma autoridade.
   delegada (`contrato-workflow.md`, B.2). Não existe "coluna inteira".
 - Incidente ou informação ausente → `workflow-incident-capture-executor`; handoff →
   `ai-memory-manager`.
+- Antes de despachar, lê os claims vigentes (Contrato do Workflow, B.5): claim
+  vigente de outro executor ou sessão no alvo → não despacha e reporta. O despacho
+  registra `Executor` no comentário da issue; cada skill despachada abre o próprio
+  claim.
 
 ---
 
@@ -2239,6 +2287,10 @@ Perguntas do tipo:
 - "Quem move issue de `Ready` para `Fazer - Claude`?" (Rafinha, no Jira ou por
   confirmação remota via `workflow-remote-orchestrator`)
 - "O que é a orquestração remota?" / "O que a orquestradora pode e não pode mover?"
+- "O Codex pode executar o workflow?" / "Trocar de executor muda alguma regra?" /
+  "O que é o claim de execução?" / "Como um executor retoma o trabalho do outro?"
+  (Contrato do Workflow, A.10 e B.5)
+- "O que é o Nível 0–4?" / "Como o Codex mapeia os níveis?" (seção 11)
 - "O que é a `Preparação técnica - Claude`?" / "O que é o atestado PRONTA?"
 - "Quando algo é Hotfix?" / "Quem move uma Hotfix entre colunas?" / "O que é
   `Excepcionada`?"

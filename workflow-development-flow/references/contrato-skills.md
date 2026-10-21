@@ -26,7 +26,7 @@ SKILL
 └── OPERAÇÃO TÉCNICA                  (o resto do SKILL.md)
     ├── passo a passo, ferramentas, comandos, integrações
     ├── formatos, templates, rotinas, fallbacks técnicos autorizados
-    └── Model Policy, recovery, detalhes específicos
+    └── Model Policy (nível 0–4), recovery, detalhes específicos
 ```
 
 O contrato **não repete** sequência de comandos, chamadas de ferramenta, sintaxe
@@ -74,6 +74,23 @@ exige o que a operação não faz → ampliar a operação. Contradição ou lac
   despacha uma skill, a skill chamada executa o próprio Passo 0, gates e registros
   normalmente; o escopo repassado conta como confirmado (Contrato do Workflow,
   B.2), mas o modo da Integração e a autorização de Modo B nunca são herdados.
+- **O executor não é autoridade.** Claude Code e Codex são executores alternativos
+  (Contrato do Workflow, A.10): trocar de executor não troca autoridade, escopo,
+  gates, evidências nem transições. Capacidade que o executor não tem homologada
+  bloqueia o gate; não há fallback silencioso.
+- **Identidade do executor.** Todo registro operacional no Jira inclui `Executor`
+  (e, quando aplicável, `Tentativa`, `Escopo fechado`, `Evidências`, `Handoff` —
+  A.9). O título contratual do comentário não muda por causa do executor.
+- **Claim antes de mutar.** Skill que muta issue abre o claim de execução depois de
+  fechar o escopo e antes da primeira mutação, e para diante de claim vigente de
+  outro executor (Contrato do Workflow, B.5).
+- **Reconciliar antes de retomar.** Retomada — pelo mesmo executor em sessão nova
+  ou por outro executor — exige recovery check e reconciliação do estado local
+  (Execution State, `ai-memory/`) com Jira, Git e GitHub; handoff entre executores
+  é registrado (B.5). O estado local nunca é instrução cega.
+- **Nível, não modelo.** A skill declara na `## Model Policy` um **nível** (0–4,
+  `workflow-development-flow` §11); cada executor o mapeia para a própria
+  configuração. A skill recomenda o escalonamento e Rafinha decide.
 
 Estes defaults são **referenciados**, não copiados para cada `SKILL.md`.
 

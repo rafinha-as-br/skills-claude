@@ -81,8 +81,8 @@ etapa que não é sua, não escolhe destino não autorizado, não pula etapas e 
 antecipa transição de outra capacidade. Sem condição satisfeita, mantém a issue
 no estado apropriado, sem inventar destino alternativo.
 
-**Exceção oficial — Comando remoto.** Numa sessão de Remote Control iniciada por
-Rafinha, a `workflow-remote-orchestrator` executa, **como execução de comando
+**Exceção oficial — Comando remoto.** Numa sessão remota iniciada por Rafinha em
+**canal remoto homologado** (A.10), a `workflow-remote-orchestrator` executa, **como execução de comando
 explícito de Rafinha registrado em comentário da issue**, apenas: (a)
 `Ready → Fazer - Claude` de issue normal com atestado `PRONTA` vigente; (b) a saída
 de `Análise - Rafinha`, `Análise Final - Rafinha` ou `Design de produto - Rafinha`
@@ -155,6 +155,45 @@ skill chamadora exige.
 Evidência só comprova fatos do escopo da sua fonte: Actions verde não prova QA
 funcional nem aceite humano. Cada contrato de skill define quais evidências são
 obrigatórias para considerar a execução concluída ou emitir atestado.
+
+**Registro mínimo por operação relevante.** Todo registro operacional no Jira
+carrega, no mínimo: `Executor` (Claude | Codex — quem de fato executou, A.10),
+`Tentativa` (quando aplicável), `Escopo fechado` (as issues efetivamente
+processadas), `Evidências` (links, SHAs, runs, páginas) e `Handoff` (origem e
+destino, quando houve). O campo `Executor` não substitui o título contratual do
+comentário (A.10).
+
+### A.10 Executor técnico
+
+**Claude Code e Codex são executores técnicos alternativos.** A escolha do
+executor **não altera** a autoridade, o escopo, os gates, as evidências nem as
+transições permitidas para a skill: o contrato vale igual para qualquer executor.
+Ferramenta, conector, plugin ou token de um executor continuam não sendo
+autoridade (A.3).
+
+- **Nomes contratuais históricos.** Nomes de coluna (`Fazer - Claude`,
+  `QA - Claude`, `Preparação técnica - Claude`, `Análise Final - Claude`), o
+  sufixo `-claude` da branch, o título de comentário estruturado (ex.:
+  "Implementação Claude") e as labels operacionais são **nomes do contrato**, não
+  indicam o executor, e não mudam quando o executor muda — o contador de
+  tentativa e o recovery dependem deles. Quem de fato agiu consta no campo
+  `Executor` (A.9).
+- **Capacidade ausente é bloqueio.** Se o executor não tem capacidade homologada
+  que uma etapa ou gate exige (ex.: executor web para QA visual, conector
+  Jira/Confluence/GitHub/AIO Tests, revisão de código), o gate permanece não
+  satisfeito. Não há fallback silencioso nem troca de ferramenta que o contrato
+  não preveja (B.3).
+- **Homologação.** Um executor só opera uma capacidade depois de passar pelos três
+  testes — seleção, execução permitida e negativa/gate — em projeto de laboratório
+  e de Rafinha declarar a homologação. Sem essa declaração, a capacidade permanece
+  apenas no executor já homologado.
+- **Canais remotos e executor web.** Referências a canal remoto e a navegador de QA
+  Web significam **canal remoto homologado** e **executor web homologado**, nunca
+  uma ferramenta presumida. Enquanto o executor web de um executor não for
+  homologado, o QA visual por ele permanece bloqueado.
+- **Nível, não modelo.** A política de modelo é expressa em níveis neutros
+  (SKILL.md §11); cada executor mapeia o nível para sua configuração. O executor
+  recomenda, Rafinha decide; não há escalonamento autônomo.
 
 ---
 
@@ -249,6 +288,56 @@ catálogo de índice está em SKILL.md §8.2 e na página **Gates operacionais**
   Só continua com exceção válida aplicável àquela obrigação.
 - Bloqueio atinge só alvos/operações dependentes (mesmos critérios de B.3);
   gate de impacto compartilhado bloqueia toda a parte dependente.
+
+### B.5 Concorrência, claim e handoff entre executores
+
+**Uma issue não pode ter dois executores (ou duas sessões) mutando a mesma etapa
+ao mesmo tempo.**
+
+**Claim.** Toda execução que **muta** uma issue ou o trabalho dela (preparar,
+implementar, integrar, QA, documentar, auditar, criar ou atualizar issue) abre,
+**depois de fechar o escopo (B.2) e antes da primeira mutação**, um comentário de
+claim no Jira, por issue:
+
+```text
+[Claim de execução] <data/hora>
+Executor: Claude | Codex
+Etapa/skill: <coluna e skill>
+Escopo fechado: <issues>
+Tentativa: <n, quando aplicável>
+```
+
+- Antes de abrir o claim a skill lê os comentários da issue. **Claim vigente de
+  outro executor** (sem resultado nem liberação registrados) → a skill **para e
+  reporta a Rafinha**. Nunca disputa, sobrescreve nem presume abandono. Não há
+  prazo de expiração: só Rafinha declara um claim abandonado ou liberado (comentário
+  na issue).
+- O claim **termina** com o comentário estruturado de resultado da própria etapa
+  (que já carrega `Executor`, A.9) ou com liberação registrada por Rafinha.
+  Etapa interrompida sem resultado mantém o claim vigente até retomada ou liberação.
+- **Mesmo executor, sessão nova** (quota, troca de conta, reinício): é retomada, não
+  disputa — aplica-se o recovery check (SKILL.md §13.4) e o novo claim registra que
+  retoma o anterior. Qualquer dúvida se a sessão anterior ainda está ativa → para e
+  pergunta a Rafinha.
+- Capacidades sem mutação de issue (consulta, `context/`, `ai-memory/`, captura de
+  incidente) não abrem claim.
+
+**Retomada por outro executor (handoff).** Exige, nesta ordem:
+
+1. claim anterior concluído ou liberado por Rafinha;
+2. **recovery check** completo: ler Jira (estado, coluna, comentários, claims),
+   Git/GitHub (branch, commits, PRs, checks), Execution State, `context/` e
+   `ai-memory/` — e **reconciliar** o estado local com as fontes primárias antes de
+   agir; nada é assumido que essas fontes não comprovem;
+3. registrar o handoff no Jira (`Handoff: Claude → Codex` ou inverso, motivo,
+   estado verificado, próxima ação) e persistir o fato operacional pela
+   `ai-memory-manager` quando relevante;
+4. novo claim do executor de destino.
+
+Divergência que arrisque decisão ou trabalho → para e pergunta a Rafinha (A.7 se for
+conflito). Mutação já registrada pelo executor anterior nunca é refeita sem checar a
+evidência. O Execution State e o claim não substituem Jira, Git e GitHub: eles
+indicam o que provavelmente aconteceu; a skill confirma antes de agir.
 
 ---
 

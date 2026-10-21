@@ -1,7 +1,7 @@
 # Plano de implementação — Pacote 8: Codex como executor alternativo
 
 Registro de implementação, no formato dos `plano-pacote-N.md` anteriores.
-**Status: PLANO APROVADO — Onda 0 executada (sem commit); Ondas 1–6 pendentes.**
+**Status: PLANO APROVADO — Onda 0 executada e sincronizada (`c0c3322`); Onda 1 executada sem commit; Ondas 1–6 pendentes.**
 
 **Fonte:** `plano-adaptacao-codex.md` (proposta de Rafinha, em `~/.codex/skills/`), avaliada em
 2026-10-21 contra o repo e contra `~/.codex`. As 6 decisões pendentes do plano original e as 6
@@ -67,11 +67,11 @@ ocorre depois dos três testes (seleção, execução permitida, negativa/gate) 
 Substituir "Claude Code" por "executor autorizado" **só** onde a regra é comum; manter "Claude"
 em nome de coluna, branch, título de comentário e fato histórico.
 
-### Onda 0 — Infraestrutura (L1, L2) — **status: executada em 2026-10-21, falta sync e teste real**
+### Onda 0 — Infraestrutura (L1, L2) — **status: executada e sincronizada em 2026-10-21; falta o teste real de seleção**
 1. **[feito]** Fonte única = `~/.claude/skills`. No clone Codex, `.system/` entrou em
    `.git/info/exclude` (config local, não versionada). O clone Codex continua sendo só leitura.
-   **[pendente]** o clone Codex só recebe as descrições novas depois de commit + push aqui e `pull`
-   lá; nada disso foi feito (sem commit, conforme combinado).
+   **[feito]** commit `c0c3322` em `master`, push para `origin`, `git pull --ff-only` no clone Codex;
+   os dois clones estão no mesmo commit e as descrições novas já estão em `~/.codex/skills`.
 2. **[feito]** 23 descrições reescritas (as 24 acima do limite menos `doc-pendency-resolver`, que já
    cabia). Resultado nas 26 skills: `name` igual à pasta, descrição de no máximo 1024 caracteres (a maior
    ficou com 995), sem `<` nem `>`, e o primeiro gatilho entre aspas dentro dos ~380 caracteres que o
@@ -83,9 +83,37 @@ em nome de coluna, branch, título de comentário e fato histórico.
    Script: reescrita idempotente, fora do repo (scratchpad da sessão).
 3. **[parcial]** Proxy offline do teste de seleção: aprovado (limites e janela de 380 caracteres).
    O `quick_validate.py` do Codex **não rodou** (falta PyYAML nesta máquina); a mesma checagem foi
-   refeita à mão. **[pendente]** Teste real de seleção nos dois executores, que exige o sync do item 1.
+   refeita à mão. **[pendente]** Teste real de seleção nos dois executores (o sync do item 1 já foi feito).
 
-### Onda 1 — Contrato e núcleo (Lote A)
+### Onda 1 — Contrato e núcleo (Lote A) — **status: texto executado em 2026-10-21, sem commit; Codex NÃO habilitado**
+Entregue (10 arquivos, só texto; descrições, `name` e fim de linha CRLF intactos):
+- `contrato-workflow.md`: **A.10 Executor técnico** (cláusula de executores alternativos; nomes
+  contratuais históricos intocáveis; capacidade ausente = bloqueio; homologação por três testes mais
+  declaração de Rafinha; canal remoto e executor web homologados; níveis neutros), **B.5 Concorrência,
+  claim e handoff** (claim por issue antes da primeira mutação; claim de outro executor para a execução;
+  sem expiração, só Rafinha libera; mesmo executor em sessão nova = recovery check; handoff em 4 passos),
+  registro mínimo (`Executor`, `Tentativa`, `Escopo fechado`, `Evidências`, `Handoff`) em A.9; A.5 com
+  canal remoto homologado.
+- `contrato-skills.md`: 5 defaults herdados novos (executor não é autoridade, identidade, claim,
+  reconciliar antes de retomar, nível em vez de modelo).
+- `workflow-development-flow/SKILL.md`: **§11** em níveis 0–4 (Rotina/Profundo) com tabela 11.6 por
+  nível e nova **11.10** (mapeamento por executor; coluna Codex "a definir por Rafinha"; declarações
+  antigas Modelo/Effort leem-se pela coluna Claude Code); **§13** com `.claude/` como estrutura
+  compartilhada, seções `Executor` e `Handoff` no Execution State e recovery com claim/handoff;
+  §14.4, §18, §20, §21 e FAQ.
+- `contexto-memoria-workspace.md` e `orquestracao-remota.md`: `AGENTS.md`, `Executor`/handoff em AI
+  Memory, canal homologado, claim no despacho.
+- `ai-memory-manager`, `engineering-context-manager`, `workflow-incident-capture-executor`,
+  `workflow-remote-orchestrator`: `Executor`/handoff nos registros, `Model Policy` em nível 0,
+  canal homologado e claim no despacho.
+
+Não tocados por não terem texto acoplado ao executor: `contrato-efetivo.md`, `politicas.md`,
+`preparacao-e-hotfix.md`, `release-lifecycle.md`. **Pendente:** as 18 skills das Ondas 2–5 ainda
+declaram `Modelo padrão / Effort padrão` (lidas pela regra de transição da §11.9) e não registram
+`Executor`/claim; migram nas respectivas ondas. Critério de aceite (Codex reconstrói o estado de
+uma issue só pelas fontes) depende do laboratório.
+
+Itens originais da onda:
 4. `contrato-workflow.md` e `contrato-skills.md`: cláusulas da seção 2.
 5. `workflow-development-flow`: §11 (níveis 0–4, L3), §13 (Execution State como estrutura compartilhada),
    §21 (canal remoto homologado), regras de claim/handoff, `references/`.

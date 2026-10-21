@@ -77,14 +77,13 @@ nunca decide nova regra; nunca inventa contexto/evidência.
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - o incidente envolve múltiplos sistemas (ex.: Jira + Git + Confluence) e
   reconstruir a sequência exata dos eventos exige cruzar várias fontes.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - não se aplica normalmente — esta skill descreve, não diagnostica nem
   decide.
 
@@ -105,7 +104,8 @@ incidente já sabe o projeto), use sem perguntar. Caso contrário, pergunte.
 Na primeira vez que esta skill gerar um arquivo num projeto, confirme que
 `.claude/workflow-incidents/` está no `.gitignore` do repositório. Se não
 estiver, adicione essa linha (mesmo padrão de `.claude/design-packages/` e
-`.claude/execution-state/`) e avise Rafinha do que foi feito.
+`.claude/execution-state/`) e avise Rafinha do que foi feito. O diretório `.claude/`
+é nome histórico de estrutura compartilhada: vale igual para Claude Code e Codex.
 
 ---
 
@@ -120,6 +120,10 @@ Reúna, do que estiver disponível na conversa/sessão atual:
 - **Skill em execução** quando o incidente ocorreu, se houver uma.
 - **Coluna do Jira** em que a issue estava, se aplicável.
 - **Branch/PR** envolvidos, se aplicável.
+- **Executor** em execução quando o incidente ocorreu (Claude | Codex) e, se
+  houve, o handoff ou claim envolvido (Contrato do Workflow, A.10 e B.5). Incidente
+  que só aparece com um dos executores (capacidade ausente, comportamento
+  diferente) é exatamente o tipo de lacuna que esta captura existe para registrar.
 
 Não invente contexto que não está disponível — registre como "não
 observado" em vez de assumir.
@@ -171,6 +175,7 @@ Usando esta estrutura:
 - Projeto:
 - Issue/épico/artefato:
 - Skill em execução:
+- Executor: Claude | Codex
 - Coluna:
 - Branch/PR:
 

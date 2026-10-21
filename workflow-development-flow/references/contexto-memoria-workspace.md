@@ -100,7 +100,7 @@ relevante como outros trabalhos entendem/alteram o sistema e o estado é claro. 
 integração, o contexto é normalizado. Descoberta não vira contexto compartilhado
 só por existir: precisa de valor durável.
 
-**`CLAUDE.md`** permanece pequeno, estável, bootstrap/router: ponto de entrada
+**`CLAUDE.md`** (ou `AGENTS.md`, o arquivo equivalente do Codex) permanece pequeno, estável, bootstrap/router: ponto de entrada
 para `context/README.md`, referências a contratos/skills, topologia mínima,
 entrypoints. Não é banco de contexto, documentação arquitetural extensa, histórico
 de decisões, AI Memory nem duplicação de `context/`.
@@ -152,6 +152,12 @@ ai-memory/
 - **Registrar quando útil:** contexto para o próximo agente, descobertas,
   dependências, impactos entre issues, direcionamentos técnicos, tentativas e
   retrabalho relevantes, problemas de QA, handoff.
+- **Executor e handoff entre executores.** Cada entrada de Descobertas e de Handoff
+  identifica `Executor` (Claude | Codex) — quem observou ou realizou o fato. O
+  handoff entre executores registra origem → destino, motivo e o **estado verificado**
+  nas fontes primárias (Contrato do Workflow, B.5), de modo que o próximo agente, de
+  qualquer executor, retome sem reconstruir contexto nem assumir o que a fonte
+  primária não comprova.
 - **Evitar:** transcrição de comandos, log bruto, cópia de código versionado,
   duplicação integral do Jira, dumps, secrets/tokens/credenciais, fatos com fonte
   oficial melhor, conhecimento técnico durável (→ `context/`).

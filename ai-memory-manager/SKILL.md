@@ -88,7 +88,12 @@ oficial.
 Criação sob demanda; nome de arquivo = chave Jira exata; seções mínimas; não
 inventar fatos; não virar log bruto; não armazenar secrets; consolidar em vez de
 duplicar; delegar à `engineering-context-manager` o que for conhecimento técnico
-durável.
+durável. **Executor e handoff:** identificar o executor (Claude | Codex) em cada
+entrada de descoberta e de handoff, e registrar o handoff entre executores como
+origem → destino, motivo e estado verificado — só o que a chamadora fundamentou
+em fonte primária (Contrato do Workflow, A.10 e B.5). A memória é lida por
+qualquer executor e **não** é claim nem prova de estado: não substitui o claim
+no Jira nem o recovery check.
 
 ### Evidências e saída
 Saídas: memória criada sob demanda; atualizada; conteúdo consolidado; handoff
@@ -113,14 +118,14 @@ conteúdo para `context/` em silêncio). Conflito Git → capacidade responsáve
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
-- a consolidação exige reconciliar versões divergentes do mesmo handoff;
+Escalar o esforço quando:
+- a consolidação exige reconciliar versões divergentes do mesmo handoff
+  (inclusive handoff entre executores);
 - a classificação entre AI Memory e `context/` é ambígua.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - não se aplica normalmente.
 
 Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
@@ -181,6 +186,16 @@ relevante — o template não gera conteúdo vazio por formalidade):
 
 `epic.md` segue estrutura equivalente no nível do Epic.
 
+**Identidade do executor.** Entradas em `Descobertas` e `Handoff` começam com
+`Executor: Claude | Codex` (e `Tentativa:` quando aplicável). Handoff entre executores:
+
+```markdown
+- Executor: Codex — retomou de Claude (Tentativa 2)
+  Motivo: <quota esgotada, troca deliberada de Rafinha, ...>
+  Estado verificado: <o que foi conferido em Jira, Git/GitHub, Execution State>
+  Próxima ação: <ação concreta>
+```
+
 **Registrar quando útil:** contexto operacional para o próximo agente; descobertas
 relevantes; dependências; impactos entre issues; direcionamentos técnicos já
 definidos; tentativas e retrabalho relevantes; problemas encontrados em QA
@@ -219,7 +234,10 @@ fundamentou.
 ### 3. Persistir
 Crie sob demanda ou atualize o arquivo; mantenha texto objetivo; nunca transcreva
 comandos nem cole log bruto; referencie a fonte oficial (PR, comentário Jira, run
-do AIO Tests) em vez de copiá-la.
+do AIO Tests) em vez de copiá-la. Registre o `Executor` do fato. Num handoff entre
+executores, persista origem → destino e o estado verificado **como a chamadora o
+fundamentou**: se a chamadora não confirmou o estado em fonte primária, registre
+"não verificado" — nunca complete por inferência.
 
 ### 4. Arquivar (active → history)
 Quando uma capacidade constatar **oficialmente** que a issue/Epic foi concluída ou

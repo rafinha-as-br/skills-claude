@@ -87,8 +87,11 @@ para leituras simples.
 ### Delegações
 Decisão técnica real não resolvida → Rafinha ou capacidade competente. Informação
 **predominantemente operacional** (tentativa, retrabalho, continuidade, handoff,
-histórico de execução) → delegar a persistência à `ai-memory-manager`. Esta skill
-**não escreve AI Memory diretamente**.
+histórico de execução, qual executor fez o quê) → delegar a persistência à
+`ai-memory-manager`. Esta skill **não escreve AI Memory diretamente**.
+Conhecimento durável de `context/` independe do executor: as notas **não**
+registram `Executor`, claim nem handoff, e valem igual para Claude Code e Codex
+(Contrato do Workflow, A.10).
 
 > Defaults herdados:
 > `workflow-development-flow/references/contrato-skills.md`.
@@ -97,14 +100,13 @@ histórico de execução) → delegar a persistência à `ai-memory-manager`. Es
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - a classificação entre `decision`, `constraints` e `architecture` é ambígua;
 - uma reorganização toca muitas notas relacionadas.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - não se aplica normalmente — a skill aplica regras, não decide arquitetura.
 
 Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
@@ -256,7 +258,8 @@ chamador exatamente quais arquivos foram alterados.
 - ❌ Nunca escrever em `ai-memory/` (delegar à `ai-memory-manager`).
 - ❌ Nunca fazer commit, push, criar branch ou alterar gitlinks.
 - ❌ Nunca promover para contexto compartilhado uma descoberta sem valor durável.
-- ❌ Nunca transformar `CLAUDE.md` em banco de contexto (ele é bootstrap/router).
+- ❌ Nunca transformar `CLAUDE.md` (ou `AGENTS.md`, no Codex) em banco de contexto
+  (ele é bootstrap/router).
 - ❌ Nunca resolver decisão técnica não determinística sozinha.
 - ❌ Nunca inferir a localização de `context/` quando a topologia não está
   declarada.
