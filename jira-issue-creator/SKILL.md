@@ -91,6 +91,15 @@ exceção; preservar a origem (GitHub, Validação Humana, Preparação Técnica
 Hotfix); evitar duplicação quando a Preparação Técnica informar issue equivalente
 já reutilizada; apresentar/validar o rascunho conforme a regra aplicável.
 
+**Executor e registro.** Issue recém-criada não tem execução concorrente possível,
+então a criação **não abre claim** (Contrato do Workflow, B.5). Imediatamente depois
+de criar, deixa na issue um comentário curto com `Executor: Claude | Codex` e a
+origem (chat, GitHub Issue, Validação Humana, Preparação Técnica ou Hotfix, com quem
+qualificou o payload) — A.9. A identidade vive só no comentário: **nunca** na
+descrição, que em Hotfix é preservada integralmente. O executor não altera nenhuma
+regra desta skill (A.10); sem conector Atlassian homologado no executor, a criação
+**bloqueia**.
+
 ### Evidências, saída e limites
 A issue criada no Jira é o registro oficial; links de origem são preservados nos
 campos/relacionamentos previstos. Saída: ticket criado no destino inicial aprovado
@@ -110,14 +119,13 @@ existente numa reprovação.
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - a hierarquia (Épico/Issue/Subtask) permanece ambígua mesmo depois de
   consultar o critério oficial em `workflow-development-flow`.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - não se aplica normalmente — criar uma issue é triagem e registro, não
   decisão arquitetural.
 
@@ -374,8 +382,8 @@ passo 5, para que Rafinha possa corrigir antes de aprovar.
 
 ### 7. Criar a issue no Jira
 
-Somente após a aprovação do rascunho, crie a issue no Jira (via Atlassian
-Rovo) com:
+Somente após a aprovação do rascunho, crie a issue no Jira (pelo conector
+Atlassian homologado do executor — Rovo no Claude Code) com:
 - Título e descrição **padronizada de 9 seções** (workflow-development-flow
   §17) conforme aprovado — nunca só Contexto/Objetivo.
 - **Tipo oficial** correto (um dos 8 — passo 3).
@@ -391,6 +399,8 @@ Rovo) com:
   que permite que `jira-issue-executor` referencie e feche a GitHub Issue
   automaticamente (`Closes #N`) quando o PR for mergeado. Nunca deixe essa
   informação só na descrição textual da issue.
+- Logo depois de criada, comente na issue: `Executor: Claude | Codex` e a origem
+  (ver Contrato, "Executor e registro"). Sem alterar a descrição.
 
 ### 8. Confirmar a criação
 

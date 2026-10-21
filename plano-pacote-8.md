@@ -1,7 +1,7 @@
 # Plano de implementação — Pacote 8: Codex como executor alternativo
 
 Registro de implementação, no formato dos `plano-pacote-N.md` anteriores.
-**Status: PLANO APROVADO — Onda 0 executada e sincronizada (`c0c3322`); Onda 1 executada sem commit; Ondas 1–6 pendentes.**
+**Status: PLANO APROVADO — Onda 0 executada e sincronizada (`c0c3322`); Onda 1 sincronizada (`7bf58f5`); Onda 2 executada sem commit; Ondas 1–6 pendentes.**
 
 **Fonte:** `plano-adaptacao-codex.md` (proposta de Rafinha, em `~/.codex/skills/`), avaliada em
 2026-10-21 contra o repo e contra `~/.codex`. As 6 decisões pendentes do plano original e as 6
@@ -85,7 +85,7 @@ em nome de coluna, branch, título de comentário e fato histórico.
    O `quick_validate.py` do Codex **não rodou** (falta PyYAML nesta máquina); a mesma checagem foi
    refeita à mão. **[pendente]** Teste real de seleção nos dois executores (o sync do item 1 já foi feito).
 
-### Onda 1 — Contrato e núcleo (Lote A) — **status: texto executado em 2026-10-21, sem commit; Codex NÃO habilitado**
+### Onda 1 — Contrato e núcleo (Lote A) — **status: texto executado e sincronizado em 2026-10-21 (`7bf58f5`); Codex NÃO habilitado**
 Entregue (10 arquivos, só texto; descrições, `name` e fim de linha CRLF intactos):
 - `contrato-workflow.md`: **A.10 Executor técnico** (cláusula de executores alternativos; nomes
   contratuais históricos intocáveis; capacidade ausente = bloqueio; homologação por três testes mais
@@ -122,7 +122,28 @@ Itens originais da onda:
    Critério: Codex reconstrói o estado de uma issue só com Jira, Git, GitHub, Execution State,
    `context/` e AI Memory, sem assumir fato não comprovado.
 
-### Onda 2 — Jira e preparação (Lote B)
+### Onda 2 — Jira e preparação (Lote B) — **status: texto executado em 2026-10-21, sem commit; Codex NÃO habilitado**
+Entregue (6 SKILL.md, só texto; `description`, `name`, Contrato Efetivo, descrições, tipos, labels e
+transições intactos; títulos e frases fixas dos comentários preservados):
+- **Nível:** `Model Policy` migrada para nível (criador, intake e decision-resolver = 0; hotfix-creator,
+  preparação técnica e validação humana = 1, conforme a tabela 11.6); "Opus" virou "Profundo".
+- **`Executor` nos registros:** atestado de Preparação Técnica (linha `Executor:` sob `Resultado`),
+  comentário de amadurecimento (intake), comentário de resultado da sessão (decision-resolver, que
+  antes não deixava comentário e agora precisa dele para liberar o claim, inclusive em resolução
+  parcial), comentário de criação (issue-creator), payload de Hotfix. Na validação humana a linha
+  `Executor:` entra **abaixo** das frases fixas, que continuam abrindo o comentário.
+- **Claim (B.5):** intake, decision-resolver, preparação técnica e validação humana abrem claim por
+  issue antes da primeira mutação. **Sem claim:** `jira-issue-creator` (issue nova, nada concorrente) e
+  `jira-hotfix-creator` (não muta o Jira). Na validação humana, a Validação Humana recém-criada no
+  GERAR também fica fora do claim.
+- **Ferramenta:** "via Atlassian Rovo" virou "conector Atlassian homologado do executor (Rovo no Claude
+  Code)"; sem conector homologado a execução bloqueia (A.10). **Não verifiquei** as operações do
+  conector Atlassian do Codex (não consta no `config.toml`): o mapeamento operação a operação ainda
+  precisa ser feito na homologação.
+Critério de aceite (issue de laboratório: cria, comenta ou transiciona só dentro da autoridade, com os
+gates satisfeitos) **não executado**: depende do projeto de laboratório.
+
+Itens originais da onda:
 7. `jira-issue-creator`, `jira-sprint-intake-executor`, `jira-issue-decision-resolver`,
    `jira-hotfix-creator`, `jira-technical-preparation-executor`, `jira-human-validation-executor`:
    campo `Executor` nos comentários, política de modelo por nível, referência de ferramenta.

@@ -57,6 +57,15 @@ issue; sinalizar decisões duráveis que mereçam documentação formal; confirm
 Rafinha antes da transição. O Jira é a fonte operacional do ato decisório. Saída:
 issue sem pendências abertas, com decisão registrada e destino correto.
 
+**Executor, claim e handoff.** Antes de alterar a descrição pela primeira vez, lê
+os comentários e abre o claim de execução (Contrato do Workflow, B.5); claim vigente
+de **outro** executor → para e reporta a Rafinha. Ao terminar a sessão deixa um
+comentário de resultado com `Executor: Claude | Codex` (A.9) — decisões registradas
+e destino, ou **resolução parcial** (pendências resolvidas × abertas) quando a
+conversa for interrompida. Esse comentário libera o claim; sem ele o claim permanece
+vigente. Retomada por outro executor segue o handoff de B.5. Sem conector Atlassian
+homologado no executor, a execução **bloqueia** (A.10).
+
 ### Limites
 Não decide autonomamente; não processa lote; não implementa; não cria PR; não faz
 QA; não escreve documentação; não aplica `requires-design` sem confirmação
@@ -70,14 +79,13 @@ explícita.
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - a pendência envolve comparar mais de uma abordagem de produto plausível,
   e Rafinha pede uma recomendação fundamentada antes de decidir.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - não se aplica normalmente — esta skill conduz decisão humana, não decide
   por si mesma nada que exija raciocínio arquitetural.
 
@@ -176,6 +184,10 @@ continua em `Decisão - Rafinha` até a próxima sessão resolver o resto.
 
 Antes de mover, resuma o que foi decidido e o destino, para ele confirmar —
 mesma lógica de "nunca decidir sozinha sem Rafinha" aplicada ao passo final.
+
+Depois da confirmação (ou ao encerrar com pendência aberta), registre o comentário
+de resultado da sessão (`Executor: Claude | Codex`, o que foi decidido, destino
+ou pendências que permanecem). É ele que libera o claim.
 
 ---
 

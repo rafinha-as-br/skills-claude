@@ -80,6 +80,15 @@ validação; apresentar proposta antes de criar; identificar Validação Humana 
 label `validacao-humana`; usar frases fixas; nunca deixar issue sair da etapa sem
 validação correspondente.
 
+**Executor, claim e handoff.** Antes da primeira mutação de cada issue **existente**
+— as issues agregadas e, no REGISTRAR, a Validação Humana já criada —, lê os
+comentários e abre o claim de execução (Contrato do Workflow, B.5); claim vigente de
+**outro** executor → não toca naquela issue e reporta a Rafinha. A Validação Humana
+recém-criada no GERAR não precisa de claim. Todo comentário desta skill leva
+`Executor: Claude | Codex` (A.9) e o comentário de resultado em cada issue libera o
+claim. Retomada por outro executor segue o handoff de B.5. Sem conector Atlassian
+homologado no executor, a execução **bloqueia** (A.10).
+
 ### Evidências, saída e limites
 O Jira registra validações, links, comentários, tentativas e veredito humano. Saída
 (GERAR): proposta aprovada e Validação Humana estruturada; (REGISTRAR): veredito
@@ -99,10 +108,9 @@ Problema novo → `jira-issue-creator`.
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: High
+Nível padrão: 1 — Rotina · esforço padrão
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - existirem múltiplos agrupamentos funcionais plausíveis para o mesmo lote
   e a escolha entre eles mudar significativamente os cenários;
 - Jira, GitHub (PR/diff), QA e documentação divergirem sobre o que a issue
@@ -111,7 +119,7 @@ Escalonar effort quando:
   julgamento humano;
 - houver muitas dependências cruzadas entre as issues do lote.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - a análise exigir raciocínio arquitetural ou funcional transversal para
   determinar o impacto observável de uma mudança;
 - houver incerteza real sobre os limites de responsabilidade entre issues
@@ -304,7 +312,8 @@ Texto exato, no início do comentário. Outras skills dependem dele.
 | `validação humana reprovada` | veredito negativo, já classificado | `jira-issue-executor` (gatilho de correção), `jira-review-executor` (bloqueio) |
 | `Tentativa N — validação humana` | abertura de cada rodada de validação | auditoria/histórico |
 
-Nunca altere essas frases.
+Nunca altere essas frases. A linha `Executor: Claude | Codex` entra **logo abaixo**
+da frase fixa, nunca antes dela: a frase continua sendo o início do comentário.
 
 ---
 

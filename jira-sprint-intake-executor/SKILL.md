@@ -64,6 +64,13 @@ informação; registrar só pendências que realmente exigem decisão; sugerir
 trabalho adicional sem criar issue; não aplicar `requires-design`; registrar o
 que foi amadurecido e o destino escolhido.
 
+**Executor, claim e handoff.** Para cada issue do escopo fechado, imediatamente
+antes da primeira mutação, lê os comentários e abre o claim de execução (Contrato
+do Workflow, B.5); claim vigente de **outro** executor → pula aquela issue e
+reporta a Rafinha. O comentário de amadurecimento leva `Executor: Claude | Codex`
+(A.9) e libera o claim. Retomada por outro executor segue o handoff de B.5. Sem
+conector Atlassian homologado no executor, a execução **bloqueia** (A.10).
+
 ### Evidências, saída e limites
 O Jira preserva descrição, comentário e transição. Saída: issue amadurecida e
 roteada. Limites: não implementa, não faz QA, não escreve documentação, não cria
@@ -81,14 +88,13 @@ Nova issue necessária → `jira-issue-creator`. Decisão humana →
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - o épico ou o conjunto de issues tem dependências cruzadas difíceis de
   mapear sem comparação cuidadosa.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - não se aplica normalmente — maturação de escopo é triagem e organização,
   não decisão arquitetural.
 
@@ -208,8 +214,9 @@ segue com ele (na criação, aqui, ou depois em `Decisão - Rafinha`).
 ### 7. Registrar e mover
 
 Atualize a descrição da issue (passos 3 e 4) e mova para o destino decidido
-(passo 6). Comente objetivamente o que foi feito: seções reorganizadas,
-pendências registradas, destino escolhido e por quê.
+(passo 6). Comente objetivamente o que foi feito: `Executor: Claude | Codex`,
+seções reorganizadas, pendências registradas, destino escolhido e por quê. O
+claim da issue (B.5) já deve estar aberto antes da primeira alteração.
 
 ### 8. Resumo final ao usuário
 

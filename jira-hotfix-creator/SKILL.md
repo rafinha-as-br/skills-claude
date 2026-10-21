@@ -74,6 +74,13 @@ técnico suficiente; **autorização de Rafinha** para o fast-track aplicável.
 O fast-track fica **integralmente na descrição** da Hotfix, incluindo a
 autorização de Rafinha. Não é fragmentado em comentários.
 
+**Executor.** Esta skill não muta o Jira (entrega payload), então **não abre claim**
+(Contrato do Workflow, B.5). O payload entregue à `jira-issue-creator` informa qual
+`Executor` (Claude | Codex) qualificou a Hotfix, para constar no comentário de
+criação (A.9) — **nunca** na descrição nem no fast-track, que ficam íntegros. O
+executor não altera os critérios de elegibilidade nem a autoridade de exceção, que é
+de Rafinha (A.10).
+
 ### Saída
 Payload de Hotfix pronto para materialização: descrição, fast-track, tipo,
 relações, destino inicial e contexto de autorização.
@@ -94,15 +101,14 @@ Criação material → `jira-issue-creator`. Trabalho normal → `jira-issue-cre
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: High
+Nível padrão: 1 — Rotina · esforço padrão
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - a elegibilidade como Hotfix é genuinamente ambígua (urgência × risco);
 - o fast-track dispensa obrigações cujo impacto de segurança técnica é difícil de
   julgar.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - a Hotfix envolve decisão arquitetural significativa ou várias estratégias de
   correção com consequências técnicas relevantes.
 

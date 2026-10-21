@@ -82,7 +82,15 @@ acesso às fontes técnicas necessárias.
   determinística;
 - delegar à `ai-memory-manager` a persistência de dependências, blockers,
   decisões técnicas pendentes, trabalho derivado ou handoff com valor de
-  continuidade.
+  continuidade;
+- **claim e executor:** para cada issue do escopo fechado, antes da primeira
+  mutação, ler os comentários e abrir o claim de execução (Contrato do Workflow,
+  B.5); claim vigente de **outro** executor → não preparar aquela issue e reportar a
+  Rafinha. O atestado leva `Executor: Claude | Codex` (A.9) e libera o claim.
+  Retomada por outro executor segue o handoff de B.5. Sem conector Atlassian e Git
+  homologados no executor, a execução **bloqueia** (A.10). A criação da branch de
+  Epic continua idempotente por existência: se já existe com a base correta, não
+  se recria.
 
 ### Evidências e registros
 O atestado (comentário Jira) cobre: resultado; dependências; design;
@@ -110,15 +118,14 @@ Trabalho técnico ausente → `jira-issue-creator`; candidato a Hotfix →
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: High
+Nível padrão: 1 — Rotina · esforço padrão
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - há várias abordagens plausíveis para a topologia Git ou para a dependência;
 - a cadeia de blockers propagados atravessa vários épicos;
 - Jira, eventos Git e o próprio Git divergem e precisam ser reconciliados.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - a decisão técnica real envolve arquitetura com várias alternativas válidas e
   consequências relevantes;
 - há conflito de dependência entre épicos ou entre repositórios que exige
@@ -312,6 +319,8 @@ durável descoberto → `engineering-context-manager`.
 ## Preparação Técnica — Atestado
 
 **Resultado:** PRONTA | BLOQUEADA | AGUARDANDO DECISÃO TÉCNICA
+
+**Executor:** Claude | Codex
 
 ### Dependências
 - <dependências relevantes e disponibilidade>
