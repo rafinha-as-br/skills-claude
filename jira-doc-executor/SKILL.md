@@ -91,6 +91,22 @@ cumprido. Em Hotfix, não exigir nem dispensar por conta própria a etapa docume
 siga o fast-track (`Satisfeita` / `Não aplicável` / `Excepcionada`), mantendo a
 rastreabilidade da Hotfix no Jira.
 
+**Claim, executor e handoff.** Para cada issue do escopo fechado, antes da primeira
+mutação, ler os comentários e abrir o claim de execução (Contrato do Workflow, B.5);
+claim vigente de **outro** executor → não documentar aquela issue e reportar a
+Rafinha. O comentário `Documentação Claude` (título contratual fixo, inclusive quando o
+executor é o Codex) leva `Executor: Claude | Codex` logo abaixo (A.9) e libera o claim.
+Retomada por outro executor segue o handoff de B.5. Os writers delegados rodam **no
+mesmo executor** e não abrem claim próprio.
+
+**Writer que o executor não consegue exercer.** Se um writer aplicável depende de
+capacidade que o executor não tem homologada — hoje, o `screen-doc-writer` no Codex,
+por precisar do executor visual —, o item do plano **não é dispensado nem trocado por
+outro**: registre como bloqueio documental (A.10, B.3), **não mova** a issue e reporte a
+Rafinha. "Nenhum writer sai do plano sem motivo" continua valendo: falta de capacidade
+não é motivo de dispensa. Sem conector Atlassian homologado no executor, a execução
+**bloqueia**.
+
 ### Evidências, saída e limites
 O Jira registra o plano e a conclusão; as páginas permanecem no Confluence. Saída:
 plano executado, comentário `Documentação Claude` e issue pronta para
@@ -111,15 +127,14 @@ writer; nunca move Hotfix.
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - o conjunto de delegações não é óbvio (vários writers candidatos, várias
   páginas candidatas por writer), exigindo análise cuidadosa antes de
   confirmar com Rafinha.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - não se aplica normalmente — esta skill só analisa impacto e delega, nunca
   escreve conteúdo nem decide sozinha uma ambiguidade real (isso vai para
   Rafinha, não para um modelo mais caro).
@@ -141,7 +156,10 @@ Antes de processar uma issue (passo 2), verifique se existe
 costuma gerar mais de uma delegação (passo 4) e a execução pode ser
 interrompida no meio do conjunto. Arquivo **local, nunca commitado** (esta
 etapa não trabalha em branch isolada). Ver `workflow-development-flow`,
-seção 13, para o mecanismo completo.
+seção 13, para o mecanismo completo. O arquivo registra `Executor` e `Handoff`:
+executor registrado diferente do atual é handoff (Contrato do Workflow, B.5) —
+reconcilie com Jira, Confluence e `ai-memory/` antes de agir, e confira nas páginas
+quais delegações realmente foram concluídas antes de retomar o conjunto.
 
 ---
 
@@ -298,7 +316,9 @@ sessão retoma só as pendentes, na mesma ordem.
 
 Publique um comentário na issue com:
 
-- Título **"Documentação Claude"**.
+- Título **"Documentação Claude"** (nome contratual fixo, A.10), com
+  `Executor: Claude | Codex` logo abaixo (A.9). É o resultado da etapa e **libera o
+  claim** de B.5.
 - Trilha (A ou B).
 - O plano executado: para cada um dos cinco writers, a página
   criada/atualizada (com link) **ou** o motivo de não ter sido aplicado.

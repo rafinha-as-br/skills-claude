@@ -32,8 +32,8 @@ uma única tela específica** (em vez do módulo como um todo), a skill certa
 é `screen-doc-writer`. Se ficar em dúvida sobre qual das três se aplica,
 pergunte a Rafinha antes de começar a escrever.
 
-Quando você tem acesso real ao repositório do módulo (rodando via Claude
-Code, tipicamente no mesmo contexto de `jira-issue-executor`), esta skill
+Quando você tem acesso real ao repositório do módulo (rodando via Claude Code ou
+Codex, tipicamente no mesmo contexto de `jira-issue-executor`), esta skill
 também sincroniza a pasta `docs/` correspondente no código, depois de
 publicar a página do Confluence — ver passo 9. Consulte a skill
 `workflow-development-flow` para dúvidas sobre como a etapa "Documentar" se
@@ -71,7 +71,10 @@ de produto; sinalizar componente reutilizável para catálogo; declarar quando n
 teve acesso ao repositório; encaminhar incertezas ao `doc-pendency-resolver`. Saída:
 documentação técnica criada/atualizada (e sincronizada no repositório quando
 aplicável e autorizado), sempre refletindo o estado técnico realmente observado. O
-Confluence é evidência da página; o Git, da documentação versionada.
+Confluence é evidência da página; o Git, da documentação versionada. **Executor:** a
+página e a pasta `docs/` descrevem só o estado atual — nunca registram executor,
+tentativa nem histórico; a identidade do executor (Claude | Codex) consta no comentário
+Jira de quem delega (Contrato do Workflow, A.9), e o claim da issue é dessa skill.
 
 ### Limites e delegações
 Não decide regra de negócio; não inventa sigla oficial; não finge sincronização; não
@@ -86,14 +89,13 @@ conveniência. Dependências: `doc-pendency-resolver`; catálogo/mapeamento por 
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - o módulo tem muitas seções cruzadas para reconciliar, ou a sincronização
   da pasta `docs/` no código (passo 9) não é trivial.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - não se aplica normalmente — documentação de módulo descreve estado
   atual já implementado, não decide arquitetura.
 
@@ -176,9 +178,9 @@ template porque não tem estrutura fixa — siga o passo 2. **README** e
 **ADR** não têm template — declare a lacuna e pergunte (ver Escopo), em vez
 de escrever com uma estrutura inventada.
 
-Se Rafinha enviou um link do Confluence, use o Atlassian Rovo para buscar a
-página (`getConfluencePage` ou equivalente) e verificar se já existe conteúdo
-— nesse caso é atualização, não criação do zero. Se o link ainda não foi
+Se Rafinha enviou um link do Confluence, use o conector Atlassian homologado do
+executor (Rovo no Claude Code: `getConfluencePage`; no Codex, a operação equivalente)
+para buscar a página e verificar se já existe conteúdo — nesse caso é atualização, não criação do zero. Se o link ainda não foi
 enviado, pergunte por ele antes de prosseguir — esta skill sempre escreve
 diretamente na página, nunca devolve texto solto no chat como entrega final.
 
@@ -293,7 +295,9 @@ substituir o código-fonte.
 ### 8. Publicar a página no Confluence
 
 Crie ou atualize a página no Confluence com o conteúdo formatado (usando
-`createConfluencePage` ou `updateConfluencePage` conforme o caso).
+`createConfluencePage` ou `updateConfluencePage` no Rovo; a operação equivalente do
+conector no Codex, conforme o caso). Sem conector Confluence homologado no executor,
+a publicação **bloqueia** (Contrato do Workflow, A.10).
 
 ### 9. Sincronizar a documentação em `docs/` no código (só na trilha módulo)
 
@@ -337,7 +341,7 @@ não é burocracia, não force a existência de um arquivo vazio:
   módulo.
 
 Esta etapa só se aplica quando você está rodando com acesso real ao
-repositório do módulo (via Claude Code — o mesmo contexto de
+repositório do módulo (via Claude Code ou Codex — o mesmo contexto de
 `jira-issue-executor`, seja porque foi chamada por ela/por
 `jira-doc-executor` durante a execução de uma issue, seja porque Rafinha
 pediu isso explicitamente numa sessão com o repositório aberto). Se você

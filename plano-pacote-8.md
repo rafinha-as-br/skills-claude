@@ -1,7 +1,7 @@
 # Plano de implementação — Pacote 8: Codex como executor alternativo
 
 Registro de implementação, no formato dos `plano-pacote-N.md` anteriores.
-**Status: PLANO APROVADO — Onda 0 executada e sincronizada (`c0c3322`); Onda 1 sincronizada (`7bf58f5`); Onda 2 sincronizada (`e5d0ce5`); Onda 3 executada sem commit; Ondas 1–6 pendentes.**
+**Status: PLANO APROVADO — Onda 0 executada e sincronizada (`c0c3322`); Onda 1 sincronizada (`7bf58f5`); Onda 2 sincronizada (`e5d0ce5`); Onda 3 sincronizada (`05e0eb9`); Onda 4 executada sem commit; Ondas 1–6 pendentes.**
 
 **Fonte:** `plano-adaptacao-codex.md` (proposta de Rafinha, em `~/.codex/skills/`), avaliada em
 2026-10-21 contra o repo e contra `~/.codex`. As 6 decisões pendentes do plano original e as 6
@@ -149,7 +149,7 @@ Itens originais da onda:
    campo `Executor` nos comentários, política de modelo por nível, referência de ferramenta.
    **Sem** mexer em Contrato Efetivo, descrições, tipos, labels ou transições.
 
-### Onda 3 — Implementação, integração e auditoria (Lote C, piloto) — **status: texto executado em 2026-10-21, sem commit; Codex NÃO habilitado**
+### Onda 3 — Implementação, integração e auditoria (Lote C, piloto) — **status: texto executado e sincronizado em 2026-10-21 (`05e0eb9`); Codex NÃO habilitado**
 Entregue (3 SKILL.md, só texto; `description`, `name`, gates 9/10/11/14/15, modos A/B/C, gramática de
 branch `-claude[.N]`, título "Implementação Claude" e frases fixas `claude review aprovado` /
 `review reprovada por claude` preservados):
@@ -186,7 +186,34 @@ Itens originais da onda:
    Critério: issue artificial percorre implementação → revisão humana → integração com os mesmos
    gates, evidências e autorizações do Claude.
 
-### Onda 4 — Documentação (Lote D)
+### Onda 4 — Documentação (Lote D) — **status: texto executado em 2026-10-21, sem commit; Codex NÃO habilitado**
+Entregue (7 SKILL.md, só texto; `description`, `name`, templates em `references/`, trilhas e regras de
+pendência intactos):
+- **Nível:** as 6 skills do lote em **Nível 0** (tabela 11.6: Documentação = 0); "Opus" virou "Profundo".
+- **Conector:** "Atlassian Rovo" virou "conector Atlassian (Confluence) homologado do executor (Rovo no
+  Claude Code)"; os nomes `getConfluencePage` / `createConfluencePage` / `updateConfluencePage` ficaram
+  como nomes do Rovo, com "a operação equivalente do conector" para o Codex. Sem conector homologado, a
+  publicação bloqueia (A.10). **Não verifiquei** as operações do conector Confluence do Codex.
+- **Página sem identidade do executor:** os 5 writers declaram que a página (e `docs/`, no
+  `tech-doc-writer`) descreve só o estado atual, sem executor, tentativa ou histórico; o `Executor` fica
+  no comentário Jira de quem delega, e o claim é dessa skill. Writers não abrem claim próprio.
+- **`jira-doc-executor`:** claim por issue, `Documentação Claude` (título fixo) com `Executor:` abaixo,
+  recovery check com executor/handoff, e regra nova **"writer que o executor não consegue exercer"**: o
+  item do plano não é dispensado nem trocado, vira bloqueio documental e a issue não se move.
+- **`jira-issue-executor` (passo 6):** a mesma regra de bloqueio para issues de Documentação (acrescentada
+  aqui por consequência, fora do Lote C original).
+- **`screen-doc-writer`:** pré-requisito 3 reescrito como tabela por executor. Claude Code = Claude in
+  Chrome (homologado, inalterado). **Codex = nenhum executor web homologado, a skill bloqueia**
+  (candidatos: Browser, Computer Use ou extensão do Chrome do Codex). Homologar exige verificar de ponta a
+  ponta **navegar, capturar, anexar na página e incorporar o print**, e só Rafinha declara. O utilitário
+  `anexar-print.sh` ficou executor-neutro (caminho `~/.claude/skills/` ou `~/.codex/skills/`) com a
+  regra de nunca expor `JIRA_API_TOKEN`.
+**Não alterado:** `doc-pendency-resolver` (fora do Lote D, sem `Model Policy` nem ferramenta acoplada).
+**Não verificado:** a anexação por REST no ambiente do Codex (variáveis `JIRA_API_*` no shell, `curl`),
+e se o conector Confluence do Codex anexa arquivo. Critério de aceite (Codex publica uma página com fonte
+correta e, quando aplicável, evidência visual verificável) **não executado**.
+
+Itens originais da onda:
 10. `product-doc-writer`, `tech-doc-writer`, `user-doc-writer`, `workflow-doc-writer`,
     `jira-doc-executor`: conector Confluence do Codex, política de modelo por nível, menções a Rovo.
 11. `screen-doc-writer`: **bloqueado para Codex** até D4 (executor visual). Documentação

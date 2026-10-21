@@ -865,6 +865,12 @@ Não tente antecipar ou reescrever essa lógica aqui: se a skill de
 documentação precisar perguntar algo a Rafinha, deixe que ela pergunte
 diretamente.
 
+**Writer que o executor não consegue exercer.** O writer roda no **mesmo executor**
+desta skill. Se ele depende de capacidade não homologada nesse executor — hoje, o
+`screen-doc-writer` no Codex (executor visual, D4) —, **não troque de writer nem
+escreva o conteúdo por conta própria**: registre o bloqueio (incidente), **não mova** a
+issue e reporte a Rafinha (Contrato do Workflow, A.10 e B.3).
+
 **6.3 Retomar o fluxo desta skill.** Depois que a página estiver
 escrita/atualizada e publicada, volte para o passo 7 (comentário de resumo)
 e siga normalmente até o passo 9. Não há gate de qualidade, branch, commit

@@ -96,7 +96,11 @@ literalmente quando o contrato de release exigir; registrar o resultado mesmo se
 drift; declarar a ausência de acesso em vez de reconstruir de memória. Saída:
 documentação criada/atualizada/auditada com resultado explícito de drift — sincronização
 descritiva compatível **ou** necessidade de reconciliação contratual; nunca mascarar a
-diferença.
+diferença. **Executor:** a ficha descreve o contrato da skill como o `SKILL.md` o
+declara — nunca o executor que a escreveu; a identidade (Claude | Codex) consta no
+comentário Jira de quem delega (Contrato do Workflow, A.9). A checagem de drift vale
+igual para qualquer executor: a lacuna entre a ficha e o `SKILL.md` é reportada, não
+escolhida por quem escreve.
 
 ### Limites e delegações
 Não altera `SKILL.md` como efeito implícito da documentação; não inventa regra; não
@@ -112,14 +116,13 @@ normativa. Dependências: `jira-release-executor`, `jira-doc-executor`,
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - a checagem de drift encontra muitas divergências entre o `SKILL.md` e a
   ficha, e reconciliar todas com clareza exige organização cuidadosa.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - não se aplica normalmente — documentação de workflow é síntese do
   contrato real, não decisão.
 
@@ -136,8 +139,8 @@ Identifique qual das três trilhas o pedido é (ver Escopo). Se não estiver
 claro, pergunte. Leia o template correspondente em `references/` antes de
 prosseguir.
 
-Se Rafinha enviou um link do Confluence, use o Atlassian Rovo para buscar a
-página e verificar se já existe conteúdo. Se o link ainda não foi enviado,
+Se Rafinha enviou um link do Confluence, use o conector Atlassian homologado do
+executor (Rovo no Claude Code) para buscar a página e verificar se já existe conteúdo. Se o link ainda não foi enviado,
 pergunte antes de prosseguir — esta skill sempre escreve diretamente na
 página, nunca devolve texto solto no chat como entrega final.
 
@@ -222,7 +225,9 @@ omitir em silêncio.
 ### 7. Publicar e apresentar resumo
 
 Crie ou atualize a página no Confluence (`createConfluencePage` ou
-`updateConfluencePage`). Ao final, apresente a Rafinha:
+`updateConfluencePage` no Rovo; a operação equivalente do conector no Codex). Sem
+conector Confluence homologado no executor, a publicação **bloqueia** (Contrato do
+Workflow, A.10). Ao final, apresente a Rafinha:
 
 ```
 ✅ Página [criada/atualizada]: [link da página]

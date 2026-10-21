@@ -26,10 +26,11 @@ atualizando diretamente a página cujo link Rafinha fornecer.
 O que torna esta skill diferente das outras duas de documentação:
 
 - **Você não parte só da descrição de Rafinha.** Você **navega a tela de
-  verdade** via **Claude in Chrome** (Chrome real da máquina, não o
-  navegador embutido do Claude Code) — mesma extensão que a
-  `jira-qa-executor` usa — pra observar o estado real da UI e tirar os
-  prints que vão pra página. Isso existe justamente para resolver o problema que motivou a
+  verdade** com o **executor web homologado** — no Claude Code, o **Claude in
+  Chrome** (Chrome real da máquina, não o navegador embutido do Claude Code), mesma
+  extensão que a `jira-qa-executor` usa; no Codex, **nenhum está homologado ainda**
+  e a skill bloqueia (pré-requisito 3, Contrato do Workflow A.10) — pra observar o
+  estado real da UI e tirar os prints que vão pra página. Isso existe justamente para resolver o problema que motivou a
   criação desta skill: documentação que vai ficando desatualizada, com
   texto fraco ou rastros de uma versão antiga da tela, porque foi escrita
   de memória em vez de a partir do que está de fato implementado.
@@ -118,20 +119,25 @@ estabelecido na página existente.
 - **Transição.** Nenhuma transição Jira por autoridade própria.
 
 ### Entradas, obrigações e saída
-Entradas: tela e produto; modo documental; ambiente local/dev funcional; Claude in
-Chrome disponível; página/página-mãe; código da tela quando modo `dev`. Obrigações:
+Entradas: tela e produto; modo documental; ambiente local/dev funcional; executor web
+homologado disponível; página/página-mãe; código da tela quando modo `dev`. Obrigações:
 navegar a UI real; tirar e embutir prints relevantes; respeitar a separação de
 público; usar estado atual; evitar jargão no modo `user`; limitar detalhe técnico ao
 escopo da tela; encaminhar informação não observável ao `doc-pendency-resolver`.
 Saída: página de tela criada/atualizada no modo correto, com screenshots pertinentes,
 limitada ao público e ao escopo da tela. A página e seus screenshots no Confluence
-são o artefato documental.
+são o artefato documental. **Executor:** a página descreve só o estado atual — nunca
+registra executor, tentativa nem histórico; a identidade (Claude | Codex) consta no
+comentário Jira de quem delega (Contrato do Workflow, A.9), e o claim da issue é dessa
+skill. **Documentação observacional é bloqueada no Codex** até a homologação do executor
+visual (captura, anexação e incorporação dos prints verificadas); não existe fallback
+para escrever "de memória", do código ou de outro navegador.
 
 ### Limites e delegações
 Não usa produção; não realiza ação que altere dado real sem confirmação; não inventa
 comportamento não observado; não substitui documentação de módulo; não escolhe o modo
-em silêncio. Dependências: Claude in Chrome; `doc-pendency-resolver`; utilitário de
-anexos.
+em silêncio. Dependências: executor web homologado (Claude in Chrome no Claude Code);
+`doc-pendency-resolver`; utilitário de anexos.
 
 > Defaults herdados (silêncio não concede autoridade, acesso técnico não é
 > autoridade, delegação não transfere autoridade etc.):
@@ -141,14 +147,13 @@ anexos.
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - a tela tem muitos estados/condicionais de exibição a reconciliar com o
   que foi observado ao vivo na navegação real.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - não se aplica normalmente — documentação de tela descreve o que existe,
   não decide arquitetura ou fluxo de UX.
 
@@ -217,22 +222,31 @@ que não vai na página.
 
 ### 2. Link da página do Confluence
 
-Se Rafinha enviou o link, use o Atlassian Rovo para buscar a página
-(`getConfluencePage`) e checar se já existe conteúdo (atualização) ou não
+Se Rafinha enviou o link, use o conector Atlassian homologado do executor (Rovo no
+Claude Code: `getConfluencePage`; no Codex, a operação equivalente) para buscar a
+página e checar se já existe conteúdo (atualização) ou não
 (criação). Se ele não enviou o link (nem o da página-mãe, no caso de
 página nova), pergunte antes de prosseguir — esta skill sempre escreve
 diretamente na página, nunca devolve o conteúdo só no chat como entrega
 final.
 
-### 3. Chrome aberto com a extensão Claude in Chrome ativa
+### 3. Executor web homologado
 
-Confirme que o Google Chrome está aberto e que a extensão **Claude in
-Chrome** está instalada e ativa antes de navegar (passo 2 do fluxo abaixo)
-— mesmo pré-requisito de `jira-qa-executor`. Esta skill usa
-especificamente essa integração, não o navegador embutido do Claude Code,
-porque é o que comprovadamente funciona de forma consistente entre
-diferentes notebooks/ambientes. Se a extensão não estiver disponível ou
-ativa, **pare e avise Rafinha** em vez de tentar outro navegador.
+O executor web é **o do seu executor**, e só vale se estiver **homologado**
+(Contrato do Workflow, A.10):
+
+| Executor | Executor web | Situação |
+|---|---|---|
+| Claude Code | **Claude in Chrome** — Chrome real aberto com a extensão instalada e ativa; mesmo pré-requisito da `jira-qa-executor`. **Não** o navegador embutido do Claude Code, porque é o que comprovadamente funciona de forma consistente entre notebooks/ambientes | Homologado |
+| Codex | Candidatos: Browser, Computer Use ou extensão do Chrome do Codex | **Nenhum homologado — esta skill bloqueia no Codex** |
+
+Confirme a disponibilidade antes de navegar (passo 2 do fluxo abaixo). Se o executor
+web não estiver disponível, ativo ou homologado, **pare e avise Rafinha** — nunca
+tente outro navegador, nunca documente "de memória" nem a partir do código no lugar
+da observação (B.3: sem fallback silencioso). Para homologar um executor web, a
+verificação precisa cobrir de ponta a ponta: **navegar a tela, capturar, anexar na
+página do Confluence e incorporar o print inline**, com evidência verificável; só
+Rafinha declara a homologação.
 
 ### 4. Como chegar na tela, ao vivo
 
@@ -279,7 +293,8 @@ mesma página.
 
 ### 2. Navegar a tela e observar o estado real
 
-Usando o Claude in Chrome (mesma integração da `jira-qa-executor`):
+Usando o executor web homologado (Claude in Chrome no Claude Code, mesma integração
+da `jira-qa-executor`):
 
 1. Abra o ambiente confirmado no pré-requisito 4 e navegue até a tela.
 2. Leia a tela como ela está: campos visíveis, rótulos, botões, textos de
@@ -338,12 +353,19 @@ genuinamente necessário para esclarecer o comportamento técnico.
 
 O Atlassian Rovo disponível hoje **não tem uma ferramenta de anexar
 arquivo** (nem no Jira, nem no Confluence) — isso já foi confirmado ao
-desenhar a `jira-qa-executor`. O caminho é a API REST do Confluence, pelo
-utilitário compartilhado desta skill:
+desenhar a `jira-qa-executor`; se o conector do Codex tem uma, isso ainda **não foi
+verificado**. O caminho comprovado é a API REST do Confluence, pelo utilitário
+compartilhado desta skill (executor-neutro; use o diretório da skill no seu executor —
+`~/.claude/skills/` ou `~/.codex/skills/`):
 
 ```bash
 ~/.claude/skills/screen-doc-writer/scripts/anexar-print.sh <pageId> print1.png [print2.png ...]
 ```
+
+As credenciais (`JIRA_API_EMAIL`/`JIRA_API_TOKEN`) precisam estar no ambiente do
+shell do executor; **nunca** as imprima, ecoe ou grave em chat, log, comentário ou
+Execution State. Variável ausente = bloqueio: peça a Rafinha, não improvise
+credencial.
 
 Ele usa as variáveis `JIRA_API_EMAIL`/`JIRA_API_TOKEN` (as mesmas do anexo no
 Jira), converte o caminho para o formato Windows quando roda no Git Bash, e
@@ -376,8 +398,9 @@ os arquivos anexados pelo nome.
 ### 6. Publicar e apresentar resumo
 
 Crie ou atualize a página no Confluence com o conteúdo formatado
-(`createConfluencePage` ou `updateConfluencePage`). Ao final, apresente a
-Rafinha:
+(`createConfluencePage` ou `updateConfluencePage` no Rovo; a operação equivalente do
+conector no Codex). Sem conector Confluence homologado no executor, a publicação
+**bloqueia** (A.10). Ao final, apresente a Rafinha:
 
 ```
 ✅ Página [criada/atualizada]: [link da página]
@@ -423,10 +446,13 @@ Rafinha:
   exemplo é permitido, submissão real não é (ver pré-requisito 5).
 - ❌ Nunca abrir um ambiente de produção para navegar/capturar prints —
   sempre local/dev, e sempre confirmado com Rafinha se não estiver claro.
-- ❌ Nunca prosseguir sem confirmar que a extensão Claude in Chrome está
-  ativa (Pré-requisito 3) — nunca tente usar o navegador embutido do
-  Claude Code como alternativa; pare e avise Rafinha se a extensão não
-  estiver disponível.
+- ❌ Nunca prosseguir sem confirmar que o executor web **homologado** está disponível
+  (Pré-requisito 3) — no Claude Code, a extensão Claude in Chrome ativa; nunca tente
+  o navegador embutido do Claude Code nem outro navegador como alternativa; no Codex,
+  enquanto nenhum executor web estiver homologado, a skill não roda. Pare e avise
+  Rafinha.
+- ❌ Nunca expor `JIRA_API_TOKEN` (nem outra credencial) em chat, log, comentário ou
+  Execution State ao anexar prints.
 - ❌ Nunca mudar de modo, ou escrever sem ter confirmado um, mesmo quando o
   nome da tela parecer sugerir claramente qual seria (ver pré-requisito 1).
 - ❌ Nunca escrever em tom narrativo/histórico ou citar número de issue no

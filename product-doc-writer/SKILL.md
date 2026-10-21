@@ -17,8 +17,10 @@ Requisito, regra funcional e explicação de Rafinha entram aqui; caminho de
 arquivo, contrato de API e estrutura de pastas não.
 
 Rafinha sempre envia o **link da página do Confluence** junto com o pedido.
-Use o Atlassian Rovo para ler a página (se já existir conteúdo) e para
-criar/atualizar o conteúdo formatado diretamente nela.
+Use o conector Atlassian (Confluence) homologado do seu executor — Rovo no Claude
+Code — para ler a página (se já existir conteúdo) e para criar/atualizar o conteúdo
+formatado diretamente nela. Sem conector Confluence homologado no executor, a
+publicação **bloqueia** (Contrato do Workflow, A.10): não há fallback silencioso.
 
 Consulte a skill `workflow-development-flow` para dúvidas sobre como a
 documentação de produto se encaixa no fluxo geral do pipeline (hierarquia,
@@ -90,6 +92,10 @@ o estado atual, sem histórico desnecessário; encaminhar incertezas ao
 evitar duplicação de fonte de verdade. Saída: página de produto criada/atualizada,
 fiel à decisão recebida, com pendências só quando explicitamente autorizadas. O
 Confluence preserva a página; o chamador recebe resumo da trilha, seções e pendências.
+**Executor:** a página descreve só o estado atual — nunca registra executor, tentativa
+nem histórico; a identidade do executor (Claude | Codex) consta no comentário Jira de
+quem delega (`jira-doc-executor` ou `jira-issue-executor`, Contrato do Workflow A.9),
+e o claim da issue pertence a essa skill, não a esta.
 
 ### Limites e delegações
 Não escreve documentação técnica do código; não documenta campos de tela; não
@@ -104,17 +110,16 @@ fonte de verdade de produto. Dependência: `doc-pendency-resolver`.
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - a RN tem muitas exceções ou condições interdependentes difíceis de
   organizar com clareza na estrutura fixa (Visão Geral, Pré-condições,
   Passo a Passo, Regras Específicas);
 - o fluxo de produto tem muitos atores ou pontos de decisão para o diagrama
   ficar claro em texto/Mermaid.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - não se aplica normalmente — documentação de produto é síntese de conteúdo
   já dado por Rafinha, não decisão arquitetural.
 
@@ -162,8 +167,9 @@ Com a trilha confirmada, **leia o template correspondente em `references/`**
 antes de prosseguir — ele traz a estrutura de seções exata, a convenção de
 título, e o que não vai naquela página.
 
-Se Rafinha enviou um link do Confluence, use o Atlassian Rovo para buscar a
-página (`getConfluencePage` ou equivalente) e verificar se já existe conteúdo
+Se Rafinha enviou um link do Confluence, use o conector Atlassian homologado para
+buscar a página (no Rovo, `getConfluencePage`; no Codex, a operação equivalente do
+conector) e verificar se já existe conteúdo
 — nesse caso, trata-se de uma reescrita/atualização, não de criação do zero.
 
 Se o link ainda não foi enviado nesta interação, pergunte por ele antes de
@@ -232,8 +238,8 @@ Formato do painel (macro de aviso/callout do Confluence — tipo "Info" ou
 ### 6. Publicar e apresentar resumo
 
 Crie ou atualize a página no Confluence com o conteúdo formatado (usando
-`createConfluencePage` ou `updateConfluencePage` conforme o caso). Ao final,
-apresente a Rafinha:
+`createConfluencePage` ou `updateConfluencePage` no Rovo; a operação equivalente
+no conector do Codex, conforme o caso). Ao final, apresente a Rafinha:
 
 ```
 ✅ Página [criada/atualizada]: [link da página]

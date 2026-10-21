@@ -102,7 +102,10 @@ mãe. Obrigações: linkar páginas de tela em vez de repetir campo por campo; e
 ponto de vista do usuário; sem jargão técnico; tom de estado atual; declarar
 dependência quando uma tela ainda não tem página publicada; encaminhar lacunas ao
 `doc-pendency-resolver`. Saída: guia de usuário final criado/atualizado, cobrindo a
-tarefa ponta a ponta e referenciando as páginas de tela sem duplicá-las.
+tarefa ponta a ponta e referenciando as páginas de tela sem duplicá-las. **Executor:**
+o guia descreve só o estado atual — nunca registra executor, tentativa nem histórico;
+a identidade do executor (Claude | Codex) consta no comentário Jira de quem delega
+(Contrato do Workflow, A.9), e o claim da issue é dessa skill.
 
 ### Limites e delegações
 Não navega a UI; não cria guia para tarefa restrita a uma única tela quando a página
@@ -117,14 +120,13 @@ Dependências: `screen-doc-writer`; `doc-pendency-resolver`.
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: Medium
+Nível padrão: 0 — Rotina · esforço baixo
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - a tarefa atravessa muitas telas ou tem muitos desvios (erro, permissão
   negada, dado ausente) para organizar num passo a passo que continue claro.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - não se aplica normalmente — guia de usuário é síntese de conteúdo já
   publicado (páginas de tela) e já confirmado por Rafinha, não decisão.
 
@@ -152,8 +154,9 @@ publicada e atualizada:
   dela.
 
 Leia `references/user-guide.md` antes de prosseguir. Se Rafinha enviou um
-link do Confluence, use o Atlassian Rovo para buscar a página e verificar se
-já existe conteúdo (atualização) ou não (criação). Se o link ainda não foi
+link do Confluence, use o conector Atlassian homologado do executor (Rovo no
+Claude Code) para buscar a página e verificar se já existe conteúdo (atualização)
+ou não (criação). Se o link ainda não foi
 enviado, pergunte antes de prosseguir — esta skill sempre escreve
 diretamente na página, nunca devolve texto solto no chat como entrega final.
 
@@ -204,8 +207,9 @@ uma seção do template sem conteúdo correspondente é candidata a pendência
 ### 6. Publicar e apresentar resumo
 
 Crie ou atualize a página no Confluence com o conteúdo formatado
-(`createConfluencePage` ou `updateConfluencePage`). Ao final, apresente a
-Rafinha:
+(`createConfluencePage` ou `updateConfluencePage` no Rovo; a operação equivalente do
+conector no Codex). Sem conector Confluence homologado no executor, a publicação
+**bloqueia** (Contrato do Workflow, A.10). Ao final, apresente a Rafinha:
 
 ```
 ✅ Página [criada/atualizada]: [link da página]
