@@ -125,6 +125,15 @@ Sem Model Escalation Policy específica nesta primeira versão: usa o nível da 
 2. Faça a checagem de disponibilidade somente leitura (pré-condições acima). Falha de
    conexão, permissão, ambiente ou sessão ambígua → **bloqueio operacional**; reporte
    e pare.
+3. Confirme que o **canal remoto e o executor da sessão estão homologados** para o que
+   foi pedido (`workflow-development-flow/references/executores.md`). Num canal ou
+   executor Codex ainda não homologado, a orquestração **não roda** (Pacote 8, D3). A
+   skill despachada executa **no executor da sessão**: se a etapa depende de capacidade
+   que esse executor não tem homologada (hoje no Codex: QA, Release, `screen-doc-writer`,
+   Modo B), a skill chamada bloqueia e você **comunica o bloqueio nos termos dela** — não
+   troca de executor, de skill nem de etapa para contorná-lo. Homologar o Codex Remote
+   Control exige, em host dedicado, iniciar e acompanhar trabalho autorizado **sem** decidir
+   modo de integração, ampliar escopo, mover Hotfix nem herdar a autorização do Modo B.
 
 ### Consulta — "Onde paramos?" e "Retomar a sessão X"
 Não escolhe alvo nem muda nada. Investigue a situação mais recente nas issues do

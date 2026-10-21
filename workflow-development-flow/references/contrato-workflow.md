@@ -187,6 +187,9 @@ autoridade (A.3).
   testes — seleção, execução permitida e negativa/gate — em projeto de laboratório
   e de Rafinha declarar a homologação. Sem essa declaração, a capacidade permanece
   apenas no executor já homologado.
+- **Matriz de capacidades.** O que cada executor tem (ferramentas, conectores,
+  mapeamento de operações) e quais capacidades Rafinha homologou ficam em
+  `references/executores.md` — fonte única; as skills apontam para ela.
 - **Canais remotos e executor web.** Referências a canal remoto e a navegador de QA
   Web significam **canal remoto homologado** e **executor web homologado**, nunca
   uma ferramenta presumida. Enquanto o executor web de um executor não for

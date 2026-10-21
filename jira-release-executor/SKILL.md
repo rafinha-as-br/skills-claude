@@ -31,6 +31,13 @@ Você **herda as regras de segurança de `jira-integration-executor`**: nunca
 `git push --force` ou `--force-with-lease`; nunca descarta trabalho não
 commitado sem perguntar; sempre `git status` antes de qualquer checkout.
 
+**Executor.** Você roda via **Claude Code ou Codex** (Contrato do Workflow, A.10), mas
+**Release por Codex só depois de homologada por Rafinha** (Pacote 8, D3). Hoje, no
+Codex, o Orchestrator (`orchestrate.ps1`), o `gh` e o Docker estão no host, porém
+**nada está homologado** e o **Drive não foi observado** (o G9/7.3 bloqueia). A matriz
+está em `workflow-development-flow/references/executores.md`. Integração ausente é
+**bloqueio do gate correspondente**, nunca contorno.
+
 **A decisão de versão nunca é sua.** Você sugere incremento com justificativa —
 por componente, mais o do produto quando a release for completa — e a decisão
 final é sempre de Rafinha.
@@ -110,6 +117,20 @@ Request; registrar exceções com item, risco, autorização e impacto; manter b
 semântico separado do build number; delegar páginas de release ao
 `workflow-doc-writer`; exigir validação de Rafinha fora da IDE.
 
+**Executor, concorrência e registro.** Release não é etapa de issue, então o claim por
+issue de B.5 não se aplica ao ciclo; a exclusividade vem da evidência primária. **Antes
+da Fase 5**, confira se já existe Release Request em andamento (`.release/requests/` sem
+conclusão) ou run de Action da release ainda ativo (`gh run list`); se houver, **pare e
+reporte a Rafinha** — só ele libera, e retomada por outro executor segue o recovery check
+e o handoff de B.5 (reconciliar com Git/GitHub, `release/current`, manifesto e Actions;
+nunca refazer bump, tag ou publicação já feitos). Nas Fix Versions (G9), antes de editar
+uma issue confira se há claim vigente de **outro** executor nela; havendo, não a edite e
+reporte. O `Executor: Claude | Codex` consta (a) no **corpo da mensagem do commit de
+bump** em `release/current` e (b) no resumo final; o **schema do Release Request e o
+`release-manifest.yml` não mudam** (contrato do Orchestrator), e a identidade nunca entra
+na cópia literal do manifesto nas páginas do Confluence. Conector Atlassian, `gh`,
+Orchestrator ou Drive não homologado no executor **bloqueia** o gate correspondente.
+
 ### Evidências, saída e limites
 Git/GitHub, manifesto, Release Request, Jira e documentação de release preservam a
 rastreabilidade. Saída: ciclo conduzido até o ponto pedido; bloqueio de gate encerra
@@ -130,16 +151,15 @@ Páginas de release → `workflow-doc-writer`.
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: High
+Nível padrão: 1 — Rotina · esforço padrão
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - o changelog agrega mudanças de múltiplos componentes com risco real de
   breaking change;
 - muitas issues cruzam componentes, tornando o mapeamento ambíguo;
 - a resolução de dependências muda o escopo de forma não óbvia.
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - surge uma decisão atípica de estratégia de release sem precedente no Release
   Lifecycle documentado.
 
@@ -470,9 +490,10 @@ Com o gate verde, faça o merge `develop → release/current` e envie.
 ### 5.1 Commit de bump na `release/current`
 
 Com a promoção feita e as versões já decididas na Fase 3, aplique o bump
-**direto na `release/current`** e commite. A partir daqui, a
-`release/current` carrega o estado estabilizado **e já versionado** da
-release.
+**direto na `release/current`** e commite — com `Executor: Claude | Codex` numa linha
+do corpo da mensagem do commit (rastro em Git do executor que fez o bump; Contrato do
+Workflow, A.9). A partir daqui, a `release/current` carrega o estado estabilizado **e
+já versionado** da release.
 
 > **Isto não duplica o bump da Action.** A versão semântica (`1.2.0`) é
 > decisão de Rafinha e pertence à linha persistente. O metadado de build
@@ -556,7 +577,8 @@ Só depois de uma release **FINAL** validada:
 
 ### 7.1 Fix Versions no Jira
 
-Crie/atualize as versões com **nome namespaced**, igual à tag:
+Crie/atualize as versões (pelo conector Atlassian homologado do executor — Rovo no
+Claude Code) com **nome namespaced**, igual à tag:
 
 ```text
 geoprag_admin 1.2.0
@@ -587,6 +609,10 @@ O G9 só fecha quando as três estão atualizadas — confira pelo resumo que a
 `workflow-doc-writer` devolve, não pela delegação em si.
 
 ### 7.3 Armazenamento
+
+**No Codex, o Drive não foi observado** (`executores.md`): sem integração de Drive
+homologada, este passo — e portanto o G9 — **bloqueia**; não substitua por outro
+armazenamento sem decisão de Rafinha.
 
 O ZIP vai para a pasta do Drive definida pelo projeto, junto de uma cópia
 atualizada do `.release/project.yml`. Em multi-repo isso não é conveniência: o

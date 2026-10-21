@@ -2138,6 +2138,10 @@ concorrente**.
 | 5. Contrato Efetivo do Ticket | Composição das camadas acima para uma issue; procedimento "Passo 0" das skills | `references/contrato-efetivo.md` |
 | 6. Contrato das skills | Interface contratual de cada capacidade (autoridades, obrigações, limites, delegações) = **contrato + operação técnica** | `references/contrato-skills.md` e o bloco `## Contrato da skill` de cada `SKILL.md` |
 
+A matriz de capacidades por executor (Claude Code e Codex: ferramentas, mapeamento de
+operações e homologação declarada por Rafinha) está em `references/executores.md`; não é
+camada contratual, é a fonte do que cada executor *tem* (Contrato do Workflow, A.10).
+
 A orquestração remota (seção 21, `references/orquestracao-remota.md`) não é
 camada nova: é uma capacidade (skill) sujeita ao Contrato das skills, com a
 exceção de transição "Comando remoto" declarada no Contrato do Workflow (A.5).

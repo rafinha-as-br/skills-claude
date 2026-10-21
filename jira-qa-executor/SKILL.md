@@ -8,7 +8,11 @@ description: "Executar QA funcional/visual, uma issue por vez, das issues da col
 ## Identidade do papel
 
 Ao executar esta skill, você atua como um **QA funcional e visual
-autônomo**. Toda issue que chega em "QA - Claude" já passou pela
+autônomo**, rodando via **Claude Code ou Codex** (executores alternativos, Contrato do
+Workflow A.10). **QA por Codex só depois de homologado por Rafinha** — hoje: QA Web
+**bloqueado** (nenhum executor web do Codex está homologado) e QA Android dependente
+da homologação do Maestro CLI no Codex; a matriz de capacidades está em
+`workflow-development-flow/references/executores.md`. Toda issue que chega em "QA - Claude" já passou pela
 implementação (`jira-issue-executor`), pelo review manual de negócio de
 Rafinha em "Análise - Rafinha", e pela etapa de Integração
 (`jira-integration-executor`) — ou seja, já está mergeada em `develop`, com
@@ -123,6 +127,24 @@ continuidade, **delegar à `ai-memory-manager`** os detalhes operacionais úteis
 próxima tentativa; aplicar/remover labels operacionais conforme o veredito; usar
 frases fixas no comentário Jira.
 
+**Claim, executor e handoff.** Para cada issue do escopo fechado, antes da primeira
+mutação (AIO Tests, comentário, label, transição), ler os comentários e abrir o claim de
+execução (Contrato do Workflow, B.5); claim vigente de **outro** executor → não testar
+aquela issue e reportar a Rafinha. As frases fixas do veredito (`QA aprovado por
+claude`, `Teste de QA - Claude falharam`, `QA - Claude: Não foi possível chegar a um
+resultado`) são **nomes contratuais fixos**, inclusive quando o executor é o Codex: a
+frase abre o comentário e `Executor: Claude | Codex` vem logo abaixo (A.9, A.10); esse
+comentário libera o claim. Retomada por outro executor segue o handoff de B.5 e **nunca
+reaproveita veredito, Run ou evidência de outro executor sem checar o AIO Tests e a
+`develop`**: um Run só vale se foi realmente executado sobre o estado testado.
+
+**Capacidade ausente = bloqueio, nunca aprovação.** Executor web, Maestro, emulador,
+AIO Tests ou conector não homologado/indisponível no executor → o resultado é
+**Inconclusivo por infraestrutura** (ou bloqueio antes de testar), jamais Aprovado, e
+nunca QA por leitura de código ou por outra plataforma (A.10, B.3). O AIO Tests só é
+chamado pelo wrapper `scripts/aio.sh` (ver "AIO Tests — registro"), que não expõe o
+token.
+
 ### Evidências, saída e limites
 AIO Tests é a fonte primária do detalhamento; o Jira mantém o veredito operacional,
 links e mudanças de estado. Saída: veredito sustentado por execução real e
@@ -145,20 +167,19 @@ handoff → `ai-memory-manager`.
 
 ## Model Policy
 
-Modelo padrão: Sonnet
-Effort padrão: High
+Nível padrão: 1 — Rotina · esforço padrão
 
-Escalonar effort quando:
+Escalar o esforço quando:
 - a falha observada é intermitente/não-determinística;
 - não é evidente se a falha é do teste (flow Maestro, seletor, timing) ou
   da infraestrutura (emulador, docker, rede) — essa distinção já é um
   ponto documentado como difícil nesta skill (ver "Falha no Maestro: teste
   vs. infraestrutura").
 
-Escalonar para Opus quando:
+Escalar para Profundo quando:
 - o comportamento da aplicação é inconsistente e a causa segue obscura
   após reexecução — só para diagnóstico/relato no comentário do Jira; esta
-  skill nunca corrige código, então Opus aqui serve para descrever o
+  skill nunca corrige código, então o nível Profundo aqui serve para descrever o
   problema com precisão, não para consertá-lo.
 
 Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
@@ -171,23 +192,28 @@ Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
 A skill separa quatro responsabilidades que nunca devem se confundir:
 
 ```
-DECISÃO   → Claude (o que testar, qual executor, aprovado/reprovado/inconclusivo)
-EXECUÇÃO  → Claude in Chrome (Web) / Maestro (Android)
+DECISÃO   → o agente (o que testar, qual executor de QA, aprovado/reprovado/inconclusivo)
+EXECUÇÃO  → executor web homologado (Web; no Claude Code, Claude in Chrome) / Maestro (Android)
 DISPOSITIVO → Chrome real / Android Emulator
 REGISTRO  → AIO Tests (execução) / Jira (workflow)
 ```
 
-Claude decide o que deve ser testado; o executor determina como; o
+O agente decide o que deve ser testado; o executor de QA determina como; o
 dispositivo é onde; o AIO Tests e o Jira são onde o resultado fica
-registrado.
+registrado. ("Executor de QA" = Claude in Chrome ou Maestro; não confundir com o
+**executor técnico** — Claude Code ou Codex — do Contrato do Workflow, A.10.)
 
 ### Status de ativação por plataforma
 
-| Plataforma | Executor | Status |
-|---|---|---|
-| Flutter Web | Claude in Chrome | **Ativo** |
-| Flutter Android | Maestro (MCP → fallback CLI) | **Ativo** |
-| Outra plataforma | — | Fora de escopo. Pare e pergunte a Rafinha. |
+| Plataforma | Executor de QA | Claude Code | Codex |
+|---|---|---|---|
+| Flutter Web | executor web homologado (Claude in Chrome) | **Ativo** | **Bloqueado** — nenhum executor web homologado (candidatos: Browser, Chrome, Computer Use do Codex) |
+| Flutter Android | Maestro (MCP → fallback CLI) | **Ativo** | Maestro **CLI** observado no host; MCP não configurado; **não homologado** |
+| Outra plataforma | — | Fora de escopo. Pare e pergunte a Rafinha. | idem |
+
+Homologar o executor web ou o Maestro para o Codex exige, no laboratório, os **três
+resultados** (Aprovado, Reprovado e Inconclusivo por infraestrutura) com evidência,
+registro no AIO Tests e transição/labels corretos para cada um; só Rafinha declara.
 
 > **Validação Fase 2 concluída em 2026-08-22**, no projeto Encryption
 > Playground (primeira issue Android de ponta a ponta: build do APK,
@@ -314,6 +340,20 @@ estiver configurado, **pare e avise Rafinha** — nunca prossiga sem
 conseguir registrar a execução, e nunca peça pra ele digitar o token
 diretamente para você em algum formulário ou chat.
 
+**O token nunca aparece no chat, em log, em comentário nem em Execution State.** Toda
+chamada ao AIO Tests passa pelo wrapper `scripts/aio.sh` desta skill (diretório da skill
+no seu executor: `~/.claude/skills/` ou `~/.codex/skills/`), que lê
+`AIO_TESTS_ACCESS_TOKEN` do ambiente e o entrega ao `curl` por arquivo temporário
+(`-K`) — fora da linha de comando, da saída e dos logs. Não monte `curl` à mão com o
+header, não use `-v`/`set -x` nem imprima variáveis de ambiente. Em erro HTTP o wrapper
+sai com código ≠ 0 e mostra só o código.
+
+```bash
+aio.sh GET  /caminho                      # consulta
+aio.sh POST /caminho '{"campo":"valor"}'  # corpo JSON inline (ou @arquivo.json)
+aio.sh POST /caminho -F file=@print.png   # anexo (multipart; converte o caminho no Git Bash)
+```
+
 > **Nota:** os payloads exatos de cada endpoint (nomes de campo,
 > obrigatoriedade) não estão fixados nesta skill de propósito, porque podem
 > mudar entre versões do AIO Tests. Antes da primeira execução real,
@@ -354,7 +394,10 @@ Antes de começar os testes de uma issue, verifique se existe
 (esta etapa roda sobre `develop`, sem branch isolada própria; ver
 `workflow-development-flow`, seção 13.3). Útil sobretudo quando uma rodada
 de QA Android via emulador é interrompida no meio de uma bateria de casos
-— o arquivo evita reexecutar do zero os fluxos já validados.
+— o arquivo evita reexecutar do zero os fluxos já validados. O arquivo registra
+`Executor` e `Handoff`: executor registrado diferente do atual é handoff (Contrato do
+Workflow, B.5) — reconcilie com Jira, AIO Tests e `ai-memory/` antes de agir, e **não
+conte como válido um Run que o outro executor não concluiu** com evidência.
 
 ### 7. Ambiente local sobe via docker compose
 
@@ -366,6 +409,11 @@ claro, pergunte a Rafinha.
 ---
 
 ## Pré-requisitos específicos — Flutter Web
+
+**No Codex, QA Web está bloqueado** até um executor web ser homologado
+(`workflow-development-flow/references/executores.md`): não existe fallback para outro
+navegador, para o Maestro nem para leitura de código — o resultado é bloqueio/Inconclusivo
+por infraestrutura. Os itens abaixo valem para o Claude Code.
 
 1. Google Chrome instalado e aberto;
 2. extensão **Claude in Chrome** instalada e ativa — esta skill usa
@@ -413,7 +461,10 @@ atrapalhe o trabalho dele em paralelo.
 4. ADB e Flutter disponíveis.
 5. Maestro CLI instalado e no PATH (`maestro --version` deve responder).
 6. Maestro MCP configurado no Claude Code (`claude mcp list` deve mostrar
-   `maestro` conectado). Instalação esperada:
+   `maestro` conectado). **No Codex o MCP não está configurado** (`config.toml` só tem
+   `node_repl`): a execução usa o **Maestro CLI** (item 5) e a descoberta interativa de
+   tela via MCP fica indisponível — o que não dispensa nenhum passo de evidência.
+   Instalação esperada no Claude Code:
 
    ```bash
    claude mcp add --scope user maestro -- maestro mcp
@@ -480,7 +531,7 @@ de infraestrutura".
 ## Seleção do executor
 
 ```
-Flutter Web       → Claude in Chrome
+Flutter Web       → executor web homologado (Claude Code: Claude in Chrome; Codex: bloqueado)
 Flutter Android    → Maestro
 Web + Android      → executar os dois quando a superfície de risco justificar
 Outra plataforma   → verificar se existe executor oficialmente configurado; senão, parar e perguntar
@@ -664,8 +715,8 @@ reexecutar imediatamente o teste.
 
 Não existe um MCP dedicado para o AIO Tests — os nomes abaixo (ex.:
 `createTestCase`, `addCaseToCycle`) são referências às operações da API
-REST, chamadas via HTTP direto (`curl` ou equivalente), não nomes de
-ferramenta MCP. Confirme o schema exato de cada uma no Swagger antes de
+REST, chamadas via HTTP direto **pelo wrapper `scripts/aio.sh`** (que protege o
+token, ver o pré-requisito 2), não nomes de ferramenta MCP. Confirme o schema exato de cada uma no Swagger antes de
 montar o payload — os nomes de campo abaixo não substituem essa consulta.
 
 ### Gotchas conhecidos da API (confirmados em 2026-08-22, projeto Encryption Playground)
@@ -679,7 +730,8 @@ montar o payload — os nomes de campo abaixo não substituem essa consulta.
 * Upload de anexo (`curl -F`) em ambiente Windows + Git Bash: use caminho
   no formato Windows (`C:/Users/...`), não POSIX (`/c/Users/...`) — o
   `curl` instalado nesses ambientes costuma ser um build nativo mingw64
-  que espera caminho Windows; caminho POSIX falha com `curl: (26)`.
+  que espera caminho Windows; caminho POSIX falha com `curl: (26)`. O
+  `scripts/aio.sh -F campo=@arquivo` já faz essa conversão.
 
 ### Casos de teste
 
@@ -729,15 +781,16 @@ aconteceu.
 
 ## Comentário obrigatório no Jira
 
-Publique um comentário na issue (via Atlassian Rovo) começando **com o
-texto exato** correspondente ao resultado:
+Publique um comentário na issue (pelo conector Atlassian homologado do executor —
+Rovo no Claude Code) começando **com o texto exato** correspondente ao resultado:
 
 * **Aprovado** → `QA aprovado por claude`
 * **Reprovado** → `Teste de QA - Claude falharam`
 * **Inconclusivo por infraestrutura** → `QA - Claude: Não foi possível
   chegar a um resultado`
 
-Depois da frase fixa, informe: plataforma testada, executor utilizado,
+Depois da frase fixa, informe, em linha própria, `Executor: Claude | Codex` (A.9) e, em
+seguida: plataforma testada, executor **de QA** utilizado (Claude in Chrome ou Maestro),
 quantidade de casos e aprovados/reprovados, regressões executadas, link do
 Cycle/Run no AIO Tests, **as labels operacionais aplicadas ou removidas**,
 e observações relevantes (ex.: "regressão Android não executada — issue

@@ -1,7 +1,7 @@
 # Plano de implementação — Pacote 8: Codex como executor alternativo
 
 Registro de implementação, no formato dos `plano-pacote-N.md` anteriores.
-**Status: PLANO APROVADO — Onda 0 executada e sincronizada (`c0c3322`); Onda 1 sincronizada (`7bf58f5`); Onda 2 sincronizada (`e5d0ce5`); Onda 3 sincronizada (`05e0eb9`); Onda 4 executada sem commit; Ondas 1–6 pendentes.**
+**Status: PLANO APROVADO — Onda 0 executada e sincronizada (`c0c3322`); Onda 1 sincronizada (`7bf58f5`); Onda 2 sincronizada (`e5d0ce5`); Onda 3 sincronizada (`05e0eb9`); Onda 4 sincronizada (`2f10538`); Onda 5 executada sem commit; Ondas 1–6 pendentes.**
 
 **Fonte:** `plano-adaptacao-codex.md` (proposta de Rafinha, em `~/.codex/skills/`), avaliada em
 2026-10-21 contra o repo e contra `~/.codex`. As 6 decisões pendentes do plano original e as 6
@@ -41,7 +41,7 @@ Hotfix, evidências primárias. Nomes de colunas Jira e gramática de branch (`-
 ### 1.3 Ainda em aberto (não bloqueia o início)
 
 - **Projeto e issues de laboratório:** Rafinha precisa indicar qual. Todos os critérios de aceite dependem dele. Sem laboratório, as Ondas 3 em diante ficam em "texto pronto, não habilitado".
-- **Conectores Atlassian/GitHub/Confluence no Codex:** não aparecem no `config.toml`; confirmar se estão ativos. Ausência = bloqueio do gate correspondente (regra do plano original).
+- **Conectores Atlassian/GitHub/Confluence no Codex:** *(corrigido na Onda 5)* não aparecem no `config.toml`, **mas existem**: o cache de plugins tem `atlassian-rovo` e `github`, e o inventário de ferramentas das sessões do Codex lista `atlassian_*` e `github_*` (ver `references/executores.md`). O que continua em aberto é se estão **ativos e autorizados** na conta, e a homologação. Ausência = bloqueio do gate correspondente (regra do plano original).
 
 ---
 
@@ -139,7 +139,8 @@ transições intactos; títulos e frases fixas dos comentários preservados):
 - **Ferramenta:** "via Atlassian Rovo" virou "conector Atlassian homologado do executor (Rovo no Claude
   Code)"; sem conector homologado a execução bloqueia (A.10). **Não verifiquei** as operações do
   conector Atlassian do Codex (não consta no `config.toml`): o mapeamento operação a operação ainda
-  precisa ser feito na homologação.
+  precisa ser feito na homologação. *(Corrigido na Onda 5: o conector existe e o mapeamento observado
+  está em `references/executores.md`; falta só testá-lo e homologá-lo.)*
 Critério de aceite (issue de laboratório: cria, comenta ou transiciona só dentro da autoridade, com os
 gates satisfeitos) **não executado**: depende do projeto de laboratório.
 
@@ -186,14 +187,16 @@ Itens originais da onda:
    Critério: issue artificial percorre implementação → revisão humana → integração com os mesmos
    gates, evidências e autorizações do Claude.
 
-### Onda 4 — Documentação (Lote D) — **status: texto executado em 2026-10-21, sem commit; Codex NÃO habilitado**
+### Onda 4 — Documentação (Lote D) — **status: texto executado e sincronizado em 2026-10-21 (`2f10538`); Codex NÃO habilitado**
 Entregue (7 SKILL.md, só texto; `description`, `name`, templates em `references/`, trilhas e regras de
 pendência intactos):
 - **Nível:** as 6 skills do lote em **Nível 0** (tabela 11.6: Documentação = 0); "Opus" virou "Profundo".
 - **Conector:** "Atlassian Rovo" virou "conector Atlassian (Confluence) homologado do executor (Rovo no
   Claude Code)"; os nomes `getConfluencePage` / `createConfluencePage` / `updateConfluencePage` ficaram
   como nomes do Rovo, com "a operação equivalente do conector" para o Codex. Sem conector homologado, a
-  publicação bloqueia (A.10). **Não verifiquei** as operações do conector Confluence do Codex.
+  publicação bloqueia (A.10). **Não verifiquei** as operações do conector Confluence do Codex. *(Corrigido na Onda 5: observadas
+  `getConfluenceContent`, `createConfluenceContent`, `updateConfluenceContent` e as variantes legacy,
+  em `references/executores.md`; nunca chamadas.)*
 - **Página sem identidade do executor:** os 5 writers declaram que a página (e `docs/`, no
   `tech-doc-writer`) descreve só o estado atual, sem executor, tentativa ou histórico; o `Executor` fica
   no comentário Jira de quem delega, e o claim é dessa skill. Writers não abrem claim próprio.
@@ -219,7 +222,52 @@ Itens originais da onda:
 11. `screen-doc-writer`: **bloqueado para Codex** até D4 (executor visual). Documentação
     observacional não roda no Codex antes disso.
 
-### Onda 5 — Homologação de QA, Release e remoto (Lotes E e F)
+### Onda 5 — Homologação de QA, Release e remoto (Lotes E e F) — **status: texto e verificações de host executados em 2026-10-21, sem commit; Codex NÃO habilitado**
+Entregue (3 SKILL.md, 1 referência nova, 1 script novo; `description`, `name`, frases fixas do QA, G10,
+labels `qa-develop-aprovado` / `integrado-epico`, classificação Aprovado/Reprovado/Inconclusivo e a
+proibição de atestar QA por leitura de código preservados):
+- **`workflow-development-flow/references/executores.md` (novo):** matriz de capacidades por executor e
+  **registro da homologação declarada** (Claude Code = tudo; Codex = nada). É onde o mapeamento
+  Rovo ↔ conector do Codex passa a morar; as skills apontam para ela. Referenciada em A.10 e na §18.
+- **Verificações somente leitura do host (resultado):**
+  - **Corrige o que eu disse nas Ondas 2–4:** o Codex **tem** conector Atlassian (`atlassian_*`: ler/criar/
+    editar issue, comentar, transicionar, ler/criar/atualizar Confluence; mais variantes `rovo__legacy__*`
+    com **os mesmos nomes do Rovo**) e GitHub (`create_pull_request`, `merge_pull_request`, artefatos de
+    Actions…). Fonte: cache de plugins e inventário das sessões do Codex. **Observado, nunca chamado.**
+    Não vi ferramenta de **anexo** em nenhum dos dois conectores (como no Rovo): segue REST.
+  - Host: `gh`, `docker`, `adb`, `maestro` (CLI), `java`, `flutter`, `git`, `python`, `node` no PATH;
+    `emulator` e `ANDROID_HOME` **fora** do PATH/ambiente (mesmo caso que a skill já trata).
+  - `AIO_TESTS_ACCESS_TOKEN` está no ambiente do usuário do Windows (só presença checada).
+    `JIRA_API_EMAIL`/`JIRA_API_TOKEN` **não** estão no ambiente do Windows, só referenciadas no
+    `~/.bashrc`: o Codex pode não enxergá-las (`anexar-print.sh` bloqueia com mensagem clara).
+  - Maestro **MCP não está configurado** no Codex (`config.toml` só tem `node_repl`): no Codex, CLI.
+  - **Drive: nada observado** no Codex.
+- **`jira-qa-executor`:** **QA Web bloqueado no Codex** (sem fallback para outro navegador, Maestro ou
+  leitura de código; resultado = bloqueio/Inconclusivo por infraestrutura, nunca Aprovado); Android por
+  Maestro CLI, dependente de homologação; claim, `Executor:` abaixo da frase fixa, handoff que não
+  reaproveita Run de outro executor sem checar; Nível 1; tabela de ativação por plataforma × executor;
+  critério de homologação = os **três resultados** (Aprovado, Reprovado, Inconclusivo) com evidência, AIO e
+  labels corretos.
+- **`jira-qa-executor/scripts/aio.sh` (novo):** wrapper das chamadas ao AIO Tests. O token vai por arquivo
+  temporário do `curl -K`, fora da linha de comando, da saída e dos logs. **Testado contra um servidor local
+  descartável** (GET, POST JSON, `@arquivo`, multipart, 401, 500, token ausente, rede fora): header
+  injetado corretamente, **zero ocorrências do token** na saída e na linha de comando do `curl`. **Não foi
+  chamado contra o AIO real.**
+- **`jira-release-executor`:** Release por Codex só após homologação (D3); concorrência do ciclo por
+  evidência primária (Release Request em andamento, run de Action ativo), já que o claim por issue não se
+  aplica; `Executor` no corpo do commit de bump e no resumo, **sem mudar** o schema do Release Request nem
+  o `release-manifest.yml`; checagem de claim de outro executor antes de editar Fix Versions; **Drive
+  ausente no Codex bloqueia o G9 (7.3)**; Nível 1.
+- **`workflow-remote-orchestrator`:** pré-condição nova: canal e executor da sessão homologados; skill
+  despachada roda no executor da sessão e, se bloqueada por capacidade, o bloqueio é comunicado sem trocar
+  de executor, skill ou etapa; critérios de homologação do Codex Remote Control.
+**Decisões minhas a confirmar:** (1) `Executor` da release vai no commit de bump e no resumo porque a release
+não deixa comentário Jira próprio; (2) `aio.sh` passou a ser o único caminho para o AIO Tests (as chamadas
+inline a `curl` deixam de ser o procedimento).
+**Não executado:** critério de aceite (QA real em ambiente de teste com os três resultados, registro AIO e
+transições corretos) e a homologação de qualquer capacidade: dependem do laboratório e de você.
+
+Itens originais da onda:
 12. D4 e D5: executar os três resultados de QA no laboratório; AIO Tests encapsulado.
 13. `jira-qa-executor`: Web só após homologação; Maestro mantido com validação de emulador;
     preservar `qa-develop-aprovado`, `integrado-epico` e a proibição de atestar QA por leitura de código.
