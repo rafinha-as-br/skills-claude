@@ -275,7 +275,7 @@ Itens originais da onda:
     artefatos, Confluence e Drive para o que o host Codex realmente tem; integração ausente =
     bloqueio; Codex Remote Control só após validação em host dedicado.
 
-### Onda 6 — README e Confluence — **status: README feito; Confluence: núcleo (itens 1–6) PUBLICADO em 2026-10-21; índices, página Executores e fichas pendentes**
+### Onda 6 — README e Confluence — **status: README feito; Confluence: núcleo (itens 1–6) e índices + página Executores (itens 7–8) PUBLICADOS em 2026-10-21; só as 22 fichas (item 9) pendentes, depois do laboratório**
 - **README (repo, feito):** nova seção de evolução "6. Codex como executor alternativo (outubro de 2026)"
   com o estado real (**texto adaptado, Codex não habilitado, nada testado em operação**); linha "Escolha do
   executor e homologação" em *Quem faz o quê*; A.10 e B.5 no resumo dos contratos; tabela do ecossistema
@@ -285,8 +285,8 @@ Itens originais da onda:
   referências; linha do orquestrador no catálogo. Contagem (26/24/2) e links conferidos.
 - **Confluence (CS1) — núcleo PUBLICADO (itens 1–6, autorizado por Rafinha):** Contrato do Workflow (v5),
   Contrato das skills (v3), Model Escalation Policy (v3), Execution State (v3), Orquestração remota (v3) e
-  2. Sincronizar as skills (v6). **Pendentes:** home e índices (item 7), página Executores (item 8) e as
-  22 fichas (item 9, depois dos testes de laboratório). Detalhes, verificação e divergências pré-existentes
+  2. Sincronizar as skills (v6). **Também publicados (itens 7–8):** página nova Executores (86769665), home
+  (v11), Skills (v9) e Workflow (v9). **Pendente:** as 22 fichas (item 9, depois dos testes de laboratório). Detalhes, verificação e divergências pré-existentes
   não resolvidas em [`plano-pacote-8-confluence.md`](plano-pacote-8-confluence.md).
 - *(histórico da preparação)* li as páginas Contrato do Workflow e Contrato das skills e mapeei o
   espaço (~30 páginas afetadas: contratos, Model Escalation Policy, Execution State, Orquestração remota,

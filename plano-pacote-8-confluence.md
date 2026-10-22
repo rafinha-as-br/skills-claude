@@ -1,6 +1,6 @@
 # Pacote 8 — Rascunho de publicação no Confluence (CS1)
 
-**Status: NÚCLEO PUBLICADO (itens 1–6), autorizado por Rafinha em 2026-10-21. Itens 7–9 NÃO publicados.**
+**Status: NÚCLEO (itens 1–6) E ÍNDICES (itens 7–8) PUBLICADOS, autorizados por Rafinha em 2026-10-21. Item 9 (22 fichas) NÃO publicado, de propósito.**
 Preparado em 2026-10-21 a partir da leitura das páginas atuais. Publicar altera páginas reais do espaço
 **CS1** (`cloudId ac6bf4cf-…`). Regra de vigência (mesma do Pacote 6): o texto conflitante é
 **substituído**, sem convivência com o antigo.
@@ -16,7 +16,21 @@ Preparado em 2026-10-21 a partir da leitura das páginas atuais. Publicar altera
 | 5 | Orquestração remota | 83197953 | 3 |
 | 6 | 2. Sincronizar as skills | 44302422 | 6 |
 
-Verificação posterior: `data-local-id` da lista de tarefas da página 6 preservados; link da ficha na
+**Publicado depois (itens 7 e 8, mesma regra: página relida em HTML antes de cada atualização):**
+
+| Item | Página | ID | Versão |
+|---|---|---|---|
+| 8 | **Executores** (nova, filha de *Workflow*) | 86769665 | 1 |
+| 7 | Claude Skills (home) | 44204199 | 11 |
+| 7 | Skills (índice) | 44105730 | 9 |
+| 7 | Workflow (índice) | 44105751 | 9 |
+
+A página **Skills** avisa expressamente que as fichas ainda descrevem o contrato anterior à adaptação e que
+serão regeneradas depois dos testes de laboratório (até lá, vale o `SKILL.md` como implementação e o Contrato
+do Workflow como norma). A lista de páginas modificadas na última hora mostrou 9 de 10; a *Workflow* não
+apareceu na busca (provável atraso de indexação), mas a atualização retornou a versão 9.
+
+Verificação posterior (itens 1–6): `data-local-id` da lista de tarefas da página 6 preservados; link da ficha na
 página 5 aponta para o ID real (83230721); só essas 6 páginas foram modificadas no espaço na hora da
 publicação. A reversão é pelo histórico de versões de cada página.
 
