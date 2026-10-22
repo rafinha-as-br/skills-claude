@@ -1,7 +1,7 @@
 # Plano de implementação — Pacote 8: Codex como executor alternativo
 
 Registro de implementação, no formato dos `plano-pacote-N.md` anteriores.
-**Status: PLANO APROVADO — Onda 0 executada e sincronizada (`c0c3322`); Onda 1 sincronizada (`7bf58f5`); Onda 2 sincronizada (`e5d0ce5`); Onda 3 sincronizada (`05e0eb9`); Onda 4 sincronizada (`2f10538`); Onda 5 executada sem commit; Ondas 1–6 pendentes.**
+**Status: PLANO APROVADO — Onda 0 executada e sincronizada (`c0c3322`); Onda 1 sincronizada (`7bf58f5`); Onda 2 sincronizada (`e5d0ce5`); Onda 3 sincronizada (`05e0eb9`); Onda 4 sincronizada (`2f10538`); Onda 5 sincronizada (`3b79d1c`); Onda 6: README feito e núcleo do Confluence publicado (itens 1–6); Ondas 1–6 pendentes.**
 
 **Fonte:** `plano-adaptacao-codex.md` (proposta de Rafinha, em `~/.codex/skills/`), avaliada em
 2026-10-21 contra o repo e contra `~/.codex`. As 6 decisões pendentes do plano original e as 6
@@ -222,7 +222,7 @@ Itens originais da onda:
 11. `screen-doc-writer`: **bloqueado para Codex** até D4 (executor visual). Documentação
     observacional não roda no Codex antes disso.
 
-### Onda 5 — Homologação de QA, Release e remoto (Lotes E e F) — **status: texto e verificações de host executados em 2026-10-21, sem commit; Codex NÃO habilitado**
+### Onda 5 — Homologação de QA, Release e remoto (Lotes E e F) — **status: texto e verificações de host executados e sincronizados em 2026-10-21 (`3b79d1c`); Codex NÃO habilitado**
 Entregue (3 SKILL.md, 1 referência nova, 1 script novo; `description`, `name`, frases fixas do QA, G10,
 labels `qa-develop-aprovado` / `integrado-epico`, classificação Aprovado/Reprovado/Inconclusivo e a
 proibição de atestar QA por leitura de código preservados):
@@ -275,7 +275,27 @@ Itens originais da onda:
     artefatos, Confluence e Drive para o que o host Codex realmente tem; integração ausente =
     bloqueio; Codex Remote Control só após validação em host dedicado.
 
-### Onda 6 — README e Confluence
+### Onda 6 — README e Confluence — **status: README feito; Confluence: núcleo (itens 1–6) PUBLICADO em 2026-10-21; índices, página Executores e fichas pendentes**
+- **README (repo, feito):** nova seção de evolução "6. Codex como executor alternativo (outubro de 2026)"
+  com o estado real (**texto adaptado, Codex não habilitado, nada testado em operação**); linha "Escolha do
+  executor e homologação" em *Quem faz o quê*; A.10 e B.5 no resumo dos contratos; tabela do ecossistema
+  (Codex opcional/em adoção, Jira com conector observado e não testado, executor web e canal remoto
+  "homologado"); fonte única das skills (`~/.claude/skills` editável, `~/.codex/skills` só leitura) e o limite
+  de descrição do Codex; limite novo em *Estado atual e limites*; `executores.md` e `plano-pacote-8.md` nas
+  referências; linha do orquestrador no catálogo. Contagem (26/24/2) e links conferidos.
+- **Confluence (CS1) — núcleo PUBLICADO (itens 1–6, autorizado por Rafinha):** Contrato do Workflow (v5),
+  Contrato das skills (v3), Model Escalation Policy (v3), Execution State (v3), Orquestração remota (v3) e
+  2. Sincronizar as skills (v6). **Pendentes:** home e índices (item 7), página Executores (item 8) e as
+  22 fichas (item 9, depois dos testes de laboratório). Detalhes, verificação e divergências pré-existentes
+  não resolvidas em [`plano-pacote-8-confluence.md`](plano-pacote-8-confluence.md).
+- *(histórico da preparação)* li as páginas Contrato do Workflow e Contrato das skills e mapeei o
+  espaço (~30 páginas afetadas: contratos, Model Escalation Policy, Execution State, Orquestração remota,
+  Sincronizar as skills, home e índices, e 22 fichas de skill). O rascunho com o texto proposto, as páginas,
+  os IDs, a ordem e os riscos está em [`plano-pacote-8-confluence.md`](plano-pacote-8-confluence.md).
+  Publicar é alteração externa, em página de autoridade normativa, e depende de autorização explícita de
+  Rafinha (escopo: núcleo agora, fichas depois dos testes de laboratório).
+
+Itens originais da onda:
 15. `README.md`: Codex como executor alternativo, regra D3 (o que está habilitado), L1.
 16. Confluence CS1 (via `workflow-doc-writer`): Contrato do Workflow, Contrato das skills,
     `workflow-development-flow` (ficha), política de modelo, índices. Substituir o conflitante,

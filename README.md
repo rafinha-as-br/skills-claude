@@ -23,7 +23,7 @@ O Rafinha-Claude trata a IA não como um gerador de código isolado, mas como **
 
 Na prática, o board do Jira é o mapa do processo e cada etapa tem uma skill dona:
 
-- **O Claude Code executa o trabalho operacional**: maturar issues, preparar o ambiente técnico e as branches, implementar com testes e abrir o Pull Request, integrar, rodar QA, escrever a documentação, auditar o resultado e preparar releases.
+- **O executor de IA faz o trabalho operacional** — o Claude Code hoje; o Codex está sendo adaptado como executor alternativo, ainda sem nenhuma capacidade homologada ([Codex como executor alternativo](#6-codex-como-executor-alternativo-outubro-de-2026)): maturar issues, preparar o ambiente técnico e as branches, implementar com testes e abrir o Pull Request, integrar, rodar QA, escrever a documentação, auditar o resultado e preparar releases.
 - **O desenvolvedor mantém as decisões que não são da IA**: regras de negócio, design de produto, decisões técnicas não determinísticas, revisão de código, aceitação do produto, o modo de cada integração e o incremento de cada versão.
 - **Os contratos ligam os dois lados**: uma skill só age dentro da autoridade que o seu contrato declara, sobre um escopo que o humano confirmou, e deixa evidência verificável do que fez.
 
@@ -40,6 +40,7 @@ A autonomia da IA aqui é **operacional e supervisionada** — não é um agente
 | Revisão de código e aceitação do produto | Decide (`Análise - Rafinha`, `Análise Final - Rafinha`) | Prepara o material (PR, evidências, Validações Humanas) |
 | Modo e merge de integração; incremento de versão | Decide e autoriza | Sugere, valida, executa o que foi autorizado |
 | Auditoria final | Lê o resultado | Audita contrato, labels, gates e rastros (`Análise Final - Claude`) |
+| Escolha do executor e homologação de capacidades | Decide qual executor atua e declara cada capacidade homologada | Registra `Executor` nos comentários; bloqueia o que o executor não tem homologado |
 
 ---
 
@@ -81,6 +82,12 @@ A partir de **20/09** o trabalho passa a ser em *pacotes* de revisão, cada um p
 ### 5. Arquitetura de contratos (outubro de 2026)
 
 A revisão mais recente, de **12/10/2026**, consolida o que os pacotes anteriores vinham construindo: o workflow passa a ser governado por **camadas contratuais** (Workflow, Tipo, Política, Etapa → Contrato Efetivo) em vez de regras espalhadas pelas skills. Com ela entram a etapa **Preparação técnica** (o fluxo vai a 13 etapas), o tipo **Hotfix**, as camadas `context/` e `ai-memory/`, o **Workspace** para produtos multi-repositório e quatro skills novas. Não há convivência com o contrato anterior nem migração de issues existentes: o workflow novo é a única referência para novas execuções.
+
+### 6. Codex como executor alternativo (outubro de 2026)
+
+O **Pacote 8** (21/10/2026) adapta o texto das skills para que o OpenAI Codex possa atuar como executor alternativo ao Claude Code, **sem mudar nenhum contrato, gate, autoridade ou transição**. O que mudou: uma cláusula de executor técnico no Contrato do Workflow (A.10); **claim** e **handoff** entre executores (B.5), para que uma issue nunca tenha dois executores na mesma etapa; o campo `Executor` nos registros do Jira; a política de modelo em **níveis neutros 0–4**, que cada executor mapeia para a própria configuração; as descrições das skills reescritas para caber no limite do Codex; e uma matriz de capacidades por executor, [`executores.md`](workflow-development-flow/references/executores.md). Nomes de coluna (`Fazer - Claude`…), o sufixo `-claude` das branches e os títulos de comentário **não mudam**.
+
+**Estado:** o texto está adaptado; **o Codex não está habilitado**. Capacidade sem homologação declarada por Rafinha é bloqueio, não fallback — hoje isso vale para toda capacidade do Codex, e QA Web, `screen-doc-writer`, Release e a promoção de Epic (Modo B) ficam só no Claude Code até serem homologadas em projeto de laboratório. Nada foi testado em operação. Registro em [`plano-pacote-8.md`](plano-pacote-8.md).
 
 ---
 
@@ -147,7 +154,7 @@ flowchart LR
 
 `A fazer` e `Integração` são as etapas em que skill e humano se encontram: o intake roda sobre um escopo que Rafinha confirmou, e a Integração roda no modo que Rafinha informou. `Ready` é um estado de espera — a passagem para `Fazer - Claude` é a autorização humana de implementação, dada por Rafinha no Jira ou por confirmação remota explícita executada pela `workflow-remote-orchestrator`.
 
-**Orquestração remota (experimental).** Pelo celular, numa sessão de Claude Code Remote Control no notebook, Rafinha pode pedir "onde paramos?" ou "continuar EPIC-123". A `workflow-remote-orchestrator` fecha o escopo, despacha a skill dona de cada etapa e comunica o resultado. Não é agente permanente: não decide negócio, design, review, aceite nem modo de integração, nunca move Hotfix, e a promoção de Epic para `develop` continua exigindo confirmação manual distinta de Rafinha. Regras em [`orquestracao-remota.md`](workflow-development-flow/references/orquestracao-remota.md).
+**Orquestração remota (experimental).** Pelo celular, numa sessão em canal remoto homologado (hoje, o Claude Code Remote Control; o do Codex ainda não está validado) no notebook, Rafinha pode pedir "onde paramos?" ou "continuar EPIC-123". A `workflow-remote-orchestrator` fecha o escopo, despacha a skill dona de cada etapa e comunica o resultado. Não é agente permanente: não decide negócio, design, review, aceite nem modo de integração, nunca move Hotfix, e a promoção de Epic para `develop` continua exigindo confirmação manual distinta de Rafinha. Regras em [`orquestracao-remota.md`](workflow-development-flow/references/orquestracao-remota.md).
 
 ### Caminhos excepcionais
 
@@ -229,7 +236,7 @@ flowchart TB
     O --> R
 ```
 
-- **Contrato do Workflow** define as regras universais: quem tem autoridade de decisão, mutação, atestação, transição e exceção; como o escopo é fechado; o que fazer quando falta informação; e os seis estados de satisfação de uma obrigação (`Pendente`, `Satisfeita`, `Não satisfeita`, `Não aplicável`, `Não verificável`, `Excepcionada`). `Excepcionada` nunca vira `Satisfeita` em silêncio.
+- **Contrato do Workflow** define as regras universais: quem tem autoridade de decisão, mutação, atestação, transição e exceção; **que Claude Code e Codex são executores alternativos e que trocar de executor não troca autoridade** (A.10); como o escopo é fechado; **como um executor reivindica uma issue e como outro a retoma** (claim e handoff, B.5); o que fazer quando falta informação; e os seis estados de satisfação de uma obrigação (`Pendente`, `Satisfeita`, `Não satisfeita`, `Não aplicável`, `Não verificável`, `Excepcionada`). `Excepcionada` nunca vira `Satisfeita` em silêncio.
 - **Tipo**, **Política** e **Etapa** acrescentam obrigações pela natureza do ticket, por condições verificáveis (uma label com efeito contratual, a topologia do produto) e pela coluna atual.
 - O **Contrato Efetivo** é a composição dessas camadas para uma issue. Não é um arquivo nem um campo do Jira: é um procedimento — o *Passo 0* — que cada skill executa lendo as fontes oficiais. Conflito entre regras sem declaração explícita de composição é decidido por Rafinha, nunca por precedência implícita.
 - O **Contrato da skill** é uma interface separada. Uma obrigação existir na issue não autoriza qualquer skill a executá-la. A skill final é *contrato + operação técnica*: o contrato diz o que ela está autorizada e obrigada a fazer; a operação diz como, e nunca pode ampliar o contrato.
@@ -294,17 +301,18 @@ Contratos em camadas, políticas ativadas por condições verificáveis, **15 ga
 
 | Ferramenta | Papel no workflow | Natureza |
 |---|---|---|
-| **Claude Code** | Ambiente de execução das skills | Obrigatório |
-| **Jira** (via Atlassian Rovo) | Fonte de verdade do estado e do histórico operacional das issues | Obrigatório |
+| **Claude Code** | Ambiente de execução das skills (único executor homologado hoje) | Obrigatório |
+| **Codex** | Executor alternativo: texto adaptado, **nenhuma capacidade homologada** ([`executores.md`](workflow-development-flow/references/executores.md)) | Opcional, em adoção |
+| **Jira** (via Atlassian Rovo; o Codex tem um conector Atlassian equivalente, observado e não testado) | Fonte de verdade do estado e do histórico operacional das issues | Obrigatório |
 | **Confluence** | Autoridade normativa do workflow, matriz oficial de labels, páginas de controle por produto e destino da documentação | Obrigatório |
 | **Git e GitHub** (Issues, Pull Requests, Actions, CLI `gh`) | Versionamento, integração, validação técnica e releases | Obrigatório |
 | **AIO Tests** | Registro detalhado da execução de QA (exige token em `AIO_TESTS_ACCESS_TOKEN`) | Obrigatório para `QA - Claude` |
-| **Claude in Chrome** | Executor de QA Web, no Chrome real | Condicional: plataforma Web |
+| **Claude in Chrome** | Executor web homologado (QA Web e prints do `screen-doc-writer`), no Chrome real; o Codex não tem executor web homologado | Condicional: plataforma Web |
 | **Maestro** (MCP, com fallback CLI) e **Android Emulator** | Executor de QA Android | Condicional: plataforma Android |
 | **Claude Design** | Etapa de design de produto e geração do Design Package | Condicional: issues com `requires-design` |
 | **PowerShell** | Release Orchestrator local | Condicional: ciclo de release |
 | **Google Drive** | Destino dos pacotes de distribuição | Condicional: ciclo de release |
-| **Claude Code Remote Control** | Sessão remota (celular) para a orquestração sob demanda | Condicional: `workflow-remote-orchestrator` |
+| **Claude Code Remote Control** (canal remoto homologado; o do Codex ainda não) | Sessão remota (celular) para a orquestração sob demanda | Condicional: `workflow-remote-orchestrator` |
 | **Notion** | Onde as atualizações do workflow são redigidas antes de virarem skills e páginas | Processo de autoria; as skills não dependem dele em execução |
 
 Os padrões de Flutter/Dart (`flutter-development-standards`) e os executores de QA (Web e Android) refletem a stack em que o workflow foi exercitado.
@@ -367,7 +375,7 @@ São **26 skills** no repositório: **24** fazem parte do Rafinha-Claude e **2**
 
 | Skill | O que faz |
 |---|---|
-| [`workflow-remote-orchestrator`](workflow-remote-orchestrator/SKILL.md) | Sob comando de Rafinha pelo celular (Claude Code Remote Control), fecha o escopo, despacha a skill dona de cada etapa e devolve resultado, bloqueios e próxima ação. Só executa `Ready → Fazer - Claude` e saídas de colunas humanas quando Rafinha declara o resultado; nunca move Hotfix nem autoriza Modo B. |
+| [`workflow-remote-orchestrator`](workflow-remote-orchestrator/SKILL.md) | Sob comando de Rafinha pelo celular (canal remoto homologado), fecha o escopo, despacha a skill dona de cada etapa e devolve resultado, bloqueios e próxima ação. Só executa `Ready → Fazer - Claude` e saídas de colunas humanas quando Rafinha declara o resultado; nunca move Hotfix nem autoriza Modo B. |
 
 #### Apoio ao workflow
 
@@ -403,6 +411,8 @@ git clone https://github.com/rafinha-as-br/skills-claude.git ~/.claude/skills
 
 > O comando só serve para um diretório `~/.claude/skills` vazio ou inexistente.
 
+**Fonte única das skills.** `~/.claude/skills` é o clone de referência: é onde as skills são editadas, commitadas e publicadas. Quem usa o Codex mantém `~/.codex/skills` como um **clone só de leitura** (`git pull --ff-only`) — nunca se edita nos dois. O Codex carrega as skills mas trunca a `description` no índice (cerca de 380 caracteres) e o validador dele rejeita mais de 1024 caracteres e `<`/`>`; por isso as descrições começam pelo gatilho e cabem nesse limite.
+
 ### Pré-requisitos reais
 
 Para o pipeline funcionar, o ambiente precisa ter as integrações da [tabela do ecossistema](#ecossistema-tecnológico) e, **além delas, a configuração do projeto**, que é manual e de responsabilidade de quem adota o workflow:
@@ -430,6 +440,7 @@ O workflow foi projetado para o ambiente pessoal de Rafinha: nomes de projeto, e
 - A revisão mais recente (12/10/2026) está implementada nas skills e no Confluence. **Não há migração de issues anteriores** e nenhuma convivência com o contrato antigo.
 - A reconfiguração real do Jira (status `Preparação técnica - Claude`, tipos nativos `Hotfix` e `Validação Humana`) e a Topologia por produto no Confluence, o bootstrap do Workspace dos produtos multi-repo e a configuração de CI e branch protection são manuais e ficam fora das skills. Enquanto não existirem, as skills **bloqueiam** em vez de assumir valores.
 - A `workflow-remote-orchestrator` é uma **primeira versão experimental**: concorrência de sessões, recuperação de desconexão, ambiente sempre ligado, expiração do canal e custo de contexto são pontos em observação (`orquestracao-remota.md`, seção 11), não bloqueios.
+- **O Codex como executor alternativo (Pacote 8) é só texto.** Não há projeto de laboratório definido, nenhuma capacidade do Codex foi homologada e nenhum teste de seleção, execução permitida ou negativa/gate foi executado. Os conectores Atlassian e GitHub do Codex foram observados, nunca chamados; o Drive e um executor web não existem para ele. Enquanto Rafinha não declarar a homologação, o Codex bloqueia em vez de assumir a capacidade.
 - Há pendências herdadas e declaradas nos contratos, como a trilha `qa-doc`, que ainda não tem writer (a skill para e reporta).
 - O Rafinha-Claude é um workflow pessoal em evolução, não um produto instalável.
 
@@ -449,9 +460,10 @@ O workflow foi projetado para o ambiente pessoal de Rafinha: nomes de projeto, e
 | [`contexto-memoria-workspace.md`](workflow-development-flow/references/contexto-memoria-workspace.md) | `context/`, AI Memory e Workspace multi-repo |
 | [`release-lifecycle.md`](workflow-development-flow/references/release-lifecycle.md) | Contratos do ciclo de release |
 | [`orquestracao-remota.md`](workflow-development-flow/references/orquestracao-remota.md) | Orquestração remota sob demanda: comandos, transições permitidas, mapa etapa → skill, segurança |
+| [`executores.md`](workflow-development-flow/references/executores.md) | Matriz de capacidades por executor (Claude Code e Codex), mapeamento de ferramentas e homologação declarada |
 
 **Pontos de entrada em [`workflow-development-flow/SKILL.md`](workflow-development-flow/SKILL.md)**: tipos de ticket (§3), etapas (§4–5), gates (§8), release (§10), Validação Humana (§12), Execution State (§13), design (§14), labels (§15), modelo de branches (§16), descrição da issue (§17), contratos (§18), orquestração remota (§21).
 
-**Registros de implementação**, um por revisão: [`plano-release-lifecycle.md`](plano-release-lifecycle.md), [`plano-pacote-2.md`](plano-pacote-2.md), [`plano-pacote-3.md`](plano-pacote-3.md), [`plano-pacote-4.md`](plano-pacote-4.md), [`plano-pacote-5.md`](plano-pacote-5.md), [`plano-pacote-6.md`](plano-pacote-6.md), [`plano-pacote-7.md`](plano-pacote-7.md). São documentos históricos de decisão, não contratos vigentes; em caso de divergência valem os contratos acima.
+**Registros de implementação**, um por revisão: [`plano-release-lifecycle.md`](plano-release-lifecycle.md), [`plano-pacote-2.md`](plano-pacote-2.md), [`plano-pacote-3.md`](plano-pacote-3.md), [`plano-pacote-4.md`](plano-pacote-4.md), [`plano-pacote-5.md`](plano-pacote-5.md), [`plano-pacote-6.md`](plano-pacote-6.md), [`plano-pacote-7.md`](plano-pacote-7.md), [`plano-pacote-8.md`](plano-pacote-8.md). São documentos históricos de decisão, não contratos vigentes; em caso de divergência valem os contratos acima.
 
 A norma é espelhada no Confluence (espaço privado do projeto). O histórico completo está no Git: `git log --reverse`.
