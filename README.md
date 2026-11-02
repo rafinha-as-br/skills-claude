@@ -46,7 +46,7 @@ A autonomia da IA aqui é **operacional e supervisionada** — não é um agente
 
 ## Origem e evolução
 
-O Rafinha-Claude não nasceu como arquitetura. Começou como automação de colunas do Jira e foi ganhando estrutura à medida que cada lacuna operacional aparecia. A história abaixo é reconstruída a partir do histórico Git do repositório, dos registros de implementação (`plano-*.md`) e das mensagens de commit; as datas são as dos commits. O que existiu antes do primeiro commit não está registrado aqui.
+O Rafinha-Claude não nasceu como arquitetura. Começou como automação de colunas do Jira e foi ganhando estrutura à medida que cada lacuna operacional aparecia. A história abaixo é reconstruída a partir do histórico Git do repositório e das mensagens de commit; as datas são as dos commits. O que existiu antes do primeiro commit não está registrado aqui.
 
 ### 1. Skills por coluna (agosto de 2026)
 
@@ -65,7 +65,7 @@ Com o pipeline rodando, as lacunas passaram a ser de confiança e de continuidad
 
 ### 3. Release como distribuição (agosto – setembro)
 
-O ciclo de release entra em **16/08** como um fluxo separado do board. Em **11–12/09** ele é redesenhado: a unidade versionada passa a ser o **componente** (tags `<componente>/vX.Y.Z`), a topologia do projeto é declarada em manifesto e nada é inferido, e o resultado deixa de ser uma tag com artefato anexado para ser uma **distribuição** que roda fora do ambiente de desenvolvimento, montada por um Release Orchestrator local. Quinze decisões de arquitetura ficaram registradas em [`plano-release-lifecycle.md`](plano-release-lifecycle.md).
+O ciclo de release entra em **16/08** como um fluxo separado do board. Em **11–12/09** ele é redesenhado: a unidade versionada passa a ser o **componente** (tags `<componente>/vX.Y.Z`), a topologia do projeto é declarada em manifesto e nada é inferido, e o resultado deixa de ser uma tag com artefato anexado para ser uma **distribuição** que roda fora do ambiente de desenvolvimento, montada por um Release Orchestrator local. Quinze decisões de arquitetura marcaram esse redesenho; o contrato vigente está em [`release-lifecycle.md`](workflow-development-flow/references/release-lifecycle.md).
 
 ### 4. Contratos, gates e design (setembro)
 
@@ -87,7 +87,7 @@ A revisão mais recente, de **12/10/2026**, consolida o que os pacotes anteriore
 
 O **Pacote 8** (21/10/2026) adapta o texto das skills para que o OpenAI Codex possa atuar como executor alternativo ao Claude Code, **sem mudar nenhum contrato, gate, autoridade ou transição**. O que mudou: uma cláusula de executor técnico no Contrato do Workflow (A.10); **claim** e **handoff** entre executores (B.5), para que uma issue nunca tenha dois executores na mesma etapa; o campo `Executor` nos registros do Jira; a política de modelo em **níveis neutros 0–4**, que cada executor mapeia para a própria configuração; as descrições das skills reescritas para caber no limite do Codex; e uma matriz de capacidades por executor, [`executores.md`](workflow-development-flow/references/executores.md). Nomes de coluna (`Fazer - Claude`…), o sufixo `-claude` das branches e os títulos de comentário **não mudam**.
 
-**Estado:** o texto está adaptado; **o Codex não está habilitado**. Capacidade sem homologação declarada por Rafinha é bloqueio, não fallback — hoje isso vale para toda capacidade do Codex, e QA Web, `screen-doc-writer`, Release e a promoção de Epic (Modo B) ficam só no Claude Code até serem homologadas em projeto de laboratório. Nada foi testado em operação. Registro em [`plano-pacote-8.md`](plano-pacote-8.md).
+**Estado:** o texto está adaptado; **o Codex não está habilitado**. Capacidade sem homologação declarada por Rafinha é bloqueio, não fallback — hoje isso vale para toda capacidade do Codex, e QA Web, `screen-doc-writer`, Release e a promoção de Epic (Modo B) ficam só no Claude Code até serem homologadas em projeto de laboratório. Nada foi testado em operação. O histórico está no Git (`git log --grep "Pacote 8"`).
 
 ---
 
@@ -321,7 +321,7 @@ Os padrões de Flutter/Dart (`flutter-development-standards`) e os executores de
 
 ## Catálogo de skills
 
-São **26 skills** no repositório: **24** fazem parte do Rafinha-Claude e **2** são pessoais.
+São **26 skills** no repositório: **24** fazem parte do Rafinha-Claude e **2** coexistem fora dele.
 
 ### Rafinha-Claude
 
@@ -386,12 +386,12 @@ São **26 skills** no repositório: **24** fazem parte do Rafinha-Claude e **2**
 
 ### Fora do Rafinha-Claude
 
-Skills pessoais que apenas coexistem neste repositório. Não fazem parte do pipeline e o [contrato das skills](workflow-development-flow/references/contrato-skills.md) as exclui expressamente.
+Skills que apenas coexistem neste repositório. Não fazem parte do pipeline e o [contrato das skills](workflow-development-flow/references/contrato-skills.md) as exclui expressamente.
 
 | Skill | O que faz |
 |---|---|
-| [`weekly-organizer`](weekly-organizer/SKILL.md) | Organiza a semana e o inbox do Todoist. |
 | [`task-creator-trabalho`](task-creator-trabalho/SKILL.md) | Registra tarefas e contexto de trabalhos acadêmicos. |
+| [`flutter-frontend-package-builder`](flutter-frontend-package-builder/SKILL.md) | Cria ou reconstrói Flutter Frontend Packages (application, features, core, design_system) e gera os cinco `AGENTS.md` do resultado. Só por invocação explícita, quando um package for necessário. |
 
 ---
 
@@ -464,6 +464,6 @@ O workflow foi projetado para o ambiente pessoal de Rafinha: nomes de projeto, e
 
 **Pontos de entrada em [`workflow-development-flow/SKILL.md`](workflow-development-flow/SKILL.md)**: tipos de ticket (§3), etapas (§4–5), gates (§8), release (§10), Validação Humana (§12), Execution State (§13), design (§14), labels (§15), modelo de branches (§16), descrição da issue (§17), contratos (§18), orquestração remota (§21).
 
-**Registros de implementação**, um por revisão: [`plano-release-lifecycle.md`](plano-release-lifecycle.md), [`plano-pacote-2.md`](plano-pacote-2.md), [`plano-pacote-3.md`](plano-pacote-3.md), [`plano-pacote-4.md`](plano-pacote-4.md), [`plano-pacote-5.md`](plano-pacote-5.md), [`plano-pacote-6.md`](plano-pacote-6.md), [`plano-pacote-7.md`](plano-pacote-7.md), [`plano-pacote-8.md`](plano-pacote-8.md). São documentos históricos de decisão, não contratos vigentes; em caso de divergência valem os contratos acima.
+**Orientação para agentes**: [`AGENTS.md`](AGENTS.md) descreve como um agente (Claude Code ou Codex) deve atuar sobre este repositório.
 
 A norma é espelhada no Confluence (espaço privado do projeto). O histórico completo está no Git: `git log --reverse`.

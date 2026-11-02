@@ -136,8 +136,8 @@ Incluídas (24): `workflow-development-flow`, `workflow-remote-orchestrator`, `j
 `workflow-doc-writer`, `doc-pendency-resolver`, `flutter-development-standards`,
 `workflow-incident-capture-executor`.
 
-**Excluídas** (classificadas no Confluence como não relacionadas ao workflow de
-desenvolvimento): `task-creator-trabalho`, `weekly-organizer`.
+**Excluídas** (não fazem parte do workflow de desenvolvimento; coexistem no
+repositório): `task-creator-trabalho`, `flutter-frontend-package-builder`.
 
 ## Capacidades de suporte à contextualização
 

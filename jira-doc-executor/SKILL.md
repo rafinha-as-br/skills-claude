@@ -48,7 +48,7 @@ existe e **entra** no guia que já existe, enquanto cria a página da tela.
 | `user-doc-writer` | o produto funcionando, via páginas de tela | **tarefa** que atravessa telas | a mudança altera como o usuário executa uma tarefa de ponta a ponta |
 | `workflow-doc-writer` | o contrato operacional (skills, Jira, Actions) | skill, regra de pipeline, release | a issue é sobre o próprio workflow — raro em projeto de produto |
 
-Referência completa do modelo: `plano-pacote-3.md`, decisão D3.
+Referência completa do modelo: `workflow-development-flow` §3.3 (Documentar é trabalho composto).
 
 ---
 

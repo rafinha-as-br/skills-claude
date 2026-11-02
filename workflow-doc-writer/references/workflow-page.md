@@ -33,8 +33,8 @@ cada link com 1 frase de contexto, nunca lista solta.
 
 ## Histórico de revisão relevante
 Só mudanças que alteraram a regra vigente, não changelog de redação: data, o
-que mudou, e a decisão que motivou (se houver uma registrada em
-`plano-pacote-*.md` ou no Notion).
+que mudou, e a decisão que motivou (se houver uma registrada, por exemplo
+no Notion).
 
 ## O que NÃO vai nesta página
 

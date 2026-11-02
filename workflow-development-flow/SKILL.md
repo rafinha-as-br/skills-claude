@@ -303,8 +303,7 @@ matriz, fora deste contrato.
 
 **Documentar é trabalho composto.** Numa issue de código, a
 `jira-doc-executor` não escolhe **um** writer: monta o conjunto de writers
-aplicáveis e declara quais pulou e por quê (ver a própria skill e a D3 do
-`plano-pacote-3.md`).
+aplicáveis e declara quais pulou e por quê (ver a própria skill).
 
 ### 3.4 Subtask
 

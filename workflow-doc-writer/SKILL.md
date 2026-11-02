@@ -47,7 +47,7 @@ naquela página.
 
 > ❗ **Se Rafinha pedir algo que nenhum dos três cobre**, diga isso e
 > pergunte antes de improvisar estrutura — mesmo princípio das demais
-> skills de documentação (D2 do `plano-pacote-3.md`).
+> skills de documentação.
 
 **Documentação não gera branch por padrão.** Esta skill escreve no
 Confluence; ela só toca arquivo no repositório para **ler** um `SKILL.md`
@@ -152,7 +152,7 @@ página, nunca devolve texto solto no chat como entrega final.
   explicitamente e pergunte a Rafinha o conteúdo em vez de reconstruir de
   memória.
 - **Página de workflow** → releia a decisão oficial mais recente sobre o
-  assunto (Notion, ou o `plano-pacote-*.md` mais recente que a decidiu) e
+  assunto (Notion ou a página de decisão correspondente) e
   as skills que a aplicam, se a página descrever um comportamento executado
   por elas.
 - **Documentação de release** → `.release/project.yml`, a `release.yml` de

@@ -29,8 +29,8 @@ tela já está coberta pela página daquela tela (seções "Interações"/"Fluxo
 esperado") — não precisa de guia próprio.
 
 Consulte a skill `workflow-development-flow` para dúvidas sobre como a
-etapa "Documentar" se encaixa no fluxo geral do pipeline, e o `plano-pacote-3.md`
-para o raciocínio completo por trás do modelo de trabalho composto (D3).
+etapa "Documentar" se encaixa no fluxo geral do pipeline e para o modelo de
+trabalho composto.
 
 ---
 
