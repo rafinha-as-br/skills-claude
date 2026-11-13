@@ -1,4 +1,4 @@
-# Orquestração remota — `workflow-remote-orchestrator`
+# Orquestração do workflow — `workflow-remote-orchestrator`
 
 > **Contrato da camada de orquestração remota sob demanda.** Espelho normativo:
 > página **Orquestração remota** no Confluence (CS1) e a ficha da skill
@@ -7,10 +7,10 @@
 
 ## 1. O que é
 
-Permite que Rafinha, pelo celular, inicie uma sessão manual em um **canal remoto
-homologado** (Claude Code Remote Control ou Codex Remote Control — Contrato do
-Workflow, A.10) no host preparado e peça continuidade de um **alvo explícito**
-do workflow. A `workflow-remote-orchestrator` lê o contexto, **despacha** para a
+Permite que Rafinha inicie uma sessão manual **local ou remota** e peça continuidade
+de um **alvo explícito** do workflow. Canal remoto exige homologação (Contrato do
+Workflow, A.10); uma sessão local autenticada é uma entrada equivalente de comando.
+A `workflow-remote-orchestrator` lê o contexto, **despacha** para a
 skill dona de cada etapa e comunica resultado e bloqueios. Ela **não substitui
 nenhuma autoridade**: o canal remoto é só uma forma de acionar e aprovar uma
 sessão; não transforma conversa em decisão, não dispensa gates e não amplia
@@ -18,9 +18,9 @@ permissões de Jira, GitHub, Confluence, código ou infraestrutura.
 
 Não é agente permanente: só age sob comando de Rafinha, dentro da sessão.
 
-## 2. Comando remoto como autoridade de controle
+## 2. Comando orquestrado como autoridade de controle
 
-Um comando explícito de Rafinha pelo canal remoto pode autorizar **objetivo, escopo
+Um comando explícito de Rafinha na sessão controladora pode autorizar **objetivo, escopo
 e ações necessárias** dentro daquela sessão. A orquestradora obedece, aplica a
 lógica do workflow e respeita contratos, gates e evidências. Não há matriz
 adicional de confirmação por ação. Depois da autorização de um objetivo/escopo ela
@@ -66,6 +66,7 @@ Rafinha (A.7).
 | "Onde paramos?" | Consulta Jira, AI Memory/Execution State e fontes pertinentes; mostra **candidatos** de continuidade e por que são candidatos. Não escolhe nem avança | Não |
 | "Continuar EPIC-123" | Resolve o conjunto do Epic e as etapas elegíveis; apresenta o recorte e **pergunta o modo (A/B/C) se o recorte incluir `Integração`**; confirmação de escopo pode autorizar execução **sequencial** de várias issues elegíveis | Não antes do escopo fechado |
 | "Trabalhar ISSUE-123" | Issue como escopo explícito; lê estágio, Contrato Efetivo e contexto antes de chamar a skill dona | Só pela skill delegada |
+| "Aprovo os PRs/MRs de ISSUE-123" | Primeiro lê a etapa da issue. Em `Análise - Rafinha`, registra o resultado humano, executa a saída para `Integração` e pede o modo A/B/C se ausente; não aprova PR no GitHub por inferência | Só a transição contratual; Integração é despachada depois do modo |
 | "Preparar as issues de EPIC-123 em Preparação técnica" | Escopo "coluna de um Epic específico": resolve, apresenta, só então despacha | Só pela skill delegada |
 | "Retomar a sessão X" | Reabre handoff/Execution State e confirma na fonte oficial o que ainda vale | Não |
 | "Parar/cancelar" | Para novos despachos num ponto seguro; não desfaz o já registrado (sem rollback, merge reverso ou exclusão) | Não |
@@ -86,11 +87,16 @@ a chamada atua só dentro do próprio contrato.
 
 ## 6. Fluxo operacional
 
-1. **Receber e classificar** o pedido: consulta, preparação de escopo, despacho de etapa ou cancelamento.
+1. **Receber e classificar** o pedido: consulta, evento de etapa humana, preparação de escopo, despacho de etapa, ação externa explicitamente pedida ou cancelamento. Referência a issue, PR/MR, aprovação, merge ou pipeline exige ler Jira antes de qualquer ferramenta externa.
 2. **Identificar o alvo sem inferir.** "Onde paramos?" é leitura; execução exige escopo aceito.
 3. **Fechar o escopo.** Se a consulta ao Jira compuser uma lista, apresentá-la antes de qualquer mutação.
 4. **Ler o contexto mínimo.** Jira e evidências relevantes; `ai-memory/` só como continuidade complementar — fatos críticos são validados na fonte autoritativa.
+5. **Despachar sem substituir a skill.** Quando o Claude Code for iniciado pelo
+   Mordomo local, enviar somente `/nome-da-skill + alvo`. Conta, workspace, locks
+   e logs são responsabilidade do Mordomo; regras, gates e mutações continuam no
+   contrato da skill chamada.
 5. **Mapear etapa → skill dona** (seção 7). A skill chamada executa o próprio Passo 0; a orquestradora não declara gate satisfeito por observação superficial.
+   Aprovação/reprovação humana é resultado da etapa atual, nunca atalho para GitHub. `gh pr review`, comentário de PR ou merge só podem ocorrer por pedido explícito e separado de Rafinha, depois de confirmar que não contradizem a etapa da issue.
 6. **Despachar uma operação delimitada**, uma skill por vez por alvo (nunca em paralelo sobre o mesmo alvo): alvo, escopo fechado, contexto verificável e intenção.
 7. **Coletar o resultado** exatamente nos termos da skill chamada; falha não vira "sucesso parcial".
 8. **Persistir continuidade** quando pertinente: handoff/tentativa/impacto já estabelecidos vão à `ai-memory-manager`. Sem segundo ledger concorrente.
@@ -136,14 +142,14 @@ Sem formato mínimo fixo além disso.
 
 ## 9. Segurança e operação remota
 
-- Sessão só por pedido manual autenticado de Rafinha; identifica projeto, máquina/sessão e alvo.
+- Sessão só por pedido manual autenticado de Rafinha; identifica projeto, máquina/sessão e alvo. Sessão local e canal remoto homologado usam o mesmo roteiro de workflow.
 - Antes de operar: checagem de disponibilidade **somente leitura** — conexão remota, diretório/projeto correto, ferramentas essenciais, ausência de outra sessão mutante concorrente. A orquestradora não presume poder para corrigir ambiente.
 - Uma sessão tem identificador e escopo. Rafinha amplia/muda o escopo por novo comando explícito; a skill nunca amplia por inferência.
 - Credenciais, tokens e segredos nunca aparecem no chat remoto, AI Memory ou resumos.
 - Falha de conexão, permissão, ambiente ou sessão ambígua → **bloqueio operacional**; não autoriza tentativa destrutiva. Diante de estado ambíguo, consultar evidência antes de repetir ação material; não inventar idempotência.
 - Prompts de permissão de ferramenta do executor (Claude Code ou Codex) seguem o mecanismo do canal remoto (aprovação pelo celular); a skill não os contorna.
 - Claim: antes de cada despacho lê os claims vigentes na issue; claim de outro executor ou sessão bloqueia o despacho e só Rafinha o libera (Contrato do Workflow, B.5). A skill despachada abre o próprio claim; a orquestradora não abre claim próprio e registra `Executor` no comentário.
-- Canal Codex Remote Control: só depois de configurado e validado em host dedicado (iniciar e acompanhar trabalho autorizado, sem decidir modo de integração, ampliar escopo ou mover Hotfix). Até lá, a operação remota usa apenas o canal já em uso.
+- Canal Codex Remote Control: só depois de configurado e validado em host dedicado (iniciar e acompanhar trabalho autorizado, sem decidir modo de integração, ampliar escopo ou mover Hotfix). Isso não impede o uso da orquestração na sessão local autenticada.
 - Compactação: economizar tokens compactando a **conversa**; nunca apagar AI Memory, Execution State, Jira ou evidências.
 - Sem registro de sessão separado: valem os registros normais no Jira e nas fontes primárias.
 

@@ -375,7 +375,7 @@ São **27 skills** no repositório: **25** fazem parte do Rafinha-Claude e **2**
 
 | Skill | O que faz |
 |---|---|
-| [`workflow-remote-orchestrator`](workflow-remote-orchestrator/SKILL.md) | Sob comando de Rafinha pelo celular (canal remoto homologado), fecha o escopo, despacha a skill dona de cada etapa e devolve resultado, bloqueios e próxima ação. Só executa `Ready → Fazer - Claude` e saídas de colunas humanas quando Rafinha declara o resultado; nunca move Hotfix nem autoriza Modo B. |
+| [`workflow-remote-orchestrator`](workflow-remote-orchestrator/SKILL.md) | Plano de controle local ou remoto: antes de qualquer ação em Jira, GitHub ou Claude, resolve o estado da issue, fecha escopo e despacha a skill dona. Aprovação humana é resultado da etapa atual, não ação isolada de GitHub; nunca move Hotfix nem autoriza Modo B. |
 | [`mordomo`](mordomo/SKILL.md) | Coordena localmente Claude A/B no workspace explícito, bloqueia concorrência por issue e repositório e faz revisão independente. Pode atestar mudança simples para A/C; Modo B continua manual e a integração efetiva fica com a skill dona. |
 
 #### Apoio ao workflow

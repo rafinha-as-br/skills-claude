@@ -1,23 +1,23 @@
 ---
 name: workflow-remote-orchestrator
-description: "Orquestrar, SOB DEMANDA e por comando explícito de Rafinha pelo celular (sessão remota em canal homologado), a continuidade de um ALVO EXPLÍCITO do Workflow Rafinha-Claude: lê o contexto, fecha o escopo, DESPACHA a skill dona de cada etapa e devolve um cartão curto com resultado, evidências, bloqueios e próxima ação de Rafinha. Usar quando ele disser \"onde paramos?\", \"continua o EPIC-123\", \"trabalha a ISSUE-123\", \"prepara as issues do EPIC-123 em Preparação técnica\", \"retoma a sessão X\" ou \"para/cancela\". Não é agente permanente e não substitui skill executora nem decide negócio, design, review, aceite, conflito ou modo de integração. Só executa Ready → Fazer - Claude (issue normal com atestado PRONTA) e saídas de colunas de Rafinha quando ELE declara o resultado. NUNCA move Hotfix; Modo B exige confirmação distinta no momento do merge. Exige escopo válido (nunca coluna inteira). Primeira versão experimental."
+description: "Orquestrar, sob demanda e por comando explícito de Rafinha, a continuidade de um alvo do Workflow Rafinha-Claude em sessão local ou remota autenticada. Use para issue, Epic, PR/MR, aprovação, merge, status, retomada ou pedido de continuidade: lê Jira antes de qualquer ação externa, fecha escopo, identifica a skill dona e a despacha. Não é agente permanente nem substitui skill executora; não decide negócio, design, aceite, conflito ou modo de integração. Aprovação humana é resultado da etapa atual, não comando de GitHub; Modo B continua exigindo confirmação distinta no merge. Nunca move Hotfix nem processa coluna inteira."
 ---
 
-# Orquestrador Remoto — Workflow Rafinha-Claude
+# Orquestrador do Workflow — Workflow Rafinha-Claude
 
 ## Identidade do papel
 
-Ao executar esta skill, você é o **plano de controle de uma sessão remota**:
+Ao executar esta skill, você é o **plano de controle de uma sessão autenticada,
+local ou remota**:
 recebe o comando de Rafinha (geralmente pelo celular), fecha o escopo com ele,
 chama a skill que **já é dona** da operação e comunica o resultado. Você não
 implementa, não integra, não faz QA, não documenta e não decide — você **despacha
 e acompanha**.
 
-O canal remoto é só uma forma de acionar e aprovar a sessão — Claude Code Remote
-Control ou Codex Remote Control, **desde que homologado** (Contrato do Workflow,
-A.10). Ele **não** transforma conversa em decisão, não dispensa gates e não amplia
-permissões de Jira, GitHub, Confluence, código ou infraestrutura. O executor da
-sessão não altera nenhuma autoridade desta skill.
+O canal (Codex local, Claude Code local ou controle remoto homologado) só define
+como a sessão é acessada. Ele **não** transforma conversa em decisão, não dispensa
+gates e não amplia permissões de Jira, GitHub, Confluence, código ou infraestrutura.
+O executor da sessão não altera nenhuma autoridade desta skill.
 
 Spec completa e mapa etapa → skill: `workflow-development-flow/references/orquestracao-remota.md`.
 Consulte `workflow-development-flow` diante de dúvida sobre o fluxo.
@@ -33,11 +33,11 @@ pela próxima operação elegível; ao fim de cada operação, devolver um resum
 estado, evidências, bloqueios e próxima ação.
 
 ### Escopo e acionamento
-Acionada **somente** por pedido manual de Rafinha numa sessão autenticada em canal
-remoto homologado. Comandos:
-"Onde paramos?"; "Continuar EPIC-123"; "Trabalhar ISSUE-123"; "Preparar as issues
-de EPIC-123 em Preparação técnica"; "Retomar a sessão X"; "Parar/cancelar". Nunca
-age por iniciativa própria, não monitora o board, não agenda trabalho.
+Acionada **somente** por pedido manual de Rafinha numa sessão autenticada. Comandos:
+"Onde paramos?"; "Continuar EPIC-123"; "Trabalhar ISSUE-123"; "Aprovo os PRs/MRs
+da ISSUE-123"; "Integre ISSUE-123 no Modo A"; "Preparar as issues de EPIC-123 em
+Preparação técnica"; "Retomar a sessão X"; "Parar/cancelar". Nunca age por iniciativa
+própria, não monitora o board, não agenda trabalho.
 
 ### Autoridade
 - **Decisão.** Apenas consequências **únicas e explícitas** nos contratos (ex.: qual
@@ -46,6 +46,11 @@ age por iniciativa própria, não monitora o board, não agenda trabalho.
   decisão técnica não determinística, prioridade, modo de integração, conflito,
   exceção nem aceite. Duas interpretações válidas ou informação obrigatória ausente
   → interrompe **só a parte afetada**, explica opções/evidências e pergunta.
+- **Roteamento.** Todo pedido que mencionar issue, Epic, coluna, PR/MR, aprovação,
+  merge, pipeline, implementação, QA, documentação ou release é primeiro um
+  **evento de workflow**. Antes de qualquer ferramenta externa, lê Jira, etapa,
+  Contrato Efetivo, claims e evidências pertinentes e identifica a skill dona. Não
+  emite comando isolado de GitHub, Git ou Jira para um artefato vinculado a issue.
 - **Mutação.** Comentário de registro no Jira e as transições abaixo. Código,
   Git/GitHub, Confluence, documentação, infraestrutura, `context/` e `ai-memory/`
   são mutados **pela skill que possui essa autoridade**; você despacha.
@@ -78,7 +83,9 @@ sessão no alvo — Contrato do Workflow, B.5).
   executor ou sessão → não despachar, reportar e perguntar (só Rafinha libera um
   claim). Você não abre claim próprio — a skill despachada abre o dela (B.5).
 - Repassar à skill chamada: alvo, escopo fechado e confirmado, contexto verificável,
-  intenção. A skill chamada executa o próprio Passo 0 e valida seus gates.
+  intenção. Quando o executor local for o Claude via Mordomo, o despacho é somente
+  `/nome-da-skill + alvo`; o Mordomo não injeta regras concorrentes. A skill chamada
+  executa o próprio Passo 0 e valida seus gates.
 - Comunicar o resultado **nos termos da skill chamada**; nunca normalizar falha como
   sucesso parcial; não avançar alvo com obrigação `Pendente`, `Não satisfeita` ou
   `Não verificável`.
@@ -86,6 +93,11 @@ sessão no alvo — Contrato do Workflow, B.5).
   de Rafinha a decisões/bloqueios.
 - Em informação obrigatória ausente, erro ou incongruência: bloqueio granular
   (Contrato do Workflow, B.3) + `workflow-incident-capture-executor`.
+- Quando Rafinha aprovar uma revisão humana em `Análise - Rafinha`, registrar o
+  resultado, executar a saída contratual para `Integração` e então pedir o Modo
+  A/B/C se ele não vier explícito. Aprovação humana não é aprovação de PR no GitHub.
+  Só chama uma ação de revisão/aprovação do GitHub se Rafinha pedir isso de forma
+  explícita e separada.
 
 ### Evidências e saída
 Evidência: comentário Jira com alvo, escopo fechado, ação autorizada, resultado e
@@ -120,12 +132,23 @@ Sem Model Escalation Policy específica nesta primeira versão: usa o nível da 
 ## Operação técnica
 
 ### Passo 0 — Classificar e verificar
-1. Classifique o comando: consulta, preparação de escopo, despacho de etapa ou
-   cancelamento.
-2. Faça a checagem de disponibilidade somente leitura (pré-condições acima). Falha de
+1. Antes de selecionar ferramenta, classifique o comando: consulta, evento de etapa
+   humana, preparação de escopo, despacho de etapa, ação externa explicitamente
+   pedida ou cancelamento. Para qualquer referência a issue/PR/MR, consulte o Jira e
+   vincule o artefato à etapa atual.
+2. Se Rafinha disser "aprovo", "reprovo", "precisa de ajuste" ou equivalente,
+   trate como resultado da etapa humana atual. Em `Análise - Rafinha`, aprovação
+   registrada significa saída para `Integração`; ela não autoriza `gh pr review`,
+   merge ou escolha de modo. Se não houver Modo A/B/C explícito, pergunte apenas o
+   modo antes de despachar a Integração.
+3. Uma ação direta em GitHub (aprovar PR, comentar PR, fechar PR) só é elegível
+   quando Rafinha a pedir expressamente como ação de GitHub e ela não contradisser o
+   workflow da issue vinculada. Falha local ou prompt de permissão antes do comando
+   prova apenas que a ação não foi executada; nunca prova ausência de acesso remoto.
+4. Faça a checagem de disponibilidade somente leitura (pré-condições acima). Falha de
    conexão, permissão, ambiente ou sessão ambígua → **bloqueio operacional**; reporte
    e pare.
-3. Confirme que o **canal remoto e o executor da sessão estão homologados** para o que
+5. Confirme que o executor da sessão está homologado para o que
    foi pedido (`workflow-development-flow/references/executores.md`). Num canal ou
    executor Codex ainda não homologado, a orquestração **não roda** (Pacote 8, D3). A
    skill despachada executa **no executor da sessão**: se a etapa depende de capacidade
@@ -155,6 +178,8 @@ limite de quantidade/duração nesta versão.
 1. Mapeie etapa → skill dona (reference, seção 7). Etapa de Rafinha → **pare** e
    apresente o necessário (pendência, Design Package, PR, resultado integrado) — ou
    execute a transição de saída se, e só se, ele declarou o resultado.
+   `Análise - Rafinha` com aprovação declarada → registre a decisão e mova para
+   `Integração`; não substitua a passagem por uma ação isolada no GitHub.
 2. `Ready`: mostre o atestado `PRONTA`; com a confirmação explícita, transite
    `Ready → Fazer - Claude`, comente na issue e despache `jira-issue-executor`.
    Atestado ausente ou não `PRONTA`, ou tipo Hotfix → não transite.
@@ -202,6 +227,9 @@ cobri-los.
 ## O que NÃO fazer
 
 - ❌ Não transformar "continuar de onde paramos" em execução ampla ou autorização silenciosa.
+- ❌ Não tratar aprovação/reprovação humana como comando técnico isolado de GitHub.
+- ❌ Não chamar `gh pr review`, aprovar PR, fazer merge, comentar PR ou alterar Jira
+  antes de identificar a issue, a etapa, o contrato e a skill dona.
 - ❌ Não mover Hotfix; não mover issue de etapa que não é sua fora das duas transições do contrato.
 - ❌ Não inferir o resultado de uma etapa humana (review, aceite, design, decisão).
 - ❌ Não escolher o modo da Integração; não herdar a autorização de Modo B.

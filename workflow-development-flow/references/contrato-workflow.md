@@ -81,8 +81,9 @@ etapa que não é sua, não escolhe destino não autorizado, não pula etapas e 
 antecipa transição de outra capacidade. Sem condição satisfeita, mantém a issue
 no estado apropriado, sem inventar destino alternativo.
 
-**Exceção oficial — Comando remoto.** Numa sessão remota iniciada por Rafinha em
-**canal remoto homologado** (A.10), a `workflow-remote-orchestrator` executa, **como execução de comando
+**Exceção oficial — Comando orquestrado.** Numa sessão autenticada iniciada por
+Rafinha — local ou remota; canal remoto somente quando homologado (A.10) — a
+`workflow-remote-orchestrator` executa, **como execução de comando
 explícito de Rafinha registrado em comentário da issue**, apenas: (a)
 `Ready → Fazer - Claude` de issue normal com atestado `PRONTA` vigente; (b) a saída
 de `Análise - Rafinha`, `Análise Final - Rafinha` ou `Design de produto - Rafinha`

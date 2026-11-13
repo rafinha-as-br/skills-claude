@@ -11,6 +11,21 @@ explícito da sessão atual. O controlador instalado fica em
 mantém logs e locks por issue e repositório e produz uma revisão independente
 em somente leitura.
 
+## Roteamento obrigatório
+
+O Mordomo é o **controlador técnico local**, não o plano de controle do workflow.
+Quando o pedido mencionar issue, Epic, status, PR/MR, aprovação, merge, pipeline,
+QA, documentação ou release, primeiro aplique a `workflow-remote-orchestrator`:
+ela resolve Jira, etapa, Contrato Efetivo, claim, escopo e skill dona. O Mordomo só
+recebe o despacho já delimitado dessa orquestração. Ele inicia o Claude Code
+com o comando da skill e seu alvo; não reescreve nem acrescenta regras do
+workflow ao comando.
+
+Não converta "aprovo o PR/MR" em `gh pr review` nem em outro comando de GitHub. Se
+a issue estiver em `Análise - Rafinha`, isso é o resultado da revisão humana; a
+orquestradora registra a decisão, conduz a saída para `Integração` e pede o modo
+A/B/C se necessário. Ação de GitHub só acontece por pedido explícito e separado.
+
 ## Contrato da skill
 
 ### Finalidade
@@ -22,9 +37,10 @@ por uma atestação automatizada de mudança simples.
 
 ### Escopo e acionamento
 
-É acionada somente por comando explícito de Rafinha, com issue, conta A ou B,
-workspace aberto na sessão atual, tarefa delimitada e modo de integração
-informado. Atua em uma issue por despacho. A revisão de autoridade se aplica
+É acionada somente por comando explícito de Rafinha, com chave de issue ou
+Épico para lock, conta A ou B, workspace aberto na sessão atual, nome da skill
+e alvo delimitado; modo de integração é informado quando a skill chamada for
+de Integração. A revisão de autoridade se aplica
 somente aos modos A e C.
 
 ### Autoridade
@@ -48,14 +64,16 @@ somente aos modos A e C.
 
 ### Entradas, obrigações e saída
 
-Entradas: escopo fechado, workspace Git explícito, conta A/B, prompt
-delimitado, perfil disponível e, para revisão, modo A/C, base de comparação e
-referência do PR quando existente. Obrigações: preservar os locks de issue e
-repositório até o término; não inferir workspace; executar o revisor em
-somente leitura; identificar a conta em log; bloquear autorização quando faltar
-qualquer evidência obrigatória. Saída: `runId`, logs, estado local e, quando
-solicitado, `review-report.json` com decisão, achados, evidências e necessidade
-de revisão humana.
+Entradas: escopo fechado, workspace Git explícito, conta A/B, nome de skill em
+kebab-case, alvo/argumentos em uma linha, perfil disponível e, para revisão,
+modo A/C, base de comparação e referência do PR quando existente. Obrigações:
+preservar os locks de issue e repositório até o término; não inferir workspace;
+despachar somente `/nome-da-skill + alvo`, sem texto de controle do workflow;
+executar o revisor em somente leitura; identificar a conta em log; bloquear
+autorização quando faltar qualquer evidência obrigatória. Saída: `runId`, logs,
+estado local, comando efetivamente despachado e, quando solicitado,
+`review-report.json` com decisão, achados, evidências e necessidade de revisão
+humana.
 
 ### Limites e delegações
 
@@ -79,12 +97,13 @@ repositórios ou arquitetura não trivial. Nunca escalar automaticamente.
 ## Operação
 
 1. Apresente escopo, fora do escopo, impacto retroativo, riscos e pendências.
-2. Confirme issue, conta, workspace atual e instrução delimitada. Não escolha
-   outro diretório por inferência.
+2. Confirme chave de lock (issue ou Épico), conta, workspace atual, skill e
+   alvo delimitado. Não escolha outro diretório por inferência.
 3. Use `Validate` quando precisar verificar perfis, inicializadores, CLIs e raiz
    Git; esta verificação não inicia uma tarefa.
-4. Gere a tarefa JSON e chame `Dispatch`. Use `Status` para acompanhar a sessão
-   e os locks; `Release` exige confirmação explícita e processo encerrado.
+4. Gere a tarefa JSON com `skill` e `arguments`; `Dispatch` entrega ao Claude
+   somente `/skill arguments`. Use `Status` para acompanhar a sessão e os
+   locks; `Release` exige confirmação explícita e processo encerrado.
 5. Com `review.enabled`, leia `review-report.json`. Só trate A/C como
    autorizado quando `decision` for `APPROVE_SIMPLE`,
    `authorizationEffective` for `true` e `mergeAuthorization` corresponder ao

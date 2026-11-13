@@ -70,7 +70,7 @@ exige o que a operação não faz → ampliar a operação. Contradição ou lac
   para declarar o resultado de outra capacidade.
 - **Operação técnica não cria autoridade.** Nenhum passo, script ou ferramenta
   concede poder que o contrato não reconheça.
-- **Chamada pela orquestradora remota.** Quando a `workflow-remote-orchestrator`
+- **Chamada pela orquestradora do workflow.** Quando a `workflow-remote-orchestrator`
   despacha uma skill, a skill chamada executa o próprio Passo 0, gates e registros
   normalmente; o escopo repassado conta como confirmado (Contrato do Workflow,
   B.2), mas o modo da Integração e a autorização de Modo B nunca são herdados.
