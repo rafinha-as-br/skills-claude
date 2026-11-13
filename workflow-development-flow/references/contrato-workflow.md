@@ -91,6 +91,15 @@ resultado). Toda outra transição continua da skill dona da etapa. Esta exceç�
 **não** alcança Hotfix e **não** substitui a autorização distinta de merge do
 Modo B (G15). Detalhes: `orquestracao-remota.md`.
 
+**Exceção oficial — Revisão simples pelo Mordomo.** Para uma issue normal nos
+modos A ou C, a skill `mordomo` pode registrar `Análise - Rafinha → Integração`
+quando o seu relatório independente tiver `decision = APPROVE_SIMPLE`,
+`authorizationEffective = true` e `mergeAuthorization` correspondente ao modo.
+Antes da transição, ela abre o claim, registra a decisão, as evidências e o
+executor; a `jira-integration-executor` revalida o próprio contrato antes de
+fazer qualquer merge. A exceção não se aplica a Hotfix, não autoriza Modo B e
+não substitui `Análise Final - Rafinha` nem decisões humanas reservadas.
+
 **Exceção oficial — Hotfix.** Com `Tipo = Hotfix`, **toda autoridade automática
 de transição entre colunas fica suspensa.** As skills executam só a
 responsabilidade da coluna atual, registram evidências e atestações normalmente,
@@ -129,7 +138,8 @@ Decisões reservadas a Rafinha (a automação apoia, não substitui):
 2. Design de produto — `Design de produto - Rafinha`.
 3. Decisão técnica não determinística — durante `Preparação técnica - Claude`
    (a issue permanece na etapa; **não** vai para `Decisão - Rafinha`).
-4. Revisão de código — `Análise - Rafinha`.
+4. Revisão de código — `Análise - Rafinha`, exceto mudança simples A/C
+   atestada efetivamente pelo `mordomo` conforme A.5.
 5. Revisão de produto — `Análise Final - Rafinha`.
 
 Colunas não têm autoridade por si; só representam onde a autoridade é exercida.
@@ -185,8 +195,10 @@ autoridade (A.3).
   não preveja (B.3).
 - **Homologação.** Um executor só opera uma capacidade depois de passar pelos três
   testes — seleção, execução permitida e negativa/gate — em projeto de laboratório
-  e de Rafinha declarar a homologação. Sem essa declaração, a capacidade permanece
-  apenas no executor já homologado.
+  **ou na primeira execução real explicitamente autorizada por Rafinha**, e de
+  Rafinha declarar a homologação. A execução real autorizada preserva todos os
+  gates; ela não é permissão para contorná-los. Sem essa declaração, a capacidade
+  permanece apenas no executor já homologado.
 - **Matriz de capacidades.** O que cada executor tem (ferramentas, conectores,
   mapeamento de operações) e quais capacidades Rafinha homologou ficam em
   `references/executores.md` — fonte única; as skills apontam para ela.

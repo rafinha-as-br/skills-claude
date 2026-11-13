@@ -126,7 +126,7 @@ Ele **não copia** o Contrato do Workflow, todos os tipos ou todas as políticas
 
 ## Escopo — skills incluídas e excluídas
 
-Incluídas (24): `workflow-development-flow`, `workflow-remote-orchestrator`, `jira-sprint-intake-executor`,
+Incluídas (25): `workflow-development-flow`, `workflow-remote-orchestrator`, `mordomo`, `jira-sprint-intake-executor`,
 `jira-issue-decision-resolver`, `jira-technical-preparation-executor`,
 `jira-hotfix-creator`, `jira-issue-creator`, `jira-issue-executor`,
 `jira-integration-executor`, `jira-qa-executor`,

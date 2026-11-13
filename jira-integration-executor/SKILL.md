@@ -52,7 +52,9 @@ Integração, o Modo B (promoção do épico para `develop`) roda **só no Claud
 
 ### Finalidade
 Executar a etapa `Integração` e realizar os merges autorizados segundo um dos três
-modos oficiais.
+modos oficiais. Em A/C, considera aprovada a issue que venha de `Análise - Rafinha`
+ou que tenha atestação efetiva do `mordomo` para mudança simples; em B a autorização
+humana distinta de Rafinha permanece obrigatória.
 
 ### Escopo e acionamento
 Opera apenas com **modo e escopo explícitos** (issue, lista, Epic ou coluna de um
@@ -88,7 +90,8 @@ Epic específico). Modos: **A** issue/Epic → branch do Epic; **B** branch do E
   movimentação manual de Rafinha.
 
 ### Entradas e pré-condições
-Projeto e repositório corretos; escopo confirmado; modo informado/confirmado **ou**
+Projeto e repositório corretos; escopo confirmado; revisão de código humana ou
+atestação efetiva do `mordomo` para mudança simples A/C; modo informado/confirmado **ou**
 deterministicamente resolvido pelo Contrato Efetivo; origem e destino reais; PR
 válido; pipeline aplicável; estado Git seguro; topologia de Epic quando aplicável
 (**preparada pela `jira-technical-preparation-executor`**); para Hotfix, Tipo e

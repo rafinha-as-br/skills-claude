@@ -2,13 +2,14 @@
 
 > **Fonte única** do que cada executor técnico tem e de quais capacidades Rafinha
 > **homologou** (Contrato do Workflow, A.10). As skills apontam para este arquivo em vez
-> de repetir tabelas de ferramenta. Estado em **2026-10-21**.
+> de repetir tabelas de ferramenta. Estado em **2026-11-12**.
 
 ## Como ler
 
 - **Homologada** = só vale com **declaração de Rafinha**, depois dos três testes
-  (seleção, execução permitida, negativa/gate) em projeto de laboratório. Sem declaração,
-  a capacidade **não** é do executor (A.10), mesmo que a ferramenta exista.
+  (seleção, execução permitida, negativa/gate) em laboratório ou na primeira execução
+  real explicitamente autorizada. Sem declaração, a capacidade **não** é do executor
+  (A.10), mesmo que a ferramenta exista.
 - **Observado** = visto no host ou no inventário de ferramentas de uma sessão do
   Codex (`~/.codex/sessions`, 2026-10-20). **Não** é "testado em operação".
 - Credenciais: esta página registra apenas **presença** de variáveis de ambiente, nunca
@@ -19,7 +20,7 @@
 | Executor | Capacidades homologadas |
 |---|---|
 | Claude Code | todas as que o workflow usa hoje |
-| Codex | **nenhuma** (Pacote 8, D3: o Codex começa em etapas selecionadas e só depois dos testes de laboratório) |
+| Codex | **Mordomo local — autorizado para primeira execução real:** coordenação de Claude A/B, locks locais e revisão de mudança simples A/C. A atestação só é efetiva com relatório completo; Modo B, QA Web, Release e demais capacidades continuam não homologados. |
 
 Quando Rafinha homologar uma capacidade para o Codex, ele (ou a skill, a pedido) atualiza
 esta tabela e a coluna "Situação no Codex" abaixo.
@@ -33,6 +34,7 @@ esta tabela e a coluna "Situação no Codex" abaixo.
 | **GitHub** | `gh` (CLI) | `gh` (no host) e conector GitHub: `create_pull_request`, `merge_pull_request`, `compare_commits`, `create_branch`, `fetch_workflow_run_jobs`, `fetch_workflow_run_artifacts`, `fetch_workflow_job_logs`, `get_commit_combined_status`. **Não observado:** disparo de workflow (usar `gh workflow run`) | Observado; não homologado |
 | **Git** | `git` | `git` (host) | Observado |
 | **Revisão automatizada** | `/code-review` (medium) + `/ponytail:ponytail-review` | skill `review-agent` (somente leitura, P0–P3) com o critério de over-engineering **no pedido**; plugin `code-review@openai-bundled` habilitado no `config.toml` | `review-agent` observado; não homologado |
+| **Mordomo local** | Não aplicável | Controlador PowerShell com Claude A/perfil padrão, Claude B/`CLAUDE_CONFIG_DIR`, locks por issue/repositório e Codex CLI somente leitura para revisão | Autorizado por Rafinha para primeira execução real: revisão simples A/C; registro e merge continuam nas skills donas. Modo B bloqueado |
 | **Executor web** (QA Web, `screen-doc-writer`) | Claude in Chrome | Candidatos presentes no cache de plugins (ativação não verificada): `browser`, `chrome`, `computer-use`, `unified-computer-use` | **Nenhum homologado — bloqueia** |
 | **Android (QA)** | Maestro (MCP preferencial, CLI) | Maestro **CLI** no host; o MCP **não** está configurado no Codex (`config.toml` só tem `node_repl`) | CLI observado; não homologado |
 | **AIO Tests** | REST + `AIO_TESTS_ACCESS_TOKEN`, via `jira-qa-executor/scripts/aio.sh` | O mesmo | Variável presente no ambiente do usuário do Windows; chamada não testada |

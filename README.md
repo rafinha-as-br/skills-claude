@@ -23,7 +23,7 @@ O Rafinha-Claude trata a IA não como um gerador de código isolado, mas como **
 
 Na prática, o board do Jira é o mapa do processo e cada etapa tem uma skill dona:
 
-- **O executor de IA faz o trabalho operacional** — o Claude Code hoje; o Codex está sendo adaptado como executor alternativo, ainda sem nenhuma capacidade homologada ([Codex como executor alternativo](#6-codex-como-executor-alternativo-outubro-de-2026)): maturar issues, preparar o ambiente técnico e as branches, implementar com testes e abrir o Pull Request, integrar, rodar QA, escrever a documentação, auditar o resultado e preparar releases.
+- **O executor de IA faz o trabalho operacional** — o Claude Code hoje; o Codex é executor alternativo com o Mordomo autorizado para primeira execução real de coordenação local e revisão simples A/C. As demais capacidades ainda não estão homologadas ([Codex como executor alternativo](#6-codex-como-executor-alternativo-outubro-de-2026)).
 - **O desenvolvedor mantém as decisões que não são da IA**: regras de negócio, design de produto, decisões técnicas não determinísticas, revisão de código, aceitação do produto, o modo de cada integração e o incremento de cada versão.
 - **Os contratos ligam os dois lados**: uma skill só age dentro da autoridade que o seu contrato declara, sobre um escopo que o humano confirmou, e deixa evidência verificável do que fez.
 
@@ -87,7 +87,7 @@ A revisão mais recente, de **12/10/2026**, consolida o que os pacotes anteriore
 
 O **Pacote 8** (21/10/2026) adapta o texto das skills para que o OpenAI Codex possa atuar como executor alternativo ao Claude Code, **sem mudar nenhum contrato, gate, autoridade ou transição**. O que mudou: uma cláusula de executor técnico no Contrato do Workflow (A.10); **claim** e **handoff** entre executores (B.5), para que uma issue nunca tenha dois executores na mesma etapa; o campo `Executor` nos registros do Jira; a política de modelo em **níveis neutros 0–4**, que cada executor mapeia para a própria configuração; as descrições das skills reescritas para caber no limite do Codex; e uma matriz de capacidades por executor, [`executores.md`](workflow-development-flow/references/executores.md). Nomes de coluna (`Fazer - Claude`…), o sufixo `-claude` das branches e os títulos de comentário **não mudam**.
 
-**Estado:** o texto está adaptado; **o Codex não está habilitado**. Capacidade sem homologação declarada por Rafinha é bloqueio, não fallback — hoje isso vale para toda capacidade do Codex, e QA Web, `screen-doc-writer`, Release e a promoção de Epic (Modo B) ficam só no Claude Code até serem homologadas em projeto de laboratório. Nada foi testado em operação. O histórico está no Git (`git log --grep "Pacote 8"`).
+**Estado:** o Codex segue sem homologação geral. Rafinha autorizou a primeira execução real do Mordomo para coordenar Claude A/B e atestar mudança simples nos modos A/C; essa execução preserva locks e gates e não alcança Modo B. QA Web, `screen-doc-writer`, Release e a promoção de Epic (Modo B) continuam no Claude Code até homologação própria. O histórico está no Git (`git log --grep "Pacote 8"`).
 
 ---
 
@@ -321,7 +321,7 @@ Os padrões de Flutter/Dart (`flutter-development-standards`) e os executores de
 
 ## Catálogo de skills
 
-São **26 skills** no repositório: **24** fazem parte do Rafinha-Claude e **2** coexistem fora dele.
+São **27 skills** no repositório: **25** fazem parte do Rafinha-Claude e **2** coexistem fora dele.
 
 ### Rafinha-Claude
 
@@ -376,6 +376,7 @@ São **26 skills** no repositório: **24** fazem parte do Rafinha-Claude e **2**
 | Skill | O que faz |
 |---|---|
 | [`workflow-remote-orchestrator`](workflow-remote-orchestrator/SKILL.md) | Sob comando de Rafinha pelo celular (canal remoto homologado), fecha o escopo, despacha a skill dona de cada etapa e devolve resultado, bloqueios e próxima ação. Só executa `Ready → Fazer - Claude` e saídas de colunas humanas quando Rafinha declara o resultado; nunca move Hotfix nem autoriza Modo B. |
+| [`mordomo`](mordomo/SKILL.md) | Coordena localmente Claude A/B no workspace explícito, bloqueia concorrência por issue e repositório e faz revisão independente. Pode atestar mudança simples para A/C; Modo B continua manual e a integração efetiva fica com a skill dona. |
 
 #### Apoio ao workflow
 
@@ -440,7 +441,7 @@ O workflow foi projetado para o ambiente pessoal de Rafinha: nomes de projeto, e
 - A revisão mais recente (12/10/2026) está implementada nas skills e no Confluence. **Não há migração de issues anteriores** e nenhuma convivência com o contrato antigo.
 - A reconfiguração real do Jira (status `Preparação técnica - Claude`, tipos nativos `Hotfix` e `Validação Humana`) e a Topologia por produto no Confluence, o bootstrap do Workspace dos produtos multi-repo e a configuração de CI e branch protection são manuais e ficam fora das skills. Enquanto não existirem, as skills **bloqueiam** em vez de assumir valores.
 - A `workflow-remote-orchestrator` é uma **primeira versão experimental**: concorrência de sessões, recuperação de desconexão, ambiente sempre ligado, expiração do canal e custo de contexto são pontos em observação (`orquestracao-remota.md`, seção 11), não bloqueios.
-- **O Codex como executor alternativo (Pacote 8) é só texto.** Não há projeto de laboratório definido, nenhuma capacidade do Codex foi homologada e nenhum teste de seleção, execução permitida ou negativa/gate foi executado. Os conectores Atlassian e GitHub do Codex foram observados, nunca chamados; o Drive e um executor web não existem para ele. Enquanto Rafinha não declarar a homologação, o Codex bloqueia em vez de assumir a capacidade.
+- **O Codex como executor alternativo (Pacote 8) continua restrito.** O Mordomo está autorizado para primeira execução real de coordenação local e revisão simples A/C; ela é a validação integrada de seleção, execução e gate, sem atalho de controles. Os conectores Atlassian e GitHub fora desse recorte, o Drive, o executor web, Release e Modo B continuam bloqueados até homologação própria.
 - Há pendências herdadas e declaradas nos contratos, como a trilha `qa-doc`, que ainda não tem writer (a skill para e reporta).
 - O Rafinha-Claude é um workflow pessoal em evolução, não um produto instalável.
 
