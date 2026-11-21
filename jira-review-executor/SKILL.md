@@ -76,6 +76,8 @@ aplicáveis; evidências Git/GitHub/AIO/Confluence quando necessárias.
   tipos, políticas, gates e obrigações que o Contrato Efetivo já resolve;
 - verificar plano documental somente quando aplicável; pendências de decisão
   residuais; evidência de integração, labels operacionais, ledger e tentativas;
+- considerar as restrições arquiteturais e convenções dos `AGENTS.md`
+  aplicáveis aos caminhos alterados, sempre subordinadas às fontes oficiais;
 - não reprovar retroativamente por regra que não valia no momento da execução; a
   Revisão do workflow 2 **não exige migração de issues existentes**, nem cria
   roteamento condicional "issue antiga × nova";
@@ -444,6 +446,23 @@ branch do Workspace correta para o modo (`workspace/epic|issue|hotfix` →
 `workspace/develop`); gitlink normal não aponta para commit isolado em branch de
 implementação. Em Hotfix, o histórico não mostra movimentação automática de coluna
 por skill (só por Rafinha).
+
+**17. Instruções locais e classificação do achado.** Para os caminhos alterados,
+localize os `AGENTS.md` aplicáveis conforme
+`workflow-development-flow/references/agents-md.md`. Não invente requisito a
+partir de texto genérico. Classifique o resultado antes de decidir o tratamento:
+
+| Classe | Tratamento |
+|---|---|
+| Violação de regra vigente | Achado: a instrução aplicável é compatível com fonte oficial e a alteração a descumpre. |
+| Recomendação técnica | Registre como recomendação; sozinha não reprova nem autoriza mudança fora do escopo. |
+| Conflito documental | Registre os arquivos e a fonte autoritativa; não escolha precedência nem corrija documentação nesta etapa. |
+| Informação ausente | Declare o que não foi possível verificar; não presuma que ausência equivale a regra inexistente. |
+| Problema fora do escopo | Não corrija nem amplie a auditoria automaticamente; reporte para decisão ou demanda própria. |
+
+Um `AGENTS.md` que conflite com Confluence, contrato, Jira, escopo, Código ou Git
+não é regra vigente para fins de reprovação. A classificação não altera os gates ou
+as transições já definidos nesta skill.
 
 ### 3. Decidir o resultado da revisão
 

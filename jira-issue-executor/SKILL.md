@@ -121,6 +121,8 @@ estado Git seguro; contexto de tentativa e branch base.
 - executar a **revisão automatizada independente** do passo 5.3c com o mecanismo
   homologado do executor, antes do gate de qualidade;
 - ler AI Memory da issue/Epic quando existir e for relevante;
+- localizar e consultar os `AGENTS.md` aplicáveis aos caminhos alterados, sem
+  permitir que instrução local amplie escopo, autoridade ou obrigação contratual;
 - delegar à `ai-memory-manager` descobertas, tentativas relevantes, dependências,
   retrabalho, limitações ou handoff com valor de continuidade;
 - aplicar `flutter-development-standards` em Flutter/Dart;
@@ -592,6 +594,20 @@ grave o Execution State com `Estado: AGUARDANDO_RAFINHA` e a pergunta feita
 em "Bloqueios / decisões pendentes de Rafinha" antes de aguardar a
 resposta — assim uma sessão diferente, se precisar retomar, sabe
 exatamente o que está pendente sem repetir a investigação.
+
+**5.0a Instruções locais aplicáveis.** Antes de alterar código, localize os
+`AGENTS.md` do Workspace (quando existir), da raiz do repositório e dos
+diretórios ancestrais de cada caminho que será modificado, conforme
+`workflow-development-flow/references/agents-md.md`. Ao passar a tocar outro
+módulo, reavalie somente a cadeia desse caminho. Ausência de arquivo é normal.
+Instrução mais específica só vale quando compatível; conflito material não tem
+precedência implícita e é reportado a Rafinha sem ampliar o escopo da issue.
+
+Ao delegar uma parte, envie ao subagente o escopo fechado, os caminhos
+autorizados, a lista desses `AGENTS.md`, as referências necessárias e o limite
+de não resolver conflitos nem criar escopo novo. Necessidade de criar ou manter
+`AGENTS.md` é encaminhada à `engineering-context-manager`; esta skill apenas
+inclui no commit a mudança que a capacidade autorizada deixou na working tree.
 
 **5.1 Checar dependências não resolvidas.** Se a issue menciona
 explicitamente depender de outra issue (ex.: "depende de EP-02"), verifique

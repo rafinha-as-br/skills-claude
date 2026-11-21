@@ -35,6 +35,11 @@ definição normativa mora aqui.
    para sobrescrever em silêncio uma regra aprovada.
 9. **AIO Tests** — registro detalhado da execução de QA. O Jira continua sendo
    a autoridade sobre o estado e histórico operacional do QA no workflow.
+10. **`AGENTS.md`** — instruções técnicas locais e duráveis para orientar a
+   atuação em Workspace, repositório ou módulo. É subordinado às fontes acima:
+   não cria autoridade, gate, transição, escopo, regra de negócio ou decisão
+   arquitetural. Convenção e resolução de conflitos:
+   `references/agents-md.md`.
 
 **Confluence × `SKILL.md`.** O Confluence define o que *deve* ser; o `SKILL.md`
 revela o que *é*. Quando divergem há **drift**, e a divergência nunca se resolve

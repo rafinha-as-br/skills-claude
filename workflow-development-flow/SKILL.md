@@ -2199,7 +2199,12 @@ Resumo; estrutura, formatos, ciclos de vida e fluxos completos em
 - **`context/`** — realidade técnica atual e durável (o *porquê* que o código
   não mostra). Governada pela `engineering-context-manager`. Leitura simples
   direta; localizar/avaliar chamando a skill; criar/alterar/reorganizar/remover
-  só por ela. `CLAUDE.md` (ou `AGENTS.md`, no Codex) é só bootstrap/router.
+  só por ela.
+- **`AGENTS.md`** — instrução técnica local para Workspace, repositório ou
+  módulo. Governada pela `engineering-context-manager`, sem substituir
+  `context/`, AI Memory, Jira, Confluence, Código ou Git. Ausência não bloqueia;
+  conflito material entre níveis não tem precedência implícita. Convenção:
+  `references/agents-md.md`.
 - **`ai-memory/`** — continuidade operacional e handoff (`active/` → `history/`,
   criação sob demanda). Governada pela `ai-memory-manager`; leitura direta,
   mutação centralizada. Não é fonte de verdade de Jira, Git ou produto.

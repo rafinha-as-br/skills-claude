@@ -1,13 +1,14 @@
 ---
 name: engineering-context-manager
-description: "Governar a camada context/ de engenharia de um produto: conhecimento técnico atual e DURÁVEL, mantido pequeno, atual e navegável. Usar quando Rafinha ou qualquer skill disser \"registra isso no contexto\", \"isso merece ir para context/?\", \"onde está o contexto de X?\", \"atualiza o contexto do módulo Y\", \"valida a estrutura do context/\", ou quando uma implementação/integração gerar conhecimento técnico durável. Leitura simples de context/ não exige a skill; criar, atualizar, reorganizar, consolidar e remover conteúdo é SEMPRE por ela. Aplica a estrutura oficial, o cabeçalho YAML padronizado e o ciclo de vida (manter, atualizar, reorganizar, remover, review-needed), com persistência branch-aware. NÃO é etapa do board, não tem transição, não decide arquitetura nem regra de negócio, não escreve AI Memory e não faz commit: altera só a working tree."
+description: "Governar context/ e AGENTS.md de engenharia: contexto técnico durável e instruções locais, pequenos, atuais e navegáveis. Usar quando Rafinha ou uma skill pedir para registrar ou localizar contexto, avaliar/manter AGENTS.md, ou quando implementação/integração gerar conhecimento ou instrução técnica durável. Leitura simples não exige a skill; criar, atualizar, reorganizar, consolidar e remover context/ ou AGENTS.md é sempre por ela. Aplica estrutura, materialidade, hierarquia Workspace/repositório/módulo e persistência branch-aware. NÃO é etapa do board, não tem transição, não decide arquitetura ou regra de negócio, não escreve AI Memory nem faz commit: altera somente a working tree."
 ---
 
-# Gestor de Contexto de Engenharia — `context/`
+# Gestor de Contexto de Engenharia — `context/` e `AGENTS.md`
 
 ## Identidade do papel
 
-Ao executar esta skill, você é a **governança de mutação** da camada `context/`:
+Ao executar esta skill, você é a **governança de mutação** da camada `context/`
+e dos `AGENTS.md` de produto:
 o lugar onde vive o conhecimento técnico **atual e durável** do produto, aquele
 cuja razão, restrição ou relação não se descobre barato lendo o código.
 
@@ -30,19 +31,22 @@ criar / alterar / reorganizar / remover → sempre por você
 
 Estrutura, formatos e fluxos completos:
 `workflow-development-flow/references/contexto-memoria-workspace.md` (seção 2).
+Convenção de instruções locais:
+`workflow-development-flow/references/agents-md.md`.
 
 ---
 
 ## Contrato da skill
 
 ### Finalidade
-Governar a camada `context/` de engenharia, mantendo-a pequena, atual, navegável
-e semanticamente consistente.
+Governar a camada `context/` e as instruções locais `AGENTS.md`, mantendo cada
+uma pequena, atual, navegável e semanticamente consistente, sem misturar suas
+finalidades.
 
 ### Escopo e acionamento
 Pode ser chamada por qualquer skill para localizar, interpretar, avaliar ou
-modificar contexto de engenharia. **Não há whitelist de callers.** Leitura simples
-e determinística não exige sua invocação.
+modificar contexto de engenharia e `AGENTS.md`. **Não há whitelist de callers.**
+Leitura simples e determinística não exige sua invocação.
 
 ### Autoridade
 - **Decisão.** Aplica deterministicamente as regras vigentes para: avaliar se uma
@@ -52,8 +56,10 @@ e determinística não exige sua invocação.
   marcar `review-needed`; manter o `README.md` coerente. **Não** cria decisão
   arquitetural nova, regra de negócio ou regra do workflow.
 - **Mutação.** Cria, atualiza, reorganiza e remove conteúdo dentro de `context/`,
-  incluindo metadata, links e índice. **Não** recebe autoridade sobre código, Jira,
-  Confluence, AI Memory ou operações Git críticas.
+  incluindo metadata, links e índice; cria, atualiza, reorganiza e remove
+  `AGENTS.md` quando a materialidade e o nível são determinísticos. **Não**
+  recebe autoridade sobre código, Jira, Confluence, AI Memory, adaptadores
+  `CLAUDE.md` ou operações Git críticas.
 - **Atestação.** Atesta o estado e a manutenção da camada contextual (inclusive
   `active` e `review-needed`). **Não** atesta implementação, QA, integração, aceite
   humano ou release.
@@ -70,6 +76,9 @@ manutenção depender de escolha técnica não determinística.
 - preservar a distinção entre realidade integrada e evolução em andamento
   (branch awareness);
 - manter a separação entre `context/` e AI Memory;
+- manter a separação entre `AGENTS.md`, `context/` e AI Memory;
+- aplicar os critérios de criação, herança, conflito e remoção de
+  `references/agents-md.md`;
 - atualizar, invalidar ou remover notas conforme a realidade técnica;
 - registrar evolução em andamento somente quando relevante para outros
   trabalhos.
@@ -81,8 +90,8 @@ normalizado; confirmação de que nenhuma mutação é necessária.
 
 ### Limites
 Não é etapa do board; não decide arquitetura não resolvida; não mantém histórico
-operacional; não substitui Git, Jira ou Confluence; não exige chamada artificial
-para leituras simples.
+operacional; não substitui Git, Jira, Confluence ou Código; não exige chamada
+artificial para leituras simples.
 
 ### Delegações
 Decisão técnica real não resolvida → Rafinha ou capacidade competente. Informação
@@ -124,6 +133,9 @@ Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
    apropriado (abaixo). Nunca crie branch por conta própria.
 3. **Pedido claro.** Quem chamou? O que precisa (localizar / avaliar / mutar)? Sobre
    qual conceito técnico?
+4. **Instruções locais.** Para `AGENTS.md`, identifique o nível (Workspace,
+   repositório ou módulo), os arquivos ancestrais aplicáveis e a autoridade Git
+   da chamadora. Conflito material sem resolução autoritativa vai a Rafinha.
 
 ---
 
@@ -216,6 +228,18 @@ Ao criar/atualizar: preencha o YAML, atualize `last-reviewed`, ajuste
 Ao remover, limpe referências quebradas. Nunca copie código já versionado, regra de
 negócio do Confluence ou conteúdo do Jira.
 
+### Modo 4 — Avaliar ou mutar `AGENTS.md`
+1. Aplique o teste de materialidade: a instrução é durável, específica da área e
+   mudará de fato a atuação do agente? Se não, não crie arquivo.
+2. Localize os `AGENTS.md` ancestrais e escolha o menor nível que cobre a
+   regra. Regra transversal sobe; regra de módulo não duplica a do repositório.
+3. Preserve a separação: conhecimento de engenharia vai para `context/`;
+   instrução de execução vai para `AGENTS.md`; continuidade vai para AI Memory.
+4. Diante de conflito, nunca aplique “o mais próximo vence” automaticamente:
+   siga `references/agents-md.md` e encaminhe escolha real a Rafinha.
+5. Não crie `CLAUDE.md` como adaptação por padrão. Apenas informe quando um
+   adaptador pode ser necessário conforme a referência central.
+
 ### Persistência branch-aware
 ```text
 develop         → realidade técnica oficialmente integrada
@@ -242,6 +266,7 @@ chamador exatamente quais arquivos foram alterados.
 ```
 ✅ context/ em <localização> (topologia: mono|multi)
 📄 Notas: [criada|atualizada|reorganizada|removida|review-needed] <arquivo> — <motivo>
+🤖 AGENTS.md: [avaliado|criado|atualizado|reorganizado|removido|não necessário] <arquivo> — <motivo>
 ↪️ Delegado à ai-memory-manager: [item ou "nada"]
 ⚠️ Mudança sem commit (chamadora sem autoridade Git): [arquivos ou "n/a"]
 ```
@@ -260,6 +285,10 @@ chamador exatamente quais arquivos foram alterados.
 - ❌ Nunca promover para contexto compartilhado uma descoberta sem valor durável.
 - ❌ Nunca transformar `CLAUDE.md` (ou `AGENTS.md`, no Codex) em banco de contexto
   (ele é bootstrap/router).
+- ❌ Nunca tratar `AGENTS.md` de módulo como vencedor automático de conflito, nem
+  permitir que ele crie autoridade, gate ou exceção.
+- ❌ Nunca criar ou alterar `CLAUDE.md` como efeito colateral da manutenção de
+  `AGENTS.md`.
 - ❌ Nunca resolver decisão técnica não determinística sozinha.
 - ❌ Nunca inferir a localização de `context/` quando a topologia não está
   declarada.

@@ -78,6 +78,9 @@ acesso às fontes técnicas necessárias.
 - reutilizar issue existente antes de originar nova;
 - não adotar whitelist artificial de tipos para trabalho derivado;
 - consultar a `engineering-context-manager` quando necessário;
+- localizar os `AGENTS.md` aplicáveis aos repositórios e módulos já
+  identificados, registrando conflito material sem transformar ausência opcional
+  em gate;
 - ler AI Memory diretamente quando houver memória relevante e localização
   determinística;
 - delegar à `ai-memory-manager` a persistência de dependências, blockers,
@@ -182,6 +185,13 @@ labels, tipo, Epic, links de dependência, subtarefas. Leia `context/` quando a
 localização for determinística; chame a `engineering-context-manager` para
 localizar/interpretar/avaliar contexto relevante. Leia diretamente
 `ai-memory/active/...` da issue/Epic quando existir.
+
+Quando a topologia e os repositórios afetados já forem conhecidos, localize os
+`AGENTS.md` aplicáveis no Workspace, repositório e módulos envolvidos conforme
+`workflow-development-flow/references/agents-md.md`. Arquivo ausente é
+informação opcional. Conflito com fonte autoritativa é reportado; conflito material
+entre níveis sem fonte que o resolva vai diretamente a Rafinha, sem virar trabalho
+técnico derivado nem criar um gate adicional.
 
 Se a seção **Pendências de decisão** estiver não vazia, a issue **não deveria**
 estar aqui: pare, reporte e oriente o retorno a `Decisão - Rafinha` (decisão
@@ -333,6 +343,9 @@ durável descoberto → `engineering-context-manager`.
 
 ### Git
 - <condição relevante de branch/topologia>
+
+### Instruções locais (AGENTS.md)
+- <arquivos aplicáveis consultados | nenhum aplicável | conflito reportado>
 
 ### Blockers
 - Diretos: <nenhum ou descrição>

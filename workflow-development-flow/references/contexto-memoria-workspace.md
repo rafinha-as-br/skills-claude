@@ -100,10 +100,12 @@ relevante como outros trabalhos entendem/alteram o sistema e o estado é claro. 
 integração, o contexto é normalizado. Descoberta não vira contexto compartilhado
 só por existir: precisa de valor durável.
 
-**`CLAUDE.md`** (ou `AGENTS.md`, o arquivo equivalente do Codex) permanece pequeno, estável, bootstrap/router: ponto de entrada
-para `context/README.md`, referências a contratos/skills, topologia mínima,
-entrypoints. Não é banco de contexto, documentação arquitetural extensa, histórico
-de decisões, AI Memory nem duplicação de `context/`.
+**`CLAUDE.md` e `AGENTS.md`** permanecem pequenos, estáveis e atuam como
+bootstrap/router: apontam para `context/README.md`, referências a contratos/skills,
+topologia mínima e entrypoints. Não são banco de contexto, documentação
+arquitetural extensa, histórico de decisões, AI Memory nem duplicação de
+`context/`. A convenção de níveis, compatibilidade entre executores e conflitos
+vive em `agents-md.md`; ela não substitui este contrato.
 
 **Consumo:** *invocação descentralizada, governança de mutação centralizada.*
 

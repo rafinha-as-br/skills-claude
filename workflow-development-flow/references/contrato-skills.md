@@ -139,7 +139,7 @@ Incluídas (24): `workflow-development-flow`, `workflow-remote-orchestrator`, `j
 **Excluídas** (não fazem parte do workflow de desenvolvimento; coexistem no
 repositório): `task-creator-trabalho`, `flutter-frontend-package-builder`.
 
-## Capacidades de suporte à contextualização
+## Capacidades de suporte à contextualização e instruções locais
 
 Leitura simples e determinística de `context/` ou `ai-memory/` → qualquer skill,
 direto. Localizar/interpretar/avaliar → pode chamar a skill especializada.
@@ -148,3 +148,10 @@ Criar/alterar/reorganizar/remover/arquivar → **sempre** pela
 skills consumidoras produzem fatos operacionais e leem direto, mas não escrevem,
 reorganizam nem arquivam essas camadas por conta própria. Ver
 `contexto-memoria-workspace.md`.
+
+`AGENTS.md` é instrução local, não uma quarta camada de fonte autoritativa. A
+`engineering-context-manager` governa sua criação, alteração, reorganização e
+remoção; a autoridade Git continua com a capacidade chamadora. Antes de modificar
+um caminho, a skill localiza os `AGENTS.md` aplicáveis e preserva o escopo. Conflito
+entre Workspace, repositório e módulo não recebe precedência implícita; a resolução
+segue `agents-md.md` e, quando material, vai a Rafinha.
