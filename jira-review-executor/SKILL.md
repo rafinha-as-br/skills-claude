@@ -101,6 +101,9 @@ aplicáveis; evidências Git/GitHub/AIO/Confluence quando necessárias.
   executor que implementou — esta skill não herda a conclusão de nenhum review
   automatizado anterior (`review-agent`, `/code-review`) e não o substitui. Sem
   conector Atlassian e GitHub homologados no executor, a execução **bloqueia**.
+  Antes da consulta Atlassian, resolve produto, site, recurso e conector por
+  `workflow-development-flow/references/resolucao-atlassian.md`; outro site nunca
+  é fallback.
 
 ### Evidências, saída e limites
 O Jira preserva o comentário de review; as evidências permanecem nas fontes

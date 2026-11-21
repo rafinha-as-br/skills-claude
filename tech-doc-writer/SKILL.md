@@ -68,7 +68,9 @@ mapa de documentação e página-mãe; sigla oficial quando houver ID canônico.
 Obrigações: usar código/API como fonte da verdade; não assumir produto nem árvore;
 não criar ID canônico com sigla provisória; distinguir documentação viva de decisão
 de produto; sinalizar componente reutilizável para catálogo; declarar quando não
-teve acesso ao repositório; encaminhar incertezas ao `doc-pendency-resolver`. Saída:
+teve acesso ao repositório; encaminhar incertezas ao `doc-pendency-resolver`; após
+alteração documental com possível impacto nas instruções, delegar a avaliação à
+`engineering-context-manager`. Saída:
 documentação técnica criada/atualizada (e sincronizada no repositório quando
 aplicável e autorizado), sempre refletindo o estado técnico realmente observado. O
 Confluence é evidência da página; o Git, da documentação versionada. **Executor:** a
@@ -79,7 +81,10 @@ Jira de quem delega (Contrato do Workflow, A.9), e o claim da issue é dessa ski
 ### Limites e delegações
 Não decide regra de negócio; não inventa sigla oficial; não finge sincronização; não
 escreve página de tela nem guia de usuário; não cria template inexistente por
-conveniência. Dependências: `doc-pendency-resolver`; catálogo/mapeamento por produto.
+conveniência. Dependências: `doc-pendency-resolver`,
+`engineering-context-manager`; catálogo/mapeamento por produto. A delegação não
+autoriza esta skill a editar AGENTS diretamente, nem autoriza a manager a publicar
+Confluence.
 
 > Defaults herdados (silêncio não concede autoridade, acesso técnico não é
 > autoridade, delegação não transfere autoridade etc.):
@@ -299,6 +304,21 @@ Crie ou atualize a página no Confluence com o conteúdo formatado (usando
 conector no Codex, conforme o caso). Sem conector Confluence homologado no executor,
 a publicação **bloqueia** (Contrato do Workflow, A.10).
 
+### 8.1 Avaliar sincronização de instruções para agentes
+
+Depois da operação documental autorizada, identifique se ela altera ou descreve
+arquitetura, responsabilidade de módulo/repositório, integração, contrato entre
+aplicações, restrição arquitetural ou organização técnica relevante. Se sim,
+delegue à `engineering-context-manager` a avaliação orientada ao evento, com a
+página alterada, fontes observadas, produto/topologia, caminhos afetados e estado
+de implementação (implementado versus especificação). Ela consulta fontes
+autoritativas e atualiza apenas os `AGENTS.md` determinísticos e afetados.
+
+Não inicie nova escrita no Confluence porque um AGENTS foi sincronizado. Se a
+documentação aprovada descreve arquitetura ainda não implementada, preserve a
+distinção e não registre isso como comportamento técnico atual no AGENTS. Se não
+há impacto, registre a avaliação sem criar manutenção artificial.
+
 ### 9. Sincronizar a documentação em `docs/` no código (só na trilha módulo)
 
 Esta etapa é exclusiva da trilha **módulo**. API, arquitetura, componente,
@@ -360,6 +380,7 @@ Ao final, apresente a Rafinha:
 📝 Gaps/observações documentados (já confirmados por Rafinha, sem pergunta): [lista ou "nenhum"]
 🔗 Links para outras páginas: [lista ou "nenhum"]
 📁 Arquivos docs/ no código: [lista dos criados/atualizados, ou "não aplicável (sem acesso ao repositório)"]
+🤖 AGENTS.md: [delegação e resultado da engineering-context-manager, ou "sem impacto"]
 ```
 
 ---

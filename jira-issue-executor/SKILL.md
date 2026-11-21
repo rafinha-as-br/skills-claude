@@ -62,6 +62,9 @@ a interação com o Jira (busca de issues, leitura/criação de comentários, la
 transições de status) e com o Confluence (quando a issue for de documentação).
 Conector ou mecanismo de revisão não homologado no executor **bloqueia** a execução:
 não há fallback silencioso (A.10).
+Antes desse uso, resolva produto, site oficial, recurso e conector pelo
+`workflow-development-flow/references/resolucao-atlassian.md`; o conector só é
+utilizável depois de validar que atende ao site declarado.
 
 ---
 
@@ -605,9 +608,11 @@ precedência implícita e é reportado a Rafinha sem ampliar o escopo da issue.
 
 Ao delegar uma parte, envie ao subagente o escopo fechado, os caminhos
 autorizados, a lista desses `AGENTS.md`, as referências necessárias e o limite
-de não resolver conflitos nem criar escopo novo. Necessidade de criar ou manter
-`AGENTS.md` é encaminhada à `engineering-context-manager`; esta skill apenas
-inclui no commit a mudança que a capacidade autorizada deixou na working tree.
+de não resolver conflitos nem criar escopo novo. Mudança implementada com impacto
+material em arquitetura, responsabilidade de componente, integração, topologia ou
+instrução durável **é encaminhada** à `engineering-context-manager` para a
+sincronização orientada a evento; não depende de novo pedido manual. Esta skill
+apenas inclui no commit a mudança que a capacidade autorizada deixou na working tree.
 
 **5.1 Checar dependências não resolvidas.** Se a issue menciona
 explicitamente depender de outra issue (ex.: "depende de EP-02"), verifique

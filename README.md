@@ -279,7 +279,7 @@ Cinco escritores, um por fonte da verdade — **produto**, **código**, **tela**
 
 ### Contexto e continuidade
 
-Três camadas com finalidades distintas: **`context/`** (conhecimento técnico atual e durável — o *porquê*), **`ai-memory/`** (continuidade operacional e handoff, de `active/` para `history/`) e o **Execution State** (ponto de retomada de uma execução). Leitura é descentralizada; mutação é centralizada em `engineering-context-manager` e `ai-memory-manager`.
+Três camadas com finalidades distintas: **`context/`** (conhecimento técnico atual e durável — o *porquê*), **`ai-memory/`** (continuidade operacional e handoff, de `active/` para `history/`) e o **Execution State** (ponto de retomada de uma execução). Leitura é descentralizada; mutação é centralizada em `engineering-context-manager` e `ai-memory-manager`. O `AGENTS.md` principal padroniza identidade, topologia e o mapa local do site Atlassian; o cadastro normativo continua no Controle de workflow por produto.
 *Valor:* menos redescoberta técnica e retomada segura entre sessões, contas ou quotas.
 `engineering-context-manager` · `ai-memory-manager`
 
@@ -368,7 +368,7 @@ São **26 skills** no repositório: **24** fazem parte do Rafinha-Claude e **2**
 
 | Skill | O que faz |
 |---|---|
-| [`engineering-context-manager`](engineering-context-manager/SKILL.md) | Governa `context/`: conhecimento técnico atual e durável. |
+| [`engineering-context-manager`](engineering-context-manager/SKILL.md) | Governa `context/` e `AGENTS.md`: conhecimento técnico atual, durável e instruções locais. |
 | [`ai-memory-manager`](ai-memory-manager/SKILL.md) | Governa `ai-memory/`: continuidade operacional e handoff. |
 
 #### Orquestração remota (experimental)
@@ -458,6 +458,8 @@ O workflow foi projetado para o ambiente pessoal de Rafinha: nomes de projeto, e
 | [`politicas.md`](workflow-development-flow/references/politicas.md) | Políticas condicionais: plataforma, QA, design, risco, topologia, fast-track |
 | [`preparacao-e-hotfix.md`](workflow-development-flow/references/preparacao-e-hotfix.md) | Preparação técnica, atestado e Hotfix |
 | [`contexto-memoria-workspace.md`](workflow-development-flow/references/contexto-memoria-workspace.md) | `context/`, AI Memory e Workspace multi-repo |
+| [`agents-md.md`](workflow-development-flow/references/agents-md.md) | Convenção hierárquica e estrutura do AGENTS principal |
+| [`resolucao-atlassian.md`](workflow-development-flow/references/resolucao-atlassian.md) | Identidade de site, recurso e conector Atlassian por produto |
 | [`release-lifecycle.md`](workflow-development-flow/references/release-lifecycle.md) | Contratos do ciclo de release |
 | [`orquestracao-remota.md`](workflow-development-flow/references/orquestracao-remota.md) | Orquestração remota sob demanda: comandos, transições permitidas, mapa etapa → skill, segurança |
 | [`executores.md`](workflow-development-flow/references/executores.md) | Matriz de capacidades por executor (Claude Code e Codex), mapeamento de ferramentas e homologação declarada |

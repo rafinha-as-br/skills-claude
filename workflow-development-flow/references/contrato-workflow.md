@@ -53,6 +53,21 @@ escolhendo um lado automaticamente:
 5. Reconciliar a implementação com o contrato aprovado, ou encaminhar a decisão
    quando a intenção normativa não estiver clara.
 
+### A.1.1 Identidade Atlassian do produto
+
+Todo produto que usa o Workflow declara um site Atlassian oficial e exclusivo no
+cadastro normativo **Controle de workflow por produto**: URL do site, projetos
+Jira (nome, chave, URL), espaços Confluence (nome, chave, URL, finalidade) e
+página inicial. O `AGENTS.md` principal reproduz somente o mapa local necessário
+à execução, com referência ao cadastro; ele não substitui a fonte normativa.
+
+Antes de uma operação em Jira ou Confluence, a skill resolve produto, site,
+recurso e conector pelo procedimento de `resolucao-atlassian.md`. Nome de
+conector, chave de Jira, acesso técnico ou outro site disponível não provam o
+destino correto. Falha de identificação, acesso ou escrita bloqueia somente a
+operação dependente conforme B.3; nunca cria fallback, site, migração, gate ou
+autorização nova.
+
 ### A.2 Autoridade de decisão
 
 Pertence à **skill responsável pela capacidade em execução**, nos limites do
@@ -195,6 +210,10 @@ autoridade (A.3).
 - **Matriz de capacidades.** O que cada executor tem (ferramentas, conectores,
   mapeamento de operações) e quais capacidades Rafinha homologou ficam em
   `references/executores.md` — fonte única; as skills apontam para ela.
+- **Destino Atlassian.** Capacidade de Jira/Confluence só é utilizável depois da
+  resolução do site e recurso declarados pelo produto
+  (`resolucao-atlassian.md`); uma ferramenta que responda por outro site não é
+  fallback nem capacidade suficiente para aquela operação.
 - **Canais remotos e executor web.** Referências a canal remoto e a navegador de QA
   Web significam **canal remoto homologado** e **executor web homologado**, nunca
   uma ferramenta presumida. Enquanto o executor web de um executor não for

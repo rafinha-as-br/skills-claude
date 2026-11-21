@@ -81,6 +81,10 @@ exige o que a operação não faz → ampliar a operação. Contradição ou lac
 - **Identidade do executor.** Todo registro operacional no Jira inclui `Executor`
   (e, quando aplicável, `Tentativa`, `Escopo fechado`, `Evidências`, `Handoff` —
   A.9). O título contratual do comentário não muda por causa do executor.
+- **Destino Atlassian.** Toda leitura ou mutação de Jira/Confluence resolve o
+  site oficial do produto, o recurso e o conector correto antes de operar, por
+  `resolucao-atlassian.md`. Acesso técnico, nome de ferramenta e site diferente
+  não substituem essa verificação nem a autoridade da skill.
 - **Claim antes de mutar.** Skill que muta issue abre o claim de execução depois de
   fechar o escopo e antes da primeira mutação, e para diante de claim vigente de
   outro executor (Contrato do Workflow, B.5).

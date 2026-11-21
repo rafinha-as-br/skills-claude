@@ -68,7 +68,9 @@ Leitura simples e determinística não exige sua invocação.
 ### Entradas e pré-condições
 Contexto técnico disponível; topologia mono ou multi-repo resolvida (onde está
 `context/`); regras de `context/` aplicáveis; decisão humana prévia quando a
-manutenção depender de escolha técnica não determinística.
+manutenção depender de escolha técnica não determinística. Para AGENTS principal,
+produto e cadastro Atlassian normativo disponíveis quando a mudança tocar
+identidade, topologia ou infraestrutura Atlassian.
 
 ### Obrigações
 - aplicar estrutura e metadata padronizadas;
@@ -79,6 +81,11 @@ manutenção depender de escolha técnica não determinística.
 - manter a separação entre `AGENTS.md`, `context/` e AI Memory;
 - aplicar os critérios de criação, herança, conflito e remoção de
   `references/agents-md.md`;
+- sincronizar AGENTS orientada a evento/delegação quando houver mudança técnica,
+  documental ou de topologia potencialmente material, sem monitoramento externo
+  contínuo;
+- preservar o esquema do AGENTS principal e reconciliar somente divergência
+  determinística com fontes autoritativas;
 - atualizar, invalidar ou remover notas conforme a realidade técnica;
 - registrar evolução em andamento somente quando relevante para outros
   trabalhos.
@@ -91,7 +98,8 @@ normalizado; confirmação de que nenhuma mutação é necessária.
 ### Limites
 Não é etapa do board; não decide arquitetura não resolvida; não mantém histórico
 operacional; não substitui Git, Jira, Confluence ou Código; não exige chamada
-artificial para leituras simples.
+artificial para leituras simples, não cria/migra site Atlassian e não publica
+Confluence por conta própria.
 
 ### Delegações
 Decisão técnica real não resolvida → Rafinha ou capacidade competente. Informação
@@ -240,6 +248,29 @@ negócio do Confluence ou conteúdo do Jira.
 5. Não crie `CLAUDE.md` como adaptação por padrão. Apenas informe quando um
    adaptador pode ser necessário conforme a referência central.
 
+### Modo 5 — Sincronização contextual orientada a evento
+
+É acionada por delegação quando uma implementação integrada/em andamento,
+mudança de documentação técnica, novo componente, integração entre componentes,
+alteração de responsabilidade de repositório, ou mudança aprovada de identidade,
+topologia ou infraestrutura Atlassian possa afetar instruções de agentes. Não
+faz polling, webhook ou varredura permanente.
+
+1. Receba da chamadora o evento, caminhos/escopo, estado de branch e fonte que
+   o comprovam; identifique a mudança efetivamente ocorrida.
+2. Consulte a fonte competente e os AGENTS ancestrais/potencialmente afetados.
+   Para site Atlassian, use `resolucao-atlassian.md` e o cadastro normativo; não
+   trate uma página técnica como prova de configuração do produto.
+3. Compare conteúdo vigente com a mudança. Atualize somente os AGENTS afetados
+   quando a alteração for determinística e material; preserve instruções não
+   relacionadas e elimine somente duplicação inequívoca.
+4. Se não houver impacto, devolva **nenhuma alteração necessária**. Se houver
+   conflito de autoridade, arquitetura ainda não aprovada, informação ausente ou
+   divergência código × documentação, não escolha: classifique, altere apenas a
+   parte independente e encaminhe o restante a Rafinha/capacidade competente.
+5. Devolva à chamadora os arquivos avaliados, fonte consultada, mutação ou
+   motivo de não mutação, bloqueios e responsabilidade de persistência Git.
+
 ### Persistência branch-aware
 ```text
 develop         → realidade técnica oficialmente integrada
@@ -267,6 +298,7 @@ chamador exatamente quais arquivos foram alterados.
 ✅ context/ em <localização> (topologia: mono|multi)
 📄 Notas: [criada|atualizada|reorganizada|removida|review-needed] <arquivo> — <motivo>
 🤖 AGENTS.md: [avaliado|criado|atualizado|reorganizado|removido|não necessário] <arquivo> — <motivo>
+🔄 Evento contextual: <origem e mudança> | fontes: <fontes> | impacto: <arquivos ou nenhum>
 ↪️ Delegado à ai-memory-manager: [item ou "nada"]
 ⚠️ Mudança sem commit (chamadora sem autoridade Git): [arquivos ou "n/a"]
 ```

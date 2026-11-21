@@ -2205,6 +2205,11 @@ Resumo; estrutura, formatos, ciclos de vida e fluxos completos em
   `context/`, AI Memory, Jira, Confluence, Código ou Git. Ausência não bloqueia;
   conflito material entre níveis não tem precedência implícita. Convenção:
   `references/agents-md.md`.
+- **Identidade Atlassian por produto** — cada produto declara site oficial,
+  projetos Jira e espaços Confluence no Controle de workflow por produto; o
+  AGENTS principal oferece o mapa local. Antes de operar, a skill resolve o
+  conector e o recurso corretos por `references/resolucao-atlassian.md`, sem
+  fallback entre sites.
 - **`ai-memory/`** — continuidade operacional e handoff (`active/` → `history/`,
   criação sob demanda). Governada pela `ai-memory-manager`; leitura direta,
   mutação centralizada. Não é fonte de verdade de Jira, Git ou produto.

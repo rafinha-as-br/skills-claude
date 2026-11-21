@@ -144,6 +144,12 @@ Nunca escalar automaticamente: Sim — ver Model Escalation Policy em
 ### 1. Qual projeto/Jira
 Se estiver claro pelo contexto, use sem perguntar. Senão, pergunte antes.
 
+Antes de consultar ou mutar Jira/Confluence, localize o AGENTS principal do
+produto e resolva site, projeto/espaço e conector pelo procedimento
+`workflow-development-flow/references/resolucao-atlassian.md`. A ausência de
+AGENTS legado não cria gate se o cadastro oficial bastar; site/recurso/conector
+não confirmado bloqueia somente a operação dependente, sem fallback.
+
 ### 2. Escopo explícito (workflow-development-flow, princípio 11)
 Esta skill **nunca varre a coluna sem escopo fechado**. Confirme com Rafinha,
 antes de buscar issue, qual forma se aplica: **issue individual**, **lista de
